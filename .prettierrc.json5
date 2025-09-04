@@ -1,0 +1,31 @@
+{
+  $schema: 'https://json.schemastore.org/prettierrc',
+  semi: false,
+  singleQuote: true,
+  tabWidth: 2,
+  trailingComma: 'all',
+  printWidth: 120,
+  bracketSpacing: true,
+  bracketSameLine: true,
+  singleAttributePerLine: false,
+  arrowParens: 'avoid',
+  endOfLine: 'lf',
+  jsxSingleQuote: false,
+  useTabs: false,
+  overrides: [
+    {
+      files: '.prettierrc.json5',
+      options: {
+        parser: 'json5',
+      },
+    },
+  ],
+  tailwindStylesheet: './src/styles/globals.css',
+  plugins: [
+    'prettier-plugin-tailwindcss',
+    'prettier-plugin-organize-attributes',
+    'prettier-plugin-organize-imports',
+    'prettier-plugin-packagejson',
+    'prettier-plugin-multiline-arrays',
+  ],
+}
