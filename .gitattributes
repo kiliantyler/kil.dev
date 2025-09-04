@@ -1,0 +1,32 @@
+# normalize all text files to LF in the repo and on checkout
+*          text=auto eol=lf
+
+# Explicit text types
+*.js       text eol=lf
+*.ts       text eol=lf
+*.tsx      text eol=lf
+*.d.ts     text eol=lf
+*.json     text eol=lf
+*.json5    text eol=lf
+*.md       text eol=lf
+*.mdc      text eol=lf
+*.yml      text eol=lf
+*.toml     text eol=lf
+*.css      text eol=lf
+*.svg      text eol=lf
+*.editorconfig text eol=lf
+*.gitattributes text eol=lf
+*.gitignore text eol=lf
+*.prettierignore text eol=lf
+*.lock     text eol=lf
+*.txt      text eol=lf
+*.webmanifest text eol=lf
+*.example  text eol=lf
+*.TODO     text eol=lf
+
+# Binary assets
+*.png      binary
+*.ico      binary
+*.ttf      binary
+*.woff     binary
+*.woff2    binary
