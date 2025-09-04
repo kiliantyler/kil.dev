@@ -1,7 +1,7 @@
-import { LinkButton } from "@/components/ui/link-button";
-import Headshot from "@/images/cartoon-headshot.jpg";
-import { CONTENT } from "@/lib/constants";
-import Image from "next/image";
+import { LinkButton } from '@/components/ui/link-button'
+import Headshot from '@/images/cartoon-headshot.jpg'
+import { CONTENT } from '@/lib/constants'
+import Image from 'next/image'
 
 function ProfileImage() {
   return (
@@ -18,39 +18,33 @@ function ProfileImage() {
         />
       </div>
     </div>
-  );
+  )
 }
 
 function HeroContent() {
   return (
     <div className="order-2 flex flex-col gap-6 lg:order-1">
       <div className="flex flex-col gap-2">
-        <h1 className="text-5xl leading-tight font-black tracking-tight text-white md:text-6xl">
-          {CONTENT.NAME}
-        </h1>
-        <p className="text-example-primary text-lg font-semibold md:text-xl">
-          {CONTENT.TITLE}
-        </p>
+        <h1 className="text-5xl leading-tight font-black tracking-tight text-white md:text-6xl">{CONTENT.NAME}</h1>
+        <p className="text-example-primary text-lg font-semibold md:text-xl">{CONTENT.TITLE}</p>
       </div>
       <div className="flex flex-wrap justify-center gap-4 lg:justify-start">
         <LinkButton
           href="#"
           className="bg-example-primary hover:bg-example-accent h-12 min-w-[140px] gap-2 rounded-md px-6 text-base font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-          aria-label="View resume"
-        >
+          aria-label="View resume">
           <span>View Resume</span>
         </LinkButton>
         <LinkButton
           href="#projects"
           variant="secondary"
           className="bg-example-secondary h-12 min-w-[140px] rounded-md px-6 text-base font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:bg-slate-700 hover:shadow-xl"
-          aria-label="Jump to projects section"
-        >
+          aria-label="Jump to projects section">
           <span className="truncate">View Projects</span>
         </LinkButton>
       </div>
     </div>
-  );
+  )
 }
 
 function Hero() {
@@ -63,7 +57,7 @@ function Hero() {
         </div>
       </div>
     </main>
-  );
+  )
 }
 
-export { Hero, HeroContent, ProfileImage };
+export { Hero, HeroContent, ProfileImage }

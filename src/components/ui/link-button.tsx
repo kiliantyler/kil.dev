@@ -1,29 +1,18 @@
-import { Button, type buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import type { VariantProps } from "class-variance-authority";
-import * as React from "react";
+import { Button, type buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import type { VariantProps } from 'class-variance-authority'
+import * as React from 'react'
 
 interface LinkButtonProps
-  extends Omit<
-    React.ComponentProps<"button"> & VariantProps<typeof buttonVariants>,
-    "asChild"
-  > {
-  href: string;
-  external?: boolean;
-  children: React.ReactNode;
-  className?: string;
+  extends Omit<React.ComponentProps<'button'> & VariantProps<typeof buttonVariants>, 'asChild'> {
+  href: string
+  external?: boolean
+  children: React.ReactNode
+  className?: string
 }
 
-function LinkButton({
-  href,
-  external = false,
-  children,
-  className,
-  ...props
-}: LinkButtonProps) {
-  const linkProps = external
-    ? { target: "_blank", rel: "noopener noreferrer" }
-    : {};
+function LinkButton({ href, external = false, children, className, ...props }: LinkButtonProps) {
+  const linkProps = external ? { target: '_blank', rel: 'noopener noreferrer' } : {}
 
   return (
     <Button asChild className={cn(className)} {...props}>
@@ -31,7 +20,7 @@ function LinkButton({
         {children}
       </a>
     </Button>
-  );
+  )
 }
 
-export { LinkButton };
+export { LinkButton }

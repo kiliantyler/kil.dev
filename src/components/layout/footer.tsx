@@ -5,5 +5,5 @@ export function Footer() {
         <p>© {new Date().getFullYear()} Kilian Tyler. All rights reserved.</p>
       </div>
     </footer>
-  );
+  )
 }

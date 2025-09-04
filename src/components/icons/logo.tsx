@@ -1,16 +1,11 @@
 interface LogoProps {
-  fill?: string;
-  className?: string;
-  width?: string | number;
-  height?: string | number;
+  fill?: string
+  className?: string
+  width?: string | number
+  height?: string | number
 }
 
-export function Logo({
-  fill = "#000000",
-  className = "",
-  width = "100%",
-  height = "100%",
-}: LogoProps) {
+export function Logo({ fill = '#000000', className = '', width = '100%', height = '100%' }: LogoProps) {
   return (
     <svg
       version="1.1"
@@ -24,8 +19,7 @@ export function Logo({
       viewBox="0 0 1024 1024"
       enableBackground="new 0 0 1024 1024"
       xmlSpace="preserve"
-      className={className}
-    >
+      className={className}>
       <path
         fill={fill}
         opacity="1.000000"
@@ -193,5 +187,5 @@ M457.663025,473.840363
 z"
       />
     </svg>
-  );
+  )
 }
