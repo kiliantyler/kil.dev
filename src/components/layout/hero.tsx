@@ -27,13 +27,14 @@ function HeroContent() {
       <div className="flex flex-col gap-2">
         <h1 className="text-5xl leading-tight font-black tracking-tight text-white md:text-6xl">{CONTENT.NAME}</h1>
         <p className="text-example-primary text-lg font-semibold md:text-xl">{CONTENT.TITLE}</p>
+        <p className="text-example-primary text-lg font-semibold md:text-xl">{CONTENT.LOCATION}</p>
       </div>
       <div className="flex flex-wrap justify-center gap-4 lg:justify-start">
         <LinkButton
           href="#"
           className="bg-example-primary hover:bg-example-accent h-12 min-w-[140px] gap-2 rounded-md px-6 text-base font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-          aria-label="View resume">
-          <span>View Resume</span>
+          aria-label="View Experience">
+          <span>View Experience</span>
         </LinkButton>
         <LinkButton
           href="#projects"

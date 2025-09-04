@@ -7,6 +7,7 @@ export const CONTENT = {
   NAME: 'Kilian Tyler',
   TITLE: 'Site Reliability Engineer | DevOps Engineer | All Rounder',
   DESCRIPTION: 'Site Reliability Engineer & DevOps specialist. Building resilient and scalable systems.',
+  LOCATION: 'Cleveland, Ohio',
 } as const
 
 export const IMAGES = {
