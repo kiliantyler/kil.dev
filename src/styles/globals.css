@@ -124,15 +124,15 @@
   }
 }
 
-/* Custom theme variables from example.html */
+
 @layer base {
   :root {
-    --example-primary-color: #03a9f4;
-    --example-secondary-color: #1e293b;
-    --example-accent-color: #0ea5e9;
-    --example-background-color: #0f172a;
-    --example-text-color: #e2e8f0;
-    --example-border-color: #334155;
+    --example-primary-color: oklch(0.6991 0.157 238.99);
+    --example-secondary-color: oklch(0.2795 0.0368 260.03);
+    --example-accent-color: oklch(0.6847 0.1479 237.32);
+    --example-background-color: oklch(0.2077 0.0398 265.75);
+    --example-text-color: oklch(0.9288 0.0126 255.51);
+    --example-border-color: oklch(0.3717 0.0392 257.29);
   }
 }
 
