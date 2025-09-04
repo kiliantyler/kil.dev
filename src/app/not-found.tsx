@@ -1,4 +1,6 @@
-import { Background, Footer, Header } from "@/components/layout";
+import { Background } from "@/components/layout/background";
+import { Footer } from "@/components/layout/footer";
+import { Header } from "@/components/layout/header";
 import { LinkButton } from "@/components/ui/link-button";
 import { useTheme } from "@/hooks/use-theme";
 import { Noto_Sans, Space_Grotesk } from "next/font/google";

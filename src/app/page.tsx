@@ -1,4 +1,7 @@
-import { Background, Footer, Header, Hero } from "@/components/layout";
+import { Background } from "@/components/layout/background";
+import { Footer } from "@/components/layout/footer";
+import { Header } from "@/components/layout/header";
+import { Hero } from "@/components/layout/hero";
 import { useTheme } from "@/hooks/use-theme";
 import type { Metadata } from "next";
 import { Noto_Sans, Space_Grotesk } from "next/font/google";
