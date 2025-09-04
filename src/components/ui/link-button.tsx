@@ -1,8 +1,13 @@
-import { Button, type ButtonProps } from "@/components/ui/button";
+import { Button, type buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import type { VariantProps } from "class-variance-authority";
 import * as React from "react";
 
-interface LinkButtonProps extends Omit<ButtonProps, "asChild"> {
+interface LinkButtonProps
+  extends Omit<
+    React.ComponentProps<"button"> & VariantProps<typeof buttonVariants>,
+    "asChild"
+  > {
   href: string;
   external?: boolean;
   children: React.ReactNode;
