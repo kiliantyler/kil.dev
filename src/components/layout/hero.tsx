@@ -1,17 +1,17 @@
-import { DownloadIcon } from "@/components/icons/download";
 import { LinkButton } from "@/components/ui/link-button";
-import { CONTENT, IMAGES } from "@/lib/constants";
+import Headshot from "@/images/cartoon-headshot.jpg";
+import { CONTENT } from "@/lib/constants";
 import Image from "next/image";
 
 function ProfileImage() {
   return (
-    <div className="relative order-1 mx-auto w-full max-w-md lg:order-2 lg:mx-0">
-      <div className="border-example-primary absolute -top-4 -left-4 h-full w-full -rotate-3 rounded-lg border-4 transition-transform duration-500 hover:rotate-0" />
+    <div className="group relative order-1 mx-auto w-full max-w-md lg:order-2 lg:mx-0">
+      <div className="border-example-primary absolute -top-4 -left-4 h-full w-full -rotate-3 rounded-lg border-4 transition-transform duration-500 group-hover:rotate-0" />
       <div className="relative h-auto w-full rounded-lg bg-cover bg-center bg-no-repeat shadow-2xl">
         <Image
           alt={`${CONTENT.NAME} headshot`}
-          src={IMAGES.HEADSHOT}
-          className="rounded-lg"
+          src={Headshot}
+          className="rounded-lg transition-transform duration-500 group-hover:-translate-y-1 group-hover:scale-105"
           loading="lazy"
           width={500}
           height={500}
@@ -36,10 +36,9 @@ function HeroContent() {
         <LinkButton
           href="#"
           className="bg-example-primary hover:bg-example-accent h-12 min-w-[140px] gap-2 rounded-md px-6 text-base font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-          aria-label="Download resume"
+          aria-label="View resume"
         >
-          <span>Download Resume</span>
-          <DownloadIcon className="size-5" />
+          <span>View Resume</span>
         </LinkButton>
         <LinkButton
           href="#projects"
