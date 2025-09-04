@@ -19,7 +19,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${geist.variable}`}>
-      <body>{children}</body>
+      <body className="flex min-h-screen flex-col">{children}</body>
     </html>
   );
 }
