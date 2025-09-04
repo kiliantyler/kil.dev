@@ -147,14 +147,3 @@
   .text-example-primary { color: var(--example-primary-color); }
   .hover\:text-example-primary:hover { color: var(--example-primary-color); }
 }
-
-/* Circuit background utility */
-@layer utilities {
-  .circuit-bg {
-    background-image: linear-gradient(to right, rgba(30, 41, 59, 0.5) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(30, 41, 59, 0.5) 1px, transparent 1px);
-    background-size: 40px 40px;
-    background-position: -1px -1px;
-  }
-}
-

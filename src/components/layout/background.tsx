@@ -1,5 +1,14 @@
+import { GridLights } from '@/components/layout/grid-lights'
+
 function CircuitBackground() {
-  return <div className="circuit-bg absolute inset-0 z-0" aria-hidden />
+  return (
+    <div
+      className="absolute inset-0 z-0 bg-[linear-gradient(to_right,rgba(30,41,59,0.5)_1px,transparent_1px),linear-gradient(to_bottom,rgba(30,41,59,0.5)_1px,transparent_1px)] bg-[length:40px_40px] bg-[position:-1px_-1px]"
+      aria-hidden
+    >
+      <GridLights />
+    </div>
+  )
 }
 
 function GradientOverlay() {
