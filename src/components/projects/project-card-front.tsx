@@ -2,10 +2,11 @@
 
 import { ProjectFlipIndicator } from '@/components/projects/project-flip-indicator'
 import { Card } from '@/components/ui/card'
+import type { StaticImageData } from 'next/image'
 import Image from 'next/image'
 
 interface ProjectCardFrontProps {
-  imageSrc: any
+  imageSrc: StaticImageData
   imageAlt: string
   title: string
 }

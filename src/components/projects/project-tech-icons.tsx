@@ -15,7 +15,7 @@ function ProjectTechIcons({ tags }: ProjectTechIconsProps) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       {tags.map(tag => {
-        const skill = SKILLS[tag as SkillName]
+        const skill = SKILLS[tag]
         if (!skill) {
           return (
             <span key={tag} className="bg-transparent text-secondary-foreground rounded-md px-2 py-1 text-xs">
