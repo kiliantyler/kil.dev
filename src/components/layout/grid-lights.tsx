@@ -160,15 +160,29 @@ function GridLights() {
     const handle = () => regenerate()
     window.addEventListener('resize', handle)
     return () => window.removeEventListener('resize', handle)
-  }, [prefersReducedMotion])
+  }, [prefersReducedMotion, numLights])
 
-  const dotClass = 'absolute w-1.5 h-1.5 rounded-full pointer-events-none shadow-[0_0_10px_rgba(3,169,244,0.7),_0_0_20px_rgba(3,169,244,0.4)] [background:radial-gradient(circle,_rgba(3,169,244,0.9)_0%,_rgba(3,169,244,0.5)_50%,_transparent_100%)]'
+  const dotClass = 'absolute rounded-full pointer-events-none'
+  const near = LIGHT_GRID.GLOW_NEAR_PX
+  const far = LIGHT_GRID.GLOW_FAR_PX
+  const rgb = LIGHT_GRID.COLOR_RGB
 
   return (
     <div ref={containerRef} className="absolute inset-0 overflow-hidden" aria-hidden>
       {styleText ? <style>{styleText}</style> : null}
       {Array.from({ length: numLights }).map((_, i) => (
-        <div key={i} className={`${dotClass} gl-${i}`} aria-hidden />
+        <div
+          key={i}
+          className={`${dotClass} gl-${i}`}
+          style={{
+            width: `${LIGHT_GRID.DOT_SIZE_PX}px`,
+            height: `${LIGHT_GRID.DOT_SIZE_PX}px`,
+            transform: 'translate(-50%, -50%)',
+            boxShadow: `0 0 ${near}px rgba(${rgb}, 0.7), 0 0 ${far}px rgba(${rgb}, 0.4)`,
+            background: `radial-gradient(circle, rgba(${rgb}, 0.9) 0%, rgba(${rgb}, 0.5) 50%, transparent 100%)`,
+          }}
+          aria-hidden
+        />
       ))}
     </div>
   )
