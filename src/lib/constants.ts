@@ -6,13 +6,8 @@ export const EXTERNAL_LINKS = {
 export const CONTENT = {
   NAME: 'Kilian Tyler',
   TITLE: 'Site Reliability Engineer | DevOps Engineer | All Rounder',
-  DESCRIPTION: 'Site Reliability Engineer & DevOps specialist. Building resilient and scalable systems.',
+  TITLE_ALT: 'I wear all the hats',
   LOCATION: 'Cleveland, Ohio',
-} as const
-
-export const IMAGES = {
-  AVATAR:
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuDL-Kljo54ODUhUxDBz0oabZ2ghbmfPPPh5NYtLhsmfMJHEAts9dK4lOoKMlHJYwXzDBRDmuC_vCcykQGg8cUBOdLs6Yi64qUDQvtspNO1FhkHPPNPaG18XDMevZIGwFMzmyizgImDedgjCFw9hVBf97y8t4I4Q9pw8xLTgtUvM8m0Z6Iw1Cg7WZZHWukAGZVAs6TIoBkfQ83J1LCuEN65wDKIKOhx0bhawX3NfQvtltWobM0X5py9sQHHyA9Un5ykIGWjoSKKEtsPW',
 } as const
 
 export const NAVIGATION = [
@@ -20,3 +15,22 @@ export const NAVIGATION = [
   { label: 'Experience', href: '#experience' },
   { label: 'Projects', href: '#projects' },
 ] as const
+
+export const LIGHT_GRID = {
+  // layout
+  GRID_SIZE_PX: 40,
+  GRID_OFFSET_PX: -5,
+  NUM_LIGHTS: 16,
+
+  // motion
+  DURATION_SECONDS: 20,
+  STAGGER_SECONDS: 0,
+  DETOUR_PROBABILITY: 0.1,
+  HORIZONTAL_PROBABILITY: 0.5,
+
+  // dot appearance
+  DOT_SIZE_PX: 5,
+  COLOR_RGB: '3,169,244',
+  GLOW_NEAR_PX: 5,
+  GLOW_FAR_PX: 10,
+} as const
