@@ -41,8 +41,8 @@ function generateHorizontalPath(width: number, height: number): Point[] {
 
   // Walk across columns; inject occasional vertical detours by exactly one grid step
   for (let c = 0; c < cols; c++) {
-    // 30% chance to take a vertical detour before moving horizontally
-    if (Math.random() < 0.3) {
+    // chance to take a vertical detour before moving horizontally
+    if (Math.random() < LIGHT_GRID.DETOUR_PROBABILITY) {
       const up = Math.random() < 0.5
       const newYIndex = clamp(yIndex + (up ? -1 : 1), 1, rows - 2)
       const newY = newYIndex * GRID_SIZE_PX
@@ -73,7 +73,7 @@ function generateVerticalPath(width: number, height: number): Point[] {
   const points: Point[] = [{ x: baseX, y: yIndex * GRID_SIZE_PX }]
 
   for (let r = 0; r < rows; r++) {
-    if (Math.random() < 0.3) {
+    if (Math.random() < LIGHT_GRID.DETOUR_PROBABILITY) {
       const left = Math.random() < 0.5
       const newXIndex = clamp(xIndex + (left ? -1 : 1), 1, cols - 2)
       const newX = newXIndex * GRID_SIZE_PX
@@ -117,12 +117,12 @@ function buildKeyframes(name: string, points: Point[]): string {
 function createStyles(paths: Point[][]): string {
   const kf: string[] = []
   const rules: string[] = []
-  const durationSeconds = 8
+  const durationSeconds = LIGHT_GRID.DURATION_SECONDS
   for (let i = 0; i < paths.length; i++) {
     const name = `gl_path_${i}`
     const path = paths[i]!
     kf.push(buildKeyframes(name, path))
-    const delay = (i * 0.7) % durationSeconds
+    const delay = (i * LIGHT_GRID.STAGGER_SECONDS) % durationSeconds
     rules.push(`.gl-${i} { animation: ${name} ${durationSeconds}s linear infinite; animation-delay: ${delay}s; }`)
   }
   return `${kf.join('\n\n')}\n\n${rules.join('\n')}`
@@ -131,7 +131,7 @@ function createStyles(paths: Point[][]): string {
 function GridLights() {
   const containerRef = useRef<HTMLDivElement>(null)
   const [styleText, setStyleText] = useState<string>('')
-  const numLights = 12
+  const numLights = LIGHT_GRID.NUM_LIGHTS
 
   const prefersReducedMotion = useMemo(() => {
     if (typeof window === 'undefined') return false
@@ -148,7 +148,9 @@ function GridLights() {
       const { width, height } = getContainerSize(containerRef.current)
       const paths: Point[][] = []
       for (let i = 0; i < numLights; i++) {
-        const generator = choose([generateHorizontalPath, generateVerticalPath])
+        const generator = Math.random() < LIGHT_GRID.HORIZONTAL_PROBABILITY
+          ? generateHorizontalPath
+          : generateVerticalPath
         paths.push(generator(width, height))
       }
       setStyleText(createStyles(paths))
