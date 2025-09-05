@@ -20,6 +20,8 @@ export const SKILLS = {
   Markdown: { icon: 'markdown', url: 'https://daringfireball.net/projects/markdown/' },
   Kubernetes: { icon: 'kubernetes', url: 'https://kubernetes.io' },
   FluxCD: { icon: { source: 'dashboardicons', name: 'flux-cd', format: 'svg' }, url: 'https://fluxcd.io' },
+  Talos: { icon: { source: 'dashboardicons', name: 'talos', format: 'svg' }, url: 'https://talos.dev' },
+  OnePassword: { icon: { source: 'dashboardicons', name: '1password', format: 'svg' }, url: 'https://1password.com' },
 } as const
 
 export type SkillName = keyof typeof SKILLS
