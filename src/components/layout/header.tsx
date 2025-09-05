@@ -1,37 +1,8 @@
-import { GitHubIcon } from '@/components/icons/github'
-import { LinkedInIcon } from '@/components/icons/linkedin'
 import { Logo } from '@/components/icons/logo'
 import { NavigationLava } from '@/components/layout/nav-lava'
-import { LinkButton } from '@/components/ui/link-button'
+import { GitHubButton, LinkedInButton } from '@/components/layout/social-buttons'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
-import { EXTERNAL_LINKS } from '@/lib/constants'
 import Link from 'next/link'
-
-function GitHubButton() {
-  return (
-    <LinkButton
-      href={EXTERNAL_LINKS.GITHUB}
-      external
-      className="bg-secondary hover:bg-accent h-10 min-w-0 rounded-lg px-4 text-sm font-bold text-secondary-foreground hover:ring-accent hover:ring-1 hover:ring-offset-2 ring-offset-background duration-300"
-      aria-label="Open Kilian's GitHub profile in a new tab">
-      <GitHubIcon className="size-5" />
-      <span className="hidden md:inline">GitHub</span>
-    </LinkButton>
-  )
-}
-
-function LinkedInButton() {
-  return (
-    <LinkButton
-      href={EXTERNAL_LINKS.LINKEDIN}
-      external
-      className="bg-secondary hover:bg-accent h-10 min-w-0 rounded-lg px-4 text-sm font-bold text-secondary-foreground hover:ring-accent hover:ring-1 hover:ring-offset-2 ring-offset-background duration-300"
-      aria-label="Open Kilian's LinkedIn profile in a new tab">
-      <LinkedInIcon className="size-5" />
-      <span className="hidden md:inline">LinkedIn</span>
-    </LinkButton>
-  )
-}
 
 function HomeLogo() {
   return (
