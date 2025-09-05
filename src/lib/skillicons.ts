@@ -27,15 +27,15 @@ export type SkillIconKey = (typeof SKILLS)[SkillName]['icon']
 
 export function getSkillIconUrl(icon: SkillIconRef): string {
   if (typeof icon === 'string') {
-    return `https://skills.syvixor.com/api/icons?i=${encodeURIComponent(icon)}`
+    return `/api/image/skills/${encodeURIComponent(icon)}`
   }
 
   if (icon.source === 'dashboardicons') {
     const format: DashboardIconFormat = icon.format ?? 'webp'
     const name = icon.name
-    return `https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/${format}/${encodeURIComponent(name)}.${format}`
+    return `/api/image/dbi/${encodeURIComponent(format)}/${encodeURIComponent(name)}.${format}`
   }
 
   // Fallback to syvixor if an unexpected value slips through
-  return `https://skills.syvixor.com/api/icons?i=${encodeURIComponent('')}`
+  return `/api/image/skills/`
 }
