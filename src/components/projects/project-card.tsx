@@ -182,6 +182,7 @@ function ProjectCard({ project }: ProjectCardProps) {
                   {project.href ? (
                     <LinkButton
                       href={project.href}
+                      external={project.href.startsWith('http')}
                       className="h-9 rounded-md px-3 text-xs font-semibold"
                       aria-label={`Open ${project.title} website`}
                       onClick={e => {
