@@ -1,3 +1,4 @@
+import type { NextRequest } from 'next/server'
 type PathParts = [segment: 'skills' | 'dbi', ...rest: string[]]
 
 function buildTargetUrl(parts: PathParts): URL | null {
@@ -22,8 +23,9 @@ function buildTargetUrl(parts: PathParts): URL | null {
   return null
 }
 
-export async function GET(request: Request, context: { params: { path?: string[] } }): Promise<Response> {
-  const parts = (context.params.path ?? []) as PathParts
+export async function GET(request: NextRequest, context: { params: Promise<{ path: string[] }> }): Promise<Response> {
+  const { path } = await context.params
+  const parts = path as PathParts
   const targetUrl = buildTargetUrl(parts)
 
   if (!targetUrl) {
