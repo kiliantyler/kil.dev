@@ -1,27 +1,7 @@
 import { LocationWithMapTooltip } from '@/components/layout/location-with-map-tooltip'
+import { ProfileImage } from '@/components/layout/profile-image'
 import { LinkButton } from '@/components/ui/link-button'
-import Headshot from '@/images/cartoon-headshot.jpg'
 import { CONTENT } from '@/lib/constants'
-import Image from 'next/image'
-
-function ProfileImage() {
-  return (
-    <div className="group relative order-1 mx-auto w-full max-w-md lg:order-2 lg:mx-0">
-      <div className="border-primary absolute -top-4 -left-4 h-full w-full -rotate-3 rounded-lg border-4 transition-transform duration-500 group-hover:rotate-0" />
-      <div className="relative h-auto w-full rounded-lg bg-cover bg-center bg-no-repeat shadow-2xl">
-        <Image
-          alt={`${CONTENT.NAME} headshot`}
-          src={Headshot}
-          className="rounded-lg transition-transform duration-500 group-hover:-translate-y-1 group-hover:scale-105"
-          loading="eager"
-          priority
-          width={500}
-          height={500}
-        />
-      </div>
-    </div>
-  )
-}
 
 function HeroContent() {
   return (
