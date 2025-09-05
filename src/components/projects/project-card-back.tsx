@@ -1,5 +1,6 @@
 'use client'
 
+import { GitHubIcon } from '@/components/icons/github'
 import { ProjectFlipIndicator } from '@/components/projects/project-flip-indicator'
 import { ProjectTechIcons } from '@/components/projects/project-tech-icons'
 import { Card } from '@/components/ui/card'
@@ -57,7 +58,7 @@ function ProjectCardBack({ project }: ProjectCardBackProps) {
                       repo: project.repo,
                     })
                   }}>
-                  Source
+                  <GitHubIcon />
                 </LinkButton>
               ) : null}
             </div>
