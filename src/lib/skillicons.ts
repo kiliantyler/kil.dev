@@ -19,7 +19,7 @@ export const SKILLS = {
   Astro: { icon: 'astro', url: 'https://astro.build' },
   Markdown: { icon: 'markdown', url: 'https://daringfireball.net/projects/markdown/' },
   Kubernetes: { icon: 'kubernetes', url: 'https://kubernetes.io' },
-  FluxCD: { icon: { source: 'dashboardicons', name: 'flux-cd', format: 'webp' }, url: 'https://fluxcd.io' },
+  FluxCD: { icon: { source: 'dashboardicons', name: 'flux-cd', format: 'svg' }, url: 'https://fluxcd.io' },
 } as const
 
 export type SkillName = keyof typeof SKILLS
