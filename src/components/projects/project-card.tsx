@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card'
 import { LinkButton } from '@/components/ui/link-button'
 import type { Project } from '@/types'
 import Image from 'next/image'
+import posthog from 'posthog-js'
 import { useCallback, useRef, useState } from 'react'
 
 interface ProjectCardProps {
