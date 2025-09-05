@@ -51,7 +51,7 @@ export const projects: Project[] = [
       'OnePassword',
     ],
     repo: 'https://github.com/shamubernetes/home-ops',
-    year: 2025,
+    year: 2021,
     status: 'wip',
     imageSrc: kubernetesImage,
     imageAlt: 'kubernetes website thumbnail',
