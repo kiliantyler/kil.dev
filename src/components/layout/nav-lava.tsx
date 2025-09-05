@@ -91,12 +91,26 @@ function NavigationLava() {
         onKeyDown={handleKeyDown}
         role="menubar"
         aria-orientation="horizontal">
-        {/* Sliding indicator */}
+        {/* Sliding indicator: trail (slower, blurred) */}
         <span
           aria-hidden="true"
           className={cn(
-            'pointer-events-none absolute top-1 bottom-1 z-0 rounded-md bg-accent/60 backdrop-blur-sm shadow-sm',
-            indicator.animate && 'transition-[transform,width,opacity] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]',
+            'pointer-events-none absolute top-1 bottom-1 z-0 rounded-md bg-accent/35 blur-[1.5px] shadow-sm will-change-[transform,width]',
+            indicator.animate && 'transition-[transform,width,opacity] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]',
+            indicator.visible ? 'opacity-100' : 'opacity-0',
+          )}
+          style={{
+            transform: `translateX(${indicator.left}px)`,
+            width: indicator.width,
+          }}
+        />
+        {/* Sliding indicator: main (faster, crisp) */}
+        <span
+          aria-hidden="true"
+          className={cn(
+            'pointer-events-none absolute top-1 bottom-1 z-10 rounded-md bg-accent/60 backdrop-blur-sm shadow-sm will-change-[transform,width]',
+            indicator.animate &&
+              'transition-[transform,width,opacity] duration-450 ease-[cubic-bezier(0.2,0.8,0.16,1)]',
             indicator.visible ? 'opacity-100' : 'opacity-0',
           )}
           style={{
