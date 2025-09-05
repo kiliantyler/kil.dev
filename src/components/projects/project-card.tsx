@@ -184,7 +184,13 @@ function ProjectCard({ project }: ProjectCardProps) {
                       href={project.href}
                       className="h-9 rounded-md px-3 text-xs font-semibold"
                       aria-label={`Open ${project.title} website`}
-                      onClick={e => e.stopPropagation()}>
+                      onClick={e => {
+                        e.stopPropagation()
+                        posthog.capture('project_visit_clicked', {
+                          projectId: project.id,
+                          href: project.href,
+                        })
+                      }}>
                       Visit
                     </LinkButton>
                   ) : null}
@@ -195,7 +201,13 @@ function ProjectCard({ project }: ProjectCardProps) {
                       variant="secondary"
                       className="h-9 rounded-md px-3 text-xs font-semibold"
                       aria-label={`Open ${project.title} repository on GitHub`}
-                      onClick={e => e.stopPropagation()}>
+                      onClick={e => {
+                        e.stopPropagation()
+                        posthog.capture('project_source_clicked', {
+                          projectId: project.id,
+                          repo: project.repo,
+                        })
+                      }}>
                       Source
                     </LinkButton>
                   ) : null}
