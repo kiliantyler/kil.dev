@@ -48,7 +48,7 @@ export const projects: Project[] = [
       'Kubernetes',
       'FluxCD',
       'Talos',
-      'OnePassword',
+      '1Password',
     ],
     repo: 'https://github.com/shamubernetes/home-k8s',
     year: 2021,
