@@ -1,3 +1,4 @@
+import { ThemeProvider } from '@/components/theme-provider'
 import '@/styles/globals.css'
 
 import { type Metadata } from 'next'
@@ -16,8 +17,15 @@ const geist = Geist({
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${geist.variable}`}>
-      <body className="flex min-h-screen flex-col">{children}</body>
+    <html lang="en" className={`${geist.variable}`} suppressHydrationWarning>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+      >
+        <body className="flex min-h-screen flex-col">{children}</body>
+      </ThemeProvider>
     </html>
   )
 }
