@@ -1,33 +1,11 @@
 import { GitHubIcon } from '@/components/icons/github'
 import { LinkedInIcon } from '@/components/icons/linkedin'
 import { Logo } from '@/components/icons/logo'
+import { NavigationLava } from '@/components/layout/nav-lava'
 import { LinkButton } from '@/components/ui/link-button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
-import { EXTERNAL_LINKS, NAVIGATION } from '@/lib/constants'
+import { EXTERNAL_LINKS } from '@/lib/constants'
 import Link from 'next/link'
-
-function Navigation() {
-  return (
-    <nav className="hidden items-center gap-8 md:flex" aria-label="Primary">
-      {NAVIGATION.map(item => {
-        const isExternal = item.href.startsWith('http')
-
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="hover:text-primary text-sm font-medium text-muted-foreground transition-colors"
-            {...(isExternal && {
-              target: '_blank',
-              rel: 'noopener noreferrer',
-            })}>
-            {item.label}
-          </Link>
-        )
-      })}
-    </nav>
-  )
-}
 
 function GitHubButton() {
   return (
@@ -77,7 +55,7 @@ function Header() {
   return (
     <header className="flex items-center justify-between border-solid whitespace-nowrap sticky top-0 z-50 w-full bg-background/90 px-10 py-8 border-b border-border">
       <HomeLogo />
-      <Navigation />
+      <NavigationLava />
       <div className="flex items-center gap-3">
         <ThemeToggle />
         <GitHubButton />
@@ -87,4 +65,4 @@ function Header() {
   )
 }
 
-export { GitHubButton, Header, Navigation }
+export { GitHubButton, Header }
