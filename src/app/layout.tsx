@@ -2,7 +2,7 @@ import { ThemeProvider } from '@/components/theme-provider'
 import '@/styles/globals.css'
 
 import { type Metadata } from 'next'
-import { Geist } from 'next/font/google'
+import { Geist, Noto_Sans, Space_Grotesk } from 'next/font/google'
 
 export const metadata: Metadata = {
   title: 'Create T3 App',
@@ -15,12 +15,27 @@ const geist = Geist({
   variable: '--font-geist-sans',
 })
 
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  weight: ['400', '500', '700'],
+  variable: '--font-space-grotesk',
+})
+
+const notoSans = Noto_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '700', '900'],
+  variable: '--font-noto-sans',
+})
+
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${geist.variable}`} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${geist.variable} ${spaceGrotesk.variable} ${notoSans.variable}`}
+      suppressHydrationWarning>
       <body className="flex min-h-screen flex-col">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          {children}
+          <main>{children}</main>
         </ThemeProvider>
       </body>
     </html>

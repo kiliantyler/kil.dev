@@ -4,23 +4,10 @@ import { Header } from '@/components/layout/header'
 import { Hero } from '@/components/layout/hero'
 import { useTheme } from '@/hooks/use-theme'
 import type { Metadata } from 'next'
-import { Noto_Sans, Space_Grotesk } from 'next/font/google'
 
 export const metadata: Metadata = {
   title: 'Kilian Tyler | Site Reliability Engineer',
 }
-
-const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin'],
-  weight: ['400', '500', '700'],
-  variable: '--font-space-grotesk',
-})
-
-const notoSans = Noto_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '700', '900'],
-  variable: '--font-noto-sans',
-})
 
 function HomepageContent() {
   const theme = useTheme()
@@ -42,9 +29,5 @@ function HomepageContent() {
 }
 
 export default function Homepage() {
-  return (
-    <div className={`${spaceGrotesk.variable} ${notoSans.variable}`}>
-      <HomepageContent />
-    </div>
-  )
+  return <HomepageContent />
 }
