@@ -28,7 +28,7 @@ function ProfileImage() {
 
   return (
     <div className="group relative order-1 mx-auto w-full max-w-md lg:order-2 lg:mx-0">
-      <div className="border-primary absolute -top-4 -left-4 h-full w-full -rotate-3 rounded-lg border-4 transition-transform duration-500 group-hover:rotate-0" />
+      <div className="border-primary absolute -top-4 -left-4 h-full w-full -rotate-3 group-hover:scale-110 group-hover:translate-y-3 group-hover:translate-x-4 rounded-lg border-4 transition-transform duration-500 group-hover:rotate-0" />
       <div className="relative h-auto w-full rounded-lg bg-cover bg-center bg-no-repeat shadow-2xl">
         <Image
           alt={imageAlt}
