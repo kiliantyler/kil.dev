@@ -1,11 +1,8 @@
 'use client'
 
-import { Card } from '@/components/ui/card'
-import { LinkButton } from '@/components/ui/link-button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { SKILL_ICON_MAP, getSkillIconUrl } from '@/lib/skillicons'
+import { ProjectCardBack } from '@/components/projects/project-card-back'
+import { ProjectCardFront } from '@/components/projects/project-card-front'
 import type { Project } from '@/types'
-import Image from 'next/image'
 import posthog from 'posthog-js'
 import { useCallback, useRef, useState } from 'react'
 
@@ -40,8 +37,6 @@ function ProjectCard({ project }: ProjectCardProps) {
     },
     [handleToggle],
   )
-
-  const hasLinks = Boolean(project.href ?? project.repo)
 
   const applyTiltTransform = useCallback((x: number, y: number) => {
     const tiltEl = tiltRef.current
@@ -109,142 +104,8 @@ function ProjectCard({ project }: ProjectCardProps) {
             'relative h-full w-full [transform-style:preserve-3d] transition-transform duration-500 ease-out ' +
             (flipped ? 'rotate-y-180' : '')
           }>
-          {/* Front (Card face) */}
-          <Card className="absolute inset-0 overflow-hidden p-0 gap-0 [backface-visibility:hidden] transition-shadow group-hover:shadow-md group-hover:ring-2 group-hover:ring-primary group-hover:ring-offset-2 group-hover:ring-offset-background">
-            <Image
-              src={project.imageSrc}
-              alt={project.imageAlt}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              priority={false}
-            />
-            {/* Flip indicator (front) */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute right-2 top-2 inline-flex items-center gap-1 rounded-md bg-background/70 px-2 py-1 text-[10px] font-medium text-foreground/80 ring-1 ring-border opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 md:text-xs">
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="opacity-80">
-                <path
-                  d="M12 6v3l4-4-4-4v3C7.58 4 4 7.58 4 12c0 1.85.63 3.55 1.68 4.9l1.47-1.47A5.98 5.98 0 0 1 6 12c0-3.31 2.69-6 6-6Zm7.32-4.9-1.47 1.47A5.98 5.98 0 0 1 18 12c0 3.31-2.69 6-6 6v-3l-4 4 4 4v-3c4.42 0 8-3.58 8-8 0-1.85-.63-3.55-1.68-4.9Z"
-                  fill="currentColor"
-                />
-              </svg>
-              <span>Flip</span>
-            </div>
-            <div className="absolute inset-x-0 bottom-0 p-3">
-              <span className="bg-black/60 text-white rounded-md px-2 py-1 text-xs font-semibold md:text-sm max-w-[85%] truncate">
-                {project.title}
-              </span>
-            </div>
-          </Card>
-
-          {/* Back (Card face) */}
-          <Card className="absolute inset-0 p-6 [backface-visibility:hidden] rotate-y-180 transition-shadow group-hover:shadow-md group-hover:ring-2 group-hover:ring-primary group-hover:ring-offset-2 group-hover:ring-offset-background">
-            {/* Flip indicator (back) */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute right-2 top-2 inline-flex items-center gap-1 rounded-md bg-background/70 px-2 py-1 text-[10px] font-medium text-foreground/80 ring-1 ring-border opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 md:text-xs">
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="opacity-80">
-                <path
-                  d="M12 6v3l4-4-4-4v3C7.58 4 4 7.58 4 12c0 1.85.63 3.55 1.68 4.9l1.47-1.47A5.98 5.98 0 0 1 6 12c0-3.31 2.69-6 6-6Zm7.32-4.9-1.47 1.47A5.98 5.98 0 0 1 18 12c0 3.31-2.69 6-6 6v-3l-4 4 4 4v-3c4.42 0 8-3.58 8-8 0-1.85-.63-3.55-1.68-4.9Z"
-                  fill="currentColor"
-                />
-              </svg>
-              <span>Flip</span>
-            </div>
-            <div className="flex h-full flex-col">
-              <div className="mb-3 text-sm text-muted-foreground">
-                {project.year ? `${project.year} • ` : ''}
-                {project.status === 'wip' ? 'Work in progress' : project.status === 'archived' ? 'Archived' : 'Live'}
-              </div>
-              <p className="text-sm leading-relaxed">{project.description}</p>
-              {project.tags?.length ? (
-                <div className="mt-4 flex flex-wrap items-center gap-2">
-                  {project.tags.map(tag => {
-                    const iconKey = SKILL_ICON_MAP[tag]
-                    if (!iconKey) {
-                      return (
-                        <span key={tag} className="bg-secondary text-secondary-foreground rounded-md px-2 py-1 text-xs">
-                          {tag}
-                        </span>
-                      )
-                    }
-
-                    return (
-                      <Tooltip key={tag}>
-                        <TooltipTrigger asChild>
-                          <span
-                            role="img"
-                            aria-label={tag}
-                            className="inline-flex items-center justify-center rounded-md ring-1 ring-border bg-muted size-7 overflow-hidden">
-                            <Image
-                              unoptimized
-                              src={getSkillIconUrl(iconKey)}
-                              alt={tag}
-                              width={20}
-                              height={20}
-                              className="object-contain"
-                              loading="lazy"
-                            />
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent>{tag}</TooltipContent>
-                      </Tooltip>
-                    )
-                  })}
-                </div>
-              ) : null}
-              {hasLinks ? (
-                <div className="mt-auto flex justify-end gap-2 pt-6">
-                  {project.href ? (
-                    <LinkButton
-                      href={project.href}
-                      external={project.href.startsWith('http')}
-                      className="h-9 rounded-md px-3 text-xs font-semibold"
-                      aria-label={`Open ${project.title} website`}
-                      onClick={e => {
-                        e.stopPropagation()
-                        posthog.capture('project_visit_clicked', {
-                          projectId: project.id,
-                          href: project.href,
-                        })
-                      }}>
-                      Visit
-                    </LinkButton>
-                  ) : null}
-                  {project.repo ? (
-                    <LinkButton
-                      href={project.repo}
-                      external
-                      variant="secondary"
-                      className="h-9 rounded-md px-3 text-xs font-semibold"
-                      aria-label={`Open ${project.title} repository on GitHub`}
-                      onClick={e => {
-                        e.stopPropagation()
-                        posthog.capture('project_source_clicked', {
-                          projectId: project.id,
-                          repo: project.repo,
-                        })
-                      }}>
-                      Source
-                    </LinkButton>
-                  ) : null}
-                </div>
-              ) : null}
-            </div>
-          </Card>
+          <ProjectCardFront imageSrc={project.imageSrc} imageAlt={project.imageAlt} title={project.title} />
+          <ProjectCardBack project={project} />
         </div>
       </div>
     </div>
