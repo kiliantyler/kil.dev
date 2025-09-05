@@ -1,3 +1,4 @@
+import { LocationWithMapTooltip } from '@/components/layout/location-with-map-tooltip'
 import { LinkButton } from '@/components/ui/link-button'
 import Headshot from '@/images/cartoon-headshot.jpg'
 import { CONTENT } from '@/lib/constants'
@@ -27,7 +28,7 @@ function HeroContent() {
       <div className="flex flex-col gap-2">
         <h1 className="text-5xl leading-tight font-black tracking-tight text-foreground md:text-6xl">{CONTENT.NAME}</h1>
         <p className="text-primary text-lg font-semibold md:text-xl">{CONTENT.TITLE}</p>
-        <p className="text-primary text-lg font-semibold md:text-xl">{CONTENT.LOCATION}</p>
+        <LocationWithMapTooltip />
       </div>
       <div className="flex flex-wrap justify-center gap-4 lg:justify-start">
         <LinkButton
