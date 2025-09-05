@@ -1,3 +1,4 @@
+import type { SkillName } from '@/lib/skillicons'
 import type { StaticImageData } from 'next/image'
 
 export interface NavigationItem {
@@ -41,7 +42,7 @@ export interface Project {
   id: string
   title: string
   description: string
-  tags: string[]
+  tags: SkillName[]
   href?: string
   repo?: string
   year?: number

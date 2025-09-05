@@ -3,6 +3,14 @@ import type { NextConfig } from 'next'
 import './src/env.js'
 
 const config: NextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'skills.syvixor.com',
+      },
+    ],
+  },
   async rewrites() {
     return [
       {

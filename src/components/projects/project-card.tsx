@@ -2,6 +2,8 @@
 
 import { Card } from '@/components/ui/card'
 import { LinkButton } from '@/components/ui/link-button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { SKILL_ICON_MAP, getSkillIconUrl } from '@/lib/skillicons'
 import type { Project } from '@/types'
 import Image from 'next/image'
 import posthog from 'posthog-js'
@@ -169,12 +171,39 @@ function ProjectCard({ project }: ProjectCardProps) {
               </div>
               <p className="text-sm leading-relaxed">{project.description}</p>
               {project.tags?.length ? (
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {project.tags.map(tag => (
-                    <span key={tag} className="bg-secondary text-secondary-foreground rounded-md px-2 py-1 text-xs">
-                      {tag}
-                    </span>
-                  ))}
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  {project.tags.map(tag => {
+                    const iconKey = SKILL_ICON_MAP[tag]
+                    if (!iconKey) {
+                      return (
+                        <span key={tag} className="bg-secondary text-secondary-foreground rounded-md px-2 py-1 text-xs">
+                          {tag}
+                        </span>
+                      )
+                    }
+
+                    return (
+                      <Tooltip key={tag}>
+                        <TooltipTrigger asChild>
+                          <span
+                            role="img"
+                            aria-label={tag}
+                            className="inline-flex items-center justify-center rounded-md ring-1 ring-border bg-muted size-7 overflow-hidden">
+                            <Image
+                              unoptimized
+                              src={getSkillIconUrl(iconKey)}
+                              alt={tag}
+                              width={20}
+                              height={20}
+                              className="object-contain"
+                              loading="lazy"
+                            />
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>{tag}</TooltipContent>
+                      </Tooltip>
+                    )
+                  })}
                 </div>
               ) : null}
               {hasLinks ? (
