@@ -1,6 +1,7 @@
 import dotfilesImage from '@/images/projects/dotfiles.jpg'
 import kilDevImage from '@/images/projects/kil-dev.jpg'
 import kubernetesImage from '@/images/projects/kubernetes.jpg'
+import questnestImage from '@/images/projects/questnest.jpg'
 import tiaxslaughterImage from '@/images/projects/tiaxslaughter.jpg'
 import type { Project } from '@/types'
 
@@ -31,8 +32,8 @@ export const projects: Project[] = [
   {
     id: 'dotfiles',
     title: 'dotfiles.wiki',
-    description: 'Dotfiles and a wiki for my macOS setup.',
-    tags: ['Astro', 'TypeScript', 'Markdown'],
+    description: 'Dotfiles and a wiki for my macOS setup. Hosted on GitHub Pages.',
+    tags: ['Astro', 'TypeScript', 'Markdown', 'GitHub Pages'],
     href: 'https://dotfiles.wiki',
     repo: 'https://github.com/kiliantyler/dotfiles',
     year: 2023,
@@ -43,7 +44,7 @@ export const projects: Project[] = [
   {
     id: 'kubernetes',
     title: 'Home Kubernetes Cluster',
-    description: 'A Kubernetes cluster for my home.',
+    description: 'A Kubernetes cluster for my home. Large server rack in my basement.',
     tags: [
       'Kubernetes',
       'FluxCD',
@@ -52,8 +53,18 @@ export const projects: Project[] = [
     ],
     repo: 'https://github.com/shamubernetes/home-k8s',
     year: 2021,
-    status: 'wip',
+    status: 'live',
     imageSrc: kubernetesImage,
     imageAlt: 'kubernetes website thumbnail',
+  },
+  {
+    id: 'questnest',
+    title: 'Questnest',
+    description: 'A web app for managing chores through gamification. Very WIP.',
+    tags: ['Next', 'Tailwind', 'shadcn', 'TypeScript', 'Drizzle', 'React', 'Vercel'],
+    year: 2025,
+    status: 'wip',
+    imageSrc: questnestImage,
+    imageAlt: 'questnest website thumbnail',
   },
 ]
