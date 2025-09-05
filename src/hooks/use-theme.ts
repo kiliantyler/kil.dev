@@ -18,12 +18,12 @@ export function useTheme(): ThemeConfig {
       fontFamily:
         'var(--font-space-grotesk), var(--font-noto-sans), ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji',
       colors: {
-        primary: 'var(--example-primary-color)',
-        secondary: 'var(--example-secondary-color)',
-        accent: 'var(--example-accent-color)',
-        background: 'var(--example-background-color)',
-        text: 'var(--example-text-color)',
-        border: 'var(--example-border-color)',
+        primary: 'var(--primary)',
+        secondary: 'var(--secondary)',
+        accent: 'var(--accent)',
+        background: 'var(--background)',
+        text: 'var(--foreground)',
+        border: 'var(--border)',
       },
     }),
     [],
