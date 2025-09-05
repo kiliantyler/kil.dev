@@ -50,7 +50,7 @@ export const projects: Project[] = [
       'Talos',
       'OnePassword',
     ],
-    repo: 'https://github.com/shamubernetes/home-ops',
+    repo: 'https://github.com/shamubernetes/home-k8s',
     year: 2021,
     status: 'wip',
     imageSrc: kubernetesImage,
