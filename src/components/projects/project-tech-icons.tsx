@@ -1,11 +1,12 @@
 'use client'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { SKILL_ICON_MAP, getSkillIconUrl } from '@/lib/skillicons'
+import type { SkillName } from '@/lib/skillicons'
+import { SKILLS, getSkillIconUrl } from '@/lib/skillicons'
 import Image from 'next/image'
 
 interface ProjectTechIconsProps {
-  tags: string[]
+  tags: SkillName[]
 }
 
 function ProjectTechIcons({ tags }: ProjectTechIconsProps) {
@@ -14,8 +15,8 @@ function ProjectTechIcons({ tags }: ProjectTechIconsProps) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       {tags.map(tag => {
-        const iconKey = SKILL_ICON_MAP[tag]
-        if (!iconKey) {
+        const skill = SKILLS[tag as SkillName]
+        if (!skill) {
           return (
             <span key={tag} className="bg-transparent text-secondary-foreground rounded-md px-2 py-1 text-xs">
               {tag}
@@ -26,17 +27,43 @@ function ProjectTechIcons({ tags }: ProjectTechIconsProps) {
         return (
           <Tooltip key={tag}>
             <TooltipTrigger asChild>
-              <span role="img" aria-label={tag} className="inline-flex items-center justify-center">
-                <Image
-                  unoptimized
-                  src={getSkillIconUrl(iconKey)}
-                  alt={tag}
-                  width={28}
-                  height={28}
-                  className="object-contain rounded-md ring-1 ring-border"
-                  loading="lazy"
-                />
-              </span>
+              {(() => {
+                const homepage = skill.url
+                const content = (
+                  <span role="img" aria-label={tag} className="inline-flex items-center justify-center">
+                    <Image
+                      unoptimized
+                      src={getSkillIconUrl(skill.icon)}
+                      alt={tag}
+                      width={28}
+                      height={28}
+                      className="object-contain rounded-md ring-1 ring-border"
+                      loading="lazy"
+                    />
+                  </span>
+                )
+
+                if (!homepage) return content
+
+                return (
+                  <a
+                    href={homepage}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Open ${tag} homepage`}
+                    onClick={e => {
+                      e.stopPropagation()
+                    }}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.stopPropagation()
+                      }
+                    }}
+                    className="inline-flex items-center justify-center focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary rounded-md">
+                    {content}
+                  </a>
+                )
+              })()}
             </TooltipTrigger>
             <TooltipContent>{tag}</TooltipContent>
           </Tooltip>
