@@ -21,10 +21,7 @@ function getContainerSize(el: HTMLElement | null): { width: number, height: numb
   return { width: Math.round(rect.width), height: Math.round(rect.height) }
 }
 
-function choose<T>(items: readonly [T, ...T[]]): T {
-  const idx = Math.floor(Math.random() * items.length)
-  return items[idx] as T
-}
+// removed choose utility as orientation choice is now probability driven
 
 function generateHorizontalPath(width: number, height: number): Point[] {
   const cols = Math.max(2, Math.floor(width / GRID_SIZE_PX))
