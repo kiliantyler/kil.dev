@@ -47,6 +47,8 @@ export const projects: Project[] = [
     tags: [
       'Kubernetes',
       'FluxCD',
+      'Talos',
+      'OnePassword',
     ],
     repo: 'https://github.com/shamubernetes/home-ops',
     year: 2025,
