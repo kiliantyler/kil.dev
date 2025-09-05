@@ -1,9 +1,14 @@
 import { GridLights } from '@/components/layout/grid-lights'
+import { LIGHT_GRID } from '@/lib/constants'
 
 function CircuitBackground() {
   return (
     <div
-      className="absolute inset-0 z-0 bg-[linear-gradient(to_right,rgba(30,41,59,0.5)_1px,transparent_1px),linear-gradient(to_bottom,rgba(30,41,59,0.5)_1px,transparent_1px)] bg-[length:40px_40px] bg-[position:-1px_-1px]"
+      className="absolute inset-0 z-0 bg-[linear-gradient(to_right,rgba(30,41,59,0.5)_1px,transparent_1px),linear-gradient(to_bottom,rgba(30,41,59,0.5)_1px,transparent_1px)]"
+      style={{
+        backgroundSize: `${LIGHT_GRID.GRID_SIZE_PX}px ${LIGHT_GRID.GRID_SIZE_PX}px`,
+        backgroundPosition: `${LIGHT_GRID.GRID_OFFSET_PX}px ${LIGHT_GRID.GRID_OFFSET_PX}px`,
+      }}
       aria-hidden
     >
       <GridLights />

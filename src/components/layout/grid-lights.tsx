@@ -1,11 +1,13 @@
 'use client'
 
+import { LIGHT_GRID } from '@/lib/constants'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 type Point = { x: number, y: number }
 
-const GRID_SIZE_PX = 40
-const DOT_HALF_PX = 3 // centers the 6px dot on the coordinate
+const GRID_SIZE_PX = LIGHT_GRID.GRID_SIZE_PX
+// Use CSS translate to center the dot; no need for half-subtraction math
+const GRID_OFFSET_PX = LIGHT_GRID.GRID_OFFSET_PX
 
 function clamp(value: number, min: number, max: number): number {
   if (value < min) return min
@@ -98,15 +100,15 @@ function buildKeyframes(name: string, points: Point[]): string {
     const pc = Math.min(100, Math.round(i * pcPerStep * 1000) / 1000)
     // Keep opacity 0 only at the very start; fully visible until the very end at the edge
     if (i === 0) {
-      lines.push(`${pc}% { left: ${p.x - DOT_HALF_PX}px; top: ${p.y - DOT_HALF_PX}px; opacity: 0 }`)
+      lines.push(`${pc}% { left: ${p.x + GRID_OFFSET_PX}px; top: ${p.y + GRID_OFFSET_PX}px; opacity: 0 }`)
       const pcIn = Math.min(100, Math.round((i * pcPerStep + 0.5) * 1000) / 1000)
-      lines.push(`${pcIn}% { left: ${p.x - DOT_HALF_PX}px; top: ${p.y - DOT_HALF_PX}px; opacity: 1 }`)
+      lines.push(`${pcIn}% { left: ${p.x + GRID_OFFSET_PX}px; top: ${p.y + GRID_OFFSET_PX}px; opacity: 1 }`)
     } else if (i === points.length - 1) {
       const pcHold = Math.max(0, Math.min(100, Math.round((i * pcPerStep - 0.5) * 1000) / 1000))
-      lines.push(`${pcHold}% { left: ${p.x - DOT_HALF_PX}px; top: ${p.y - DOT_HALF_PX}px; opacity: 1 }`)
-      lines.push(`${pc}% { left: ${p.x - DOT_HALF_PX}px; top: ${p.y - DOT_HALF_PX}px; opacity: 0 }`)
+      lines.push(`${pcHold}% { left: ${p.x + GRID_OFFSET_PX}px; top: ${p.y + GRID_OFFSET_PX}px; opacity: 1 }`)
+      lines.push(`${pc}% { left: ${p.x + GRID_OFFSET_PX}px; top: ${p.y + GRID_OFFSET_PX}px; opacity: 0 }`)
     } else {
-      lines.push(`${pc}% { left: ${p.x - DOT_HALF_PX}px; top: ${p.y - DOT_HALF_PX}px; opacity: 1 }`)
+      lines.push(`${pc}% { left: ${p.x + GRID_OFFSET_PX}px; top: ${p.y + GRID_OFFSET_PX}px; opacity: 1 }`)
     }
   }
   return `@keyframes ${name} {\n${lines.join('\n')}\n}`
