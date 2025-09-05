@@ -115,3 +115,35 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+
+@layer base {
+  :root {
+    --example-primary-color: oklch(0.6991 0.157 238.99);
+    --example-secondary-color: oklch(0.2795 0.0368 260.03);
+    --example-accent-color: oklch(0.6847 0.1479 237.32);
+    --example-background-color: oklch(0.2077 0.0398 265.75);
+    --example-text-color: oklch(0.9288 0.0126 255.51);
+    --example-border-color: oklch(0.3717 0.0392 257.29);
+  }
+}
+
+/* Utilities to map example variables to Tailwind arbitrary variables syntax */
+@layer utilities {
+  .bg-example-background { background-color: var(--example-background-color); }
+  .text-example-text { color: var(--example-text-color); }
+  .border-example-border { border-color: var(--example-border-color); }
+  .bg-example-primary { background-color: var(--example-primary-color); }
+  .bg-example-secondary { background-color: var(--example-secondary-color); }
+  .hover\:bg-example-accent:hover { background-color: var(--example-accent-color); }
+  .text-example-primary { color: var(--example-primary-color); }
+  .hover\:text-example-primary:hover { color: var(--example-primary-color); }
+}
