@@ -30,16 +30,21 @@ function ProjectTechIcons({ tags }: ProjectTechIconsProps) {
               {(() => {
                 const homepage = skill.url
                 const content = (
-                  <span role="img" aria-label={tag} className="inline-flex items-center justify-center">
-                    <Image
-                      unoptimized
-                      src={getSkillIconUrl(skill.icon)}
-                      alt={tag}
-                      width={28}
-                      height={28}
-                      className="object-contain rounded-md ring-1 ring-border"
-                      loading="lazy"
-                    />
+                  <span
+                    role="img"
+                    aria-label={tag}
+                    className="inline-flex items-center justify-center size-[28px] rounded-md ring-1 ring-border overflow-hidden">
+                    <span className="relative size-full">
+                      <Image
+                        unoptimized
+                        src={getSkillIconUrl(skill.icon)}
+                        alt={tag}
+                        fill
+                        sizes="28px"
+                        className="object-contain"
+                        loading="lazy"
+                      />
+                    </span>
                   </span>
                 )
 
