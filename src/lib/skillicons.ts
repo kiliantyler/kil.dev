@@ -6,6 +6,9 @@ export const SKILLS = {
   JavaScript: { icon: 'js', url: 'https://developer.mozilla.org/docs/Web/JavaScript' },
   React: { icon: 'react', url: 'https://react.dev' },
   Vercel: { icon: 'vercel', url: 'https://vercel.com' },
+  Astro: { icon: 'astro', url: 'https://astro.build' },
+  Markdown: { icon: 'markdown', url: 'https://daringfireball.net/projects/markdown/' },
+  Kubernetes: { icon: 'kubernetes', url: 'https://kubernetes.io' },
 } as const
 
 export type SkillName = keyof typeof SKILLS

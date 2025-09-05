@@ -1,5 +1,6 @@
 import dotfilesImage from '@/images/projects/dotfiles.jpg'
 import kilDevImage from '@/images/projects/kil-dev.jpg'
+import kubernetesImage from '@/images/projects/kubernetes.jpg'
 import tiaxslaughterImage from '@/images/projects/tiaxslaughter.jpg'
 import type { Project } from '@/types'
 
@@ -20,7 +21,7 @@ export const projects: Project[] = [
     id: 'tiaxslaughter',
     title: 'tiaxslaughter.com',
     description: 'A photography portfolio website for my sister.',
-    tags: ['Next', 'Tailwind', 'shadcn'],
+    tags: ['Next', 'Tailwind', 'shadcn', 'TypeScript', 'React', 'Vercel'],
     href: 'https://tiaxslaughter.com',
     year: 2025,
     status: 'live',
@@ -31,12 +32,25 @@ export const projects: Project[] = [
     id: 'dotfiles',
     title: 'dotfiles.wiki',
     description: 'Dotfiles and a wiki for my macOS setup.',
-    tags: [],
+    tags: ['Astro', 'TypeScript', 'Markdown'],
     href: 'https://dotfiles.wiki',
     repo: 'https://github.com/kiliantyler/dotfiles',
     year: 2023,
     status: 'wip',
     imageSrc: dotfilesImage,
     imageAlt: 'dotfiles website thumbnail',
+  },
+  {
+    id: 'kubernetes',
+    title: 'Home Kubernetes Cluster',
+    description: 'A Kubernetes cluster for my home.',
+    tags: [
+      'Kubernetes',
+    ],
+    repo: 'https://github.com/shamubernetes/home-ops',
+    year: 2025,
+    status: 'wip',
+    imageSrc: kubernetesImage,
+    imageAlt: 'kubernetes website thumbnail',
   },
 ]
