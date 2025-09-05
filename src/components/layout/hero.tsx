@@ -13,7 +13,8 @@ function ProfileImage() {
           alt={`${CONTENT.NAME} headshot`}
           src={Headshot}
           className="rounded-lg transition-transform duration-500 group-hover:-translate-y-1 group-hover:scale-105"
-          loading="lazy"
+          loading="eager"
+          priority
           width={500}
           height={500}
         />
