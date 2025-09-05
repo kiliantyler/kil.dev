@@ -20,15 +20,18 @@ function NavigationLava() {
   const containerRef = React.useRef<HTMLDivElement | null>(null)
   const linkRefs = React.useRef<Record<string, HTMLAnchorElement | null>>({})
 
-  const [indicator, setIndicator] = React.useState<{ left: number; width: number; visible: boolean }>({
-    left: 0,
-    width: 0,
-    visible: false,
-  })
+  const [indicator, setIndicator] = React.useState<{ left: number; width: number; visible: boolean; animate: boolean }>(
+    {
+      left: 0,
+      width: 0,
+      visible: false,
+      animate: false,
+    },
+  )
 
   const activeIndex = React.useMemo(() => getActiveIndex(NAVIGATION, pathname ?? ''), [pathname])
 
-  const moveIndicatorTo = React.useCallback((key: string) => {
+  const moveIndicatorTo = React.useCallback((key: string, animate: boolean) => {
     const container = containerRef.current
     const target = linkRefs.current[key]
     if (!container || !target) return
@@ -38,7 +41,7 @@ function NavigationLava() {
 
     const left = targetRect.left - containerRect.left
     const width = targetRect.width - 8
-    setIndicator({ left, width, visible: true })
+    setIndicator({ left, width, visible: true, animate })
   }, [])
 
   const hideIndicator = React.useCallback(() => {
@@ -46,13 +49,12 @@ function NavigationLava() {
   }, [])
 
   // On mount or route change, snap to active route if available
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     if (activeIndex >= 0) {
       if (!NAVIGATION[activeIndex]) return
       const key = NAVIGATION[activeIndex].href
-      // wait next frame for layout
-      const id = requestAnimationFrame(() => moveIndicatorTo(key))
-      return () => cancelAnimationFrame(id)
+      moveIndicatorTo(key, false)
+      return
     }
     hideIndicator()
   }, [activeIndex, moveIndicatorTo, hideIndicator])
@@ -60,7 +62,7 @@ function NavigationLava() {
   const handleMouseLeaveContainer = React.useCallback(() => {
     if (activeIndex >= 0) {
       if (!NAVIGATION[activeIndex]) return
-      moveIndicatorTo(NAVIGATION[activeIndex].href)
+      moveIndicatorTo(NAVIGATION[activeIndex].href, true)
       return
     }
     hideIndicator()
@@ -93,7 +95,8 @@ function NavigationLava() {
         <span
           aria-hidden="true"
           className={cn(
-            'pointer-events-none absolute top-1 bottom-1 z-0 rounded-md bg-accent/60 backdrop-blur-sm shadow-sm transition-[transform,width,opacity] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]',
+            'pointer-events-none absolute top-1 bottom-1 z-0 rounded-md bg-accent/60 backdrop-blur-sm shadow-sm',
+            indicator.animate && 'transition-[transform,width,opacity] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]',
             indicator.visible ? 'opacity-100' : 'opacity-0',
           )}
           style={{
@@ -121,8 +124,8 @@ function NavigationLava() {
               )}
               aria-current={isActive ? 'page' : undefined}
               role="menuitem"
-              onMouseEnter={() => moveIndicatorTo(item.href)}
-              onFocus={() => moveIndicatorTo(item.href)}
+              onMouseEnter={() => moveIndicatorTo(item.href, true)}
+              onFocus={() => moveIndicatorTo(item.href, true)}
               {...(isExternal && {
                 target: '_blank',
                 rel: 'noopener noreferrer',
