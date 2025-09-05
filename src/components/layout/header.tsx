@@ -2,6 +2,7 @@ import { GitHubIcon } from '@/components/icons/github'
 import { LinkedInIcon } from '@/components/icons/linkedin'
 import { Logo } from '@/components/icons/logo'
 import { LinkButton } from '@/components/ui/link-button'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { EXTERNAL_LINKS, NAVIGATION } from '@/lib/constants'
 import Link from 'next/link'
 
@@ -76,6 +77,7 @@ function Header() {
       </div>
       <Navigation />
       <div className="flex items-center gap-3">
+        <ThemeToggle />
         <GitHubButton />
         <LinkedInButton />
       </div>
