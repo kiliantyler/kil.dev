@@ -19,9 +19,9 @@ export const SKILLS = {
   Astro: { icon: 'astro', url: 'https://astro.build' },
   Markdown: { icon: 'markdown', url: 'https://daringfireball.net/projects/markdown/' },
   Kubernetes: { icon: 'kubernetes', url: 'https://kubernetes.io' },
-  FluxCD: { icon: { source: 'dashboardicons', name: 'flux-cd', format: 'svg' }, url: 'https://fluxcd.io' },
-  Talos: { icon: { source: 'dashboardicons', name: 'talos', format: 'svg' }, url: 'https://talos.dev' },
-  '1Password': { icon: { source: 'dashboardicons', name: '1password', format: 'svg' }, url: 'https://1password.com' },
+  FluxCD: { icon: { source: 'dashboardicons', name: 'flux-cd', format: 'webp' }, url: 'https://fluxcd.io' },
+  Talos: { icon: { source: 'dashboardicons', name: 'talos', format: 'webp' }, url: 'https://talos.dev' },
+  '1Password': { icon: { source: 'dashboardicons', name: '1password', format: 'webp' }, url: 'https://1password.com' },
 } as const
 
 export type SkillName = keyof typeof SKILLS
