@@ -17,7 +17,7 @@ function Navigation() {
           <Component
             key={item.href}
             href={item.href}
-            className="hover:text-example-primary text-sm font-medium text-slate-300 transition-colors"
+            className="hover:text-primary text-sm font-medium text-muted-foreground transition-colors"
             {...(isExternal && {
               target: '_blank',
               rel: 'noopener noreferrer',
@@ -35,7 +35,7 @@ function GitHubButton() {
     <LinkButton
       href={EXTERNAL_LINKS.GITHUB}
       external
-      className="bg-example-secondary hover:bg-example-accent h-10 min-w-0 rounded-lg px-4 text-sm font-bold text-white transition-colors"
+      className="bg-secondary hover:bg-accent h-10 min-w-0 rounded-lg px-4 text-sm font-bold text-secondary-foreground transition-colors"
       aria-label="Open Kilian's GitHub profile in a new tab">
       <GitHubIcon className="size-5" />
       <span className="hidden md:inline">GitHub</span>
@@ -48,7 +48,7 @@ function LinkedInButton() {
     <LinkButton
       href={EXTERNAL_LINKS.LINKEDIN}
       external
-      className="bg-example-secondary hover:bg-example-accent h-10 min-w-0 rounded-lg px-4 text-sm font-bold text-white transition-colors"
+      className="bg-secondary hover:bg-accent h-10 min-w-0 rounded-lg px-4 text-sm font-bold text-secondary-foreground transition-colors"
       aria-label="Open Kilian's LinkedIn profile in a new tab">
       <LinkedInIcon className="size-5" />
       <span className="hidden md:inline">LinkedIn</span>
@@ -58,16 +58,15 @@ function LinkedInButton() {
 
 function Header() {
   return (
-    <header className="border-example-border flex items-center justify-between border-b border-solid px-10 py-5 whitespace-nowrap">
-      <div className="group flex cursor-default items-center gap-3 text-white">
+    <header className="flex items-center justify-between border-solid whitespace-nowrap mt-auto w-full bg-background/90 px-10 py-8 border-b border-border">
+      <div className="group flex cursor-default items-center gap-3 text-foreground">
         <Logo
-          fill="white"
+          fill="currentColor"
           width={32}
           height={32}
-          className="transition-all duration-300 ease-in-out group-hover:scale-110"
         />
         <h2
-          className="relative text-xl leading-tight font-bold text-white transition-all duration-300 ease-in-out"
+          className="relative text-xl leading-tight font-bold text-foreground transition-all duration-300 ease-in-out"
           data-hover-text="Kilian.DevOps">
           <span className="transition-opacity duration-300 group-hover:opacity-0">kil.dev</span>
           <span className="absolute top-0 left-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100">

@@ -27,7 +27,7 @@ function HomepageContent() {
 
   return (
     <div
-      className="bg-example-background text-example-text relative flex min-h-screen flex-col"
+      className="bg-background text-foreground relative flex min-h-screen flex-col"
       style={{ fontFamily: theme.fontFamily }}>
       <Background />
       <div className="relative z-20 flex size-full flex-1 flex-col overflow-x-hidden">
