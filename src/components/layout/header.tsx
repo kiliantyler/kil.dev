@@ -11,10 +11,9 @@ function Navigation() {
     <nav className="hidden items-center gap-8 md:flex" aria-label="Primary">
       {NAVIGATION.map(item => {
         const isExternal = item.href.startsWith('http')
-        const Component = isExternal ? 'a' : Link
 
         return (
-          <Component
+          <Link
             key={item.href}
             href={item.href}
             className="hover:text-primary text-sm font-medium text-muted-foreground transition-colors"
@@ -23,7 +22,7 @@ function Navigation() {
               rel: 'noopener noreferrer',
             })}>
             {item.label}
-          </Component>
+          </Link>
         )
       })}
     </nav>
@@ -76,7 +75,7 @@ function HomeLogo() {
 
 function Header() {
   return (
-    <header className="flex items-center justify-between border-solid whitespace-nowrap mt-auto w-full bg-background/90 px-10 py-8 border-b border-border">
+    <header className="flex items-center justify-between border-solid whitespace-nowrap sticky top-0 z-50 w-full bg-background/90 px-10 py-8 border-b border-border">
       <HomeLogo />
       <Navigation />
       <div className="flex items-center gap-3">

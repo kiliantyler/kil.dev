@@ -1,3 +1,5 @@
+import type { StaticImageData } from 'next/image'
+
 export interface NavigationItem {
   label: string
   href: string
@@ -33,4 +35,17 @@ export interface LinkButtonProps {
   className?: string
   variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
   size?: 'default' | 'sm' | 'lg' | 'icon'
+}
+
+export interface Project {
+  id: string
+  title: string
+  description: string
+  tags: string[]
+  href?: string
+  repo?: string
+  year?: number
+  status?: 'live' | 'wip' | 'archived'
+  imageSrc: StaticImageData
+  imageAlt: string
 }

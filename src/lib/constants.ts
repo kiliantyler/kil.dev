@@ -13,7 +13,7 @@ export const CONTENT = {
 export const NAVIGATION = [
   { label: 'About', href: '#about' },
   { label: 'Experience', href: '#experience' },
-  { label: 'Projects', href: '#projects' },
+  { label: 'Projects', href: '/projects' },
 ] as const
 
 export const LIGHT_GRID = {

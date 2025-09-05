@@ -37,10 +37,10 @@ function HeroContent() {
           <span>View Experience</span>
         </LinkButton>
         <LinkButton
-          href="#projects"
+          href="/projects"
           variant="secondary"
           className="bg-secondary h-12 min-w-[140px] rounded-md px-6 text-base font-bold text-secondary-foreground shadow-lg transition-all duration-300 hover:-translate-y-1 hover:bg-secondary/80 hover:shadow-xl"
-          aria-label="Jump to projects section">
+          aria-label="Open projects page">
           <span className="truncate">View Projects</span>
         </LinkButton>
       </div>
