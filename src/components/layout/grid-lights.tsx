@@ -115,11 +115,21 @@ function createStyles(paths: Point[][]): string {
   const kf: string[] = []
   const rules: string[] = []
   const durationSeconds = LIGHT_GRID.DURATION_SECONDS
+  // Evenly distribute phases across the full duration; fallback to computed stagger when constant is 0
+  const staggerSeconds = LIGHT_GRID.STAGGER_SECONDS > 0
+    ? LIGHT_GRID.STAGGER_SECONDS
+    : durationSeconds / Math.max(1, paths.length)
+
   for (let i = 0; i < paths.length; i++) {
     const name = `gl_path_${i}`
     const path = paths[i]!
     kf.push(buildKeyframes(name, path))
-    const delay = (i * LIGHT_GRID.STAGGER_SECONDS) % durationSeconds
+    // Seed each light mid-cycle using negative delays so the screen is populated immediately.
+    // Add slight jitter so edges don't align perfectly.
+    const base = (i * staggerSeconds) % durationSeconds
+    const jitter = ((Math.random() - 0.5) * 2) * (staggerSeconds * 0.15)
+    const normalized = ((base + jitter) % durationSeconds + durationSeconds) % durationSeconds
+    const delay = -normalized
     rules.push(`.gl-${i} { animation: ${name} ${durationSeconds}s linear infinite; animation-delay: ${delay}s; }`)
   }
   return `${kf.join('\n\n')}\n\n${rules.join('\n')}`
