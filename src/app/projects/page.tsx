@@ -2,7 +2,6 @@ import { Background } from '@/components/layout/background'
 import { Footer } from '@/components/layout/footer'
 import { Header } from '@/components/layout/header'
 import { ProjectCard } from '@/components/projects/project-card'
-import { useTheme } from '@/hooks/use-theme'
 import { projects } from '@/lib/projects'
 import type { Project } from '@/types'
 import type { Metadata } from 'next'
@@ -31,12 +30,8 @@ function ProjectsGrid({ items }: { items: Project[] }) {
 }
 
 function ProjectsContent() {
-  const theme = useTheme()
-
   return (
-    <div
-      className="bg-background text-foreground relative flex min-h-screen flex-col"
-      style={{ fontFamily: theme.fontFamily }}>
+    <div className="bg-background text-foreground relative flex min-h-screen flex-col">
       <Background />
       <div className="relative z-20 flex size-full flex-1 flex-col overflow-x-hidden">
         <div className="layout-container flex h-full flex-1 flex-col">

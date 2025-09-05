@@ -2,7 +2,6 @@ import { Background } from '@/components/layout/background'
 import { Footer } from '@/components/layout/footer'
 import { Header } from '@/components/layout/header'
 import { Hero } from '@/components/layout/hero'
-import { useTheme } from '@/hooks/use-theme'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -10,12 +9,8 @@ export const metadata: Metadata = {
 }
 
 function HomepageContent() {
-  const theme = useTheme()
-
   return (
-    <div
-      className="bg-background text-foreground relative flex min-h-screen flex-col"
-      style={{ fontFamily: theme.fontFamily }}>
+    <div className="bg-background text-foreground relative flex min-h-screen flex-col">
       <Background />
       <div className="relative z-20 flex size-full flex-1 flex-col overflow-x-hidden">
         <div className="layout-container flex h-full flex-1 flex-col">

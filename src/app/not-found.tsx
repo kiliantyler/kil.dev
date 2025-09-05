@@ -2,28 +2,9 @@ import { Background } from '@/components/layout/background'
 import { Footer } from '@/components/layout/footer'
 import { Header } from '@/components/layout/header'
 import { LinkButton } from '@/components/ui/link-button'
-import { useTheme } from '@/hooks/use-theme'
-import { Noto_Sans, Space_Grotesk } from 'next/font/google'
-
-const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin'],
-  weight: ['400', '500', '700'],
-  variable: '--font-space-grotesk',
-})
-
-const notoSans = Noto_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '700', '900'],
-  variable: '--font-noto-sans',
-})
-
 function NotFoundContent() {
-  const theme = useTheme()
-
   return (
-    <div
-      className="bg-background text-foreground relative flex min-h-screen flex-col"
-      style={{ fontFamily: theme.fontFamily }}>
+    <div className="bg-background text-foreground relative flex min-h-screen flex-col">
       <Background />
       <div className="relative z-20 flex size-full flex-1 flex-col overflow-x-hidden">
         <div className="layout-container flex h-full flex-1 flex-col">
@@ -67,9 +48,5 @@ function NotFoundContent() {
 }
 
 export default function NotFound() {
-  return (
-    <div className={`${spaceGrotesk.variable} ${notoSans.variable}`}>
-      <NotFoundContent />
-    </div>
-  )
+  return <NotFoundContent />
 }
