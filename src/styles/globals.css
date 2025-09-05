@@ -28,6 +28,7 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -63,6 +64,7 @@
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
@@ -82,22 +84,23 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
+  --background: oklch(0.2077 0.0398 265.75);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
+  --popover: oklch(24.325% 0.05053 264.952);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
+  --primary: oklch(0.6991 0.157 238.99);
+  --primary-foreground: oklch(0.9288 0.0126 255.51);
+  --secondary: oklch(0.2795 0.0368 260.03);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
+  --accent: oklch(0.6847 0.1479 237.32);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.3717 0.0392 257.29);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
   --chart-1: oklch(0.488 0.243 264.376);
@@ -115,35 +118,3 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-}
-
-
-@layer base {
-  :root {
-    --example-primary-color: oklch(0.6991 0.157 238.99);
-    --example-secondary-color: oklch(0.2795 0.0368 260.03);
-    --example-accent-color: oklch(0.6847 0.1479 237.32);
-    --example-background-color: oklch(0.2077 0.0398 265.75);
-    --example-text-color: oklch(0.9288 0.0126 255.51);
-    --example-border-color: oklch(0.3717 0.0392 257.29);
-  }
-}
-
-/* Utilities to map example variables to Tailwind arbitrary variables syntax */
-@layer utilities {
-  .bg-example-background { background-color: var(--example-background-color); }
-  .text-example-text { color: var(--example-text-color); }
-  .border-example-border { border-color: var(--example-border-color); }
-  .bg-example-primary { background-color: var(--example-primary-color); }
-  .bg-example-secondary { background-color: var(--example-secondary-color); }
-  .hover\:bg-example-accent:hover { background-color: var(--example-accent-color); }
-  .text-example-primary { color: var(--example-primary-color); }
-  .hover\:text-example-primary:hover { color: var(--example-primary-color); }
-}
