@@ -5,8 +5,7 @@ export const EXTERNAL_LINKS = {
 
 export const CONTENT = {
   NAME: 'Kilian Tyler',
-  TITLE: 'Site Reliability Engineer | DevOps Engineer | All Rounder',
-  TITLE_ALT: 'I wear all the hats',
+  TITLE: 'Site Reliability | DevOps Engineer',
   LOCATION: 'Cleveland, Ohio',
 } as const
 
