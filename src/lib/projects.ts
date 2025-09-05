@@ -9,6 +9,7 @@ export const projects: Project[] = [
     description: 'This site. Next.js, Tailwind, shadcn/ui, deployed on Vercel.',
     tags: ['Next.js', 'Tailwind', 'shadcn/ui'],
     href: '/#YouWereAlreadyHere',
+    repo: 'https://github.com/kiliantyler/kil.dev',
     year: 2025,
     status: 'live',
     imageSrc: kilDevImage,
