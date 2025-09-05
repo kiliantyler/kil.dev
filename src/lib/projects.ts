@@ -46,6 +46,7 @@ export const projects: Project[] = [
     description: 'A Kubernetes cluster for my home.',
     tags: [
       'Kubernetes',
+      'FluxCD',
     ],
     repo: 'https://github.com/shamubernetes/home-ops',
     year: 2025,
