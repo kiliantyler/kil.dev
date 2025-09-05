@@ -4,16 +4,9 @@ import './src/env.js'
 
 const config: NextConfig = {
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'skills.syvixor.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'cdn.jsdelivr.net',
-      },
-    ],
+    minimumCacheTTL: 31536000, // 1 year
+    formats: ['image/avif', 'image/webp'],
+    dangerouslyAllowSVG: true,
   },
   async rewrites() {
     return [
