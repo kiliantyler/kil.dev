@@ -36,7 +36,6 @@ function ProjectTechIcons({ tags }: ProjectTechIconsProps) {
                     className="inline-flex items-center justify-center size-[28px] rounded-md ring-1 ring-border overflow-hidden">
                     <span className="relative size-full">
                       <Image
-                        unoptimized
                         src={getSkillIconUrl(skill.icon)}
                         alt={tag}
                         fill
