@@ -5,6 +5,7 @@ import Grumpy from '@/images/cartoon-grumpy.jpg'
 import Headshot from '@/images/cartoon-headshot.jpg'
 import { CONTENT } from '@/lib/constants'
 import Image from 'next/image'
+import posthog from 'posthog-js'
 import { useCallback, useEffect, useState, type KeyboardEvent } from 'react'
 
 function ProfileImage() {
