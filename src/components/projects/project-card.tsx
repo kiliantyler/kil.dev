@@ -34,7 +34,7 @@ function ProjectCard({ project }: ProjectCardProps) {
       aria-label={`Toggle details for ${project.title}`}
       onClick={handleToggle}
       onKeyDown={handleKeyDown}
-      className="relative h-full min-h-[360px] w-full cursor-pointer select-none outline-hidden [perspective:1200px] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary">
+      className="relative w-full aspect-[16/10] cursor-pointer select-none outline-hidden [perspective:1200px] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary">
       <div
         className={
           'relative h-full w-full [transform-style:preserve-3d] transition-transform duration-500 ease-out ' +
