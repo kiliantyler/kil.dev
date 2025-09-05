@@ -27,8 +27,14 @@ function ProfileImage() {
   }, [updateFromHash])
 
   const handleClick = useCallback(() => {
+    if (isGrumpy) return
     setIsGrumpy(true)
-  }, [])
+    posthog.capture('profile_image_clicked', {
+      interaction: 'click',
+      newState: 'grumpy',
+      wasConfused: useConfused,
+    })
+  }, [isGrumpy, useConfused])
 
   const handlePointerLeave = useCallback(() => {
     setIsGrumpy(false)
