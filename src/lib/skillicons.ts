@@ -1,3 +1,13 @@
+export type DashboardIconFormat = 'webp' | 'svg' | 'png'
+
+export type SkillIconRef =
+  | string
+  | {
+      source: 'dashboardicons'
+      name: string
+      format?: DashboardIconFormat
+    }
+
 export const SKILLS = {
   Next: { icon: 'nextjs', url: 'https://nextjs.org' },
   Tailwind: { icon: 'tailwind', url: 'https://tailwindcss.com' },
@@ -9,11 +19,23 @@ export const SKILLS = {
   Astro: { icon: 'astro', url: 'https://astro.build' },
   Markdown: { icon: 'markdown', url: 'https://daringfireball.net/projects/markdown/' },
   Kubernetes: { icon: 'kubernetes', url: 'https://kubernetes.io' },
+  FluxCD: { icon: { source: 'dashboardicons', name: 'flux-cd', format: 'webp' }, url: 'https://fluxcd.io' },
 } as const
 
 export type SkillName = keyof typeof SKILLS
 export type SkillIconKey = (typeof SKILLS)[SkillName]['icon']
 
-export function getSkillIconUrl(iconKey: string): string {
-  return `https://skills.syvixor.com/api/icons?i=${encodeURIComponent(iconKey)}`
+export function getSkillIconUrl(icon: SkillIconRef): string {
+  if (typeof icon === 'string') {
+    return `https://skills.syvixor.com/api/icons?i=${encodeURIComponent(icon)}`
+  }
+
+  if (icon.source === 'dashboardicons') {
+    const format: DashboardIconFormat = icon.format ?? 'webp'
+    const name = icon.name
+    return `https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/${format}/${encodeURIComponent(name)}.${format}`
+  }
+
+  // Fallback to syvixor if an unexpected value slips through
+  return `https://skills.syvixor.com/api/icons?i=${encodeURIComponent('')}`
 }

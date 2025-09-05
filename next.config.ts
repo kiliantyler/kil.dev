@@ -9,6 +9,10 @@ const config: NextConfig = {
         protocol: 'https',
         hostname: 'skills.syvixor.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'cdn.jsdelivr.net',
+      },
     ],
   },
   async rewrites() {
