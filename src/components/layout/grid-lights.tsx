@@ -3,7 +3,7 @@
 import { LIGHT_GRID } from '@/lib/constants'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-type Point = { x: number, y: number }
+type Point = { x: number; y: number }
 
 const GRID_SIZE_PX = LIGHT_GRID.GRID_SIZE_PX
 // Use CSS translate to center the dot; no need for half-subtraction math
@@ -15,7 +15,7 @@ function clamp(value: number, min: number, max: number): number {
   return value
 }
 
-function getContainerSize(el: HTMLElement | null): { width: number, height: number } {
+function getContainerSize(el: HTMLElement | null): { width: number; height: number } {
   if (!el) return { width: window.innerWidth, height: window.innerHeight }
   const rect = el.getBoundingClientRect()
   return { width: Math.round(rect.width), height: Math.round(rect.height) }
@@ -116,9 +116,8 @@ function createStyles(paths: Point[][]): string {
   const rules: string[] = []
   const durationSeconds = LIGHT_GRID.DURATION_SECONDS
   // Evenly distribute phases across the full duration; fallback to computed stagger when constant is 0
-  const staggerSeconds = LIGHT_GRID.STAGGER_SECONDS > 0
-    ? LIGHT_GRID.STAGGER_SECONDS
-    : durationSeconds / Math.max(1, paths.length)
+  const staggerSeconds =
+    LIGHT_GRID.STAGGER_SECONDS > 0 ? LIGHT_GRID.STAGGER_SECONDS : durationSeconds / Math.max(1, paths.length)
 
   for (let i = 0; i < paths.length; i++) {
     const name = `gl_path_${i}`
@@ -127,8 +126,8 @@ function createStyles(paths: Point[][]): string {
     // Seed each light mid-cycle using negative delays so the screen is populated immediately.
     // Add slight jitter so edges don't align perfectly.
     const base = (i * staggerSeconds) % durationSeconds
-    const jitter = ((Math.random() - 0.5) * 2) * (staggerSeconds * 0.15)
-    const normalized = ((base + jitter) % durationSeconds + durationSeconds) % durationSeconds
+    const jitter = (Math.random() - 0.5) * 2 * (staggerSeconds * 0.15)
+    const normalized = (((base + jitter) % durationSeconds) + durationSeconds) % durationSeconds
     const delay = -normalized
     rules.push(`.gl-${i} { animation: ${name} ${durationSeconds}s linear infinite; animation-delay: ${delay}s; }`)
   }
@@ -155,9 +154,8 @@ function GridLights() {
       const { width, height } = getContainerSize(containerRef.current)
       const paths: Point[][] = []
       for (let i = 0; i < numLights; i++) {
-        const generator = Math.random() < LIGHT_GRID.HORIZONTAL_PROBABILITY
-          ? generateHorizontalPath
-          : generateVerticalPath
+        const generator =
+          Math.random() < LIGHT_GRID.HORIZONTAL_PROBABILITY ? generateHorizontalPath : generateVerticalPath
         paths.push(generator(width, height))
       }
       setStyleText(createStyles(paths))
@@ -196,5 +194,3 @@ function GridLights() {
 }
 
 export { GridLights }
-
-

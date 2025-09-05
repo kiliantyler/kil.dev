@@ -60,11 +60,7 @@ function Header() {
   return (
     <header className="flex items-center justify-between border-solid whitespace-nowrap mt-auto w-full bg-background/90 px-10 py-8 border-b border-border">
       <div className="group flex cursor-default items-center gap-3 text-foreground">
-        <Logo
-          fill="currentColor"
-          width={32}
-          height={32}
-        />
+        <Logo fill="currentColor" width={32} height={32} />
         <h2
           className="relative text-xl leading-tight font-bold text-foreground transition-all duration-300 ease-in-out"
           data-hover-text="Kilian.DevOps">
