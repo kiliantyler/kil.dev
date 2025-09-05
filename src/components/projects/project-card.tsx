@@ -19,15 +19,25 @@ function ProjectCard({ project }: ProjectCardProps) {
   const tiltRef = useRef<HTMLDivElement | null>(null)
 
   const handleToggle = useCallback(() => {
-    setFlipped(prev => !prev)
-  }, [])
+    setFlipped(prev => {
+      const next = !prev
+      posthog.capture('project_card_flipped', {
+        projectId: project.id,
+        flippedTo: next ? 'back' : 'front',
+      })
+      return next
+    })
+  }, [project.id])
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault()
-      setFlipped(prev => !prev)
-    }
-  }, [])
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        handleToggle()
+      }
+    },
+    [handleToggle],
+  )
 
   const hasLinks = Boolean(project.href ?? project.repo)
 
