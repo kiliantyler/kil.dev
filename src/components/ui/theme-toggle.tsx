@@ -6,6 +6,7 @@ import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { captureThemeChanged } from '@/hooks/posthog'
 import { cn } from '@/lib/utils'
 
@@ -23,6 +24,7 @@ export function ThemeToggle() {
   const { startTransition } = useThemeTransition()
 
   const [open, setOpen] = useState(false)
+  const [openedViaKeyboard, setOpenedViaKeyboard] = useState(false)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const optionRefA = useRef<HTMLButtonElement | null>(null)
@@ -116,38 +118,52 @@ export function ThemeToggle() {
       const target = e.target as Node | null
       if (containerRef.current && target && !containerRef.current.contains(target)) {
         setOpen(false)
+        setOpenedViaKeyboard(false)
       }
     }
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation()
         setOpen(false)
+        setOpenedViaKeyboard(false)
         triggerRef.current?.focus()
       }
     }
     window.addEventListener('mousedown', onClick)
     window.addEventListener('keydown', onKey)
     // focus first option when opening
-    const id = window.setTimeout(() => optionRefA.current?.focus(), 0)
+    const id = window.setTimeout(() => {
+      if (openedViaKeyboard) optionRefA.current?.focus()
+    }, 0)
     return () => {
       window.removeEventListener('mousedown', onClick)
       window.removeEventListener('keydown', onKey)
       window.clearTimeout(id)
     }
-  }, [open])
+  }, [open, openedViaKeyboard])
 
-  const handleTriggerKeyDown = useCallback((e: ReactKeyboardEvent<HTMLButtonElement>) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault()
-      setOpen(o => !o)
-      return
-    }
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-      e.preventDefault()
-      setOpen(true)
-      // focus handled by effect
-    }
-  }, [])
+  const handleTriggerKeyDown = useCallback(
+    (e: ReactKeyboardEvent<HTMLButtonElement>) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        if (open) {
+          setOpen(false)
+          setOpenedViaKeyboard(false)
+        } else {
+          setOpen(true)
+          setOpenedViaKeyboard(true)
+        }
+        return
+      }
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault()
+        setOpen(true)
+        setOpenedViaKeyboard(true)
+        // focus handled by effect
+      }
+    },
+    [open],
+  )
 
   const handleMenuKeyDown = useCallback((e: ReactKeyboardEvent<HTMLDivElement>) => {
     const isHorizontal = typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches
@@ -178,29 +194,48 @@ export function ThemeToggle() {
 
   return (
     <div ref={containerRef} className="relative">
-      <Button
-        ref={triggerRef}
-        variant="ghost"
-        size="icon"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-controls="theme-options"
-        onClick={() => setOpen(o => !o)}
-        onKeyDown={handleTriggerKeyDown}
-        className={cn(
-          'hover:ring-accent hover:ring-1 hover:ring-offset-2 ring-offset-background transition-all duration-200',
-          open && 'ring-1 ring-accent ring-offset-2 scale-95 rotate-3',
-        )}>
-        {open && currentPreference === 'system' ? (
-          <SystemIcon className="h-[1.2rem] w-[1.2rem]" />
-        ) : (
-          <>
-            <Sun className="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
-            <Moon className="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
-          </>
-        )}
-        <span className="sr-only">Toggle theme menu</span>
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            ref={triggerRef}
+            variant="ghost"
+            size="icon"
+            aria-haspopup="menu"
+            aria-expanded={open}
+            aria-controls="theme-options"
+            onClick={() => {
+              setOpen(o => {
+                const next = !o
+                setOpenedViaKeyboard(false)
+                return next
+              })
+            }}
+            onKeyDown={handleTriggerKeyDown}
+            className={cn(
+              'hover:ring-accent hover:ring-1 hover:ring-offset-2 ring-offset-background transition-all duration-200',
+              open && 'ring-1 ring-accent ring-offset-2 scale-95 rotate-3',
+            )}>
+            {open && currentPreference === 'system' ? (
+              <SystemIcon className="h-[1.2rem] w-[1.2rem]" />
+            ) : (
+              <>
+                <Sun className="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
+                <Moon className="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
+              </>
+            )}
+            <span className="sr-only">Toggle theme menu</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          {open
+            ? currentPreference === 'system'
+              ? 'System'
+              : currentPreference === 'dark'
+                ? 'Dark'
+                : 'Light'
+            : 'Theme Toggle'}
+        </TooltipContent>
+      </Tooltip>
 
       <div
         id="theme-options"
@@ -216,24 +251,28 @@ export function ThemeToggle() {
           open ? 'pointer-events-auto' : 'pointer-events-none',
         )}>
         {optionsToShow.map((opt, idx) => (
-          <Button
-            key={opt.value}
-            ref={idx === 0 ? optionRefA : optionRefB}
-            onClick={e => handleThemeChange(opt.value, e)}
-            role="menuitem"
-            aria-label={opt.label}
-            title={opt.label}
-            variant="ghost"
-            size="icon"
-            className={cn(
-              'transition-all duration-200 ease-out hover:bg-accent/70',
-              open
-                ? 'opacity-100 translate-y-0 md:translate-x-0 scale-100'
-                : 'opacity-0 -translate-y-2 md:translate-x-2 md:translate-y-0 scale-95',
-            )}
-            style={{ transitionDelay: `${idx * 60}ms` }}>
-            <opt.Icon className="size-4" />
-          </Button>
+          <Tooltip key={opt.value}>
+            <TooltipTrigger asChild>
+              <Button
+                ref={idx === 0 ? optionRefA : optionRefB}
+                onClick={e => handleThemeChange(opt.value, e)}
+                role="menuitem"
+                aria-label={opt.label}
+                title={opt.label}
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  'transition-all duration-200 ease-out hover:bg-accent/70',
+                  open
+                    ? 'opacity-100 translate-y-0 md:translate-x-0 scale-100'
+                    : 'opacity-0 -translate-y-2 md:translate-x-2 md:translate-y-0 scale-95',
+                )}
+                style={{ transitionDelay: `${idx * 60}ms` }}>
+                <opt.Icon className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{opt.label}</TooltipContent>
+          </Tooltip>
         ))}
       </div>
     </div>
