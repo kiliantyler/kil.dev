@@ -5,41 +5,52 @@ import Link from 'next/link'
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 
 export function HomeLogo() {
-  const shortContent = 'kil.dev'
+  const shortContent = 'Kil.Dev'
   const longContent = 'Kilian.DevOps'
 
   const [isHovered, setIsHovered] = useState(false)
-  const [shortWidth, setShortWidth] = useState(0)
-  const [longWidth, setLongWidth] = useState(0)
+  const [shortPrefixWidth, setShortPrefixWidth] = useState(0)
+  const [longPrefixWidth, setLongPrefixWidth] = useState(0)
+  const [shortSuffixWidth, setShortSuffixWidth] = useState(0)
+  const [longSuffixWidth, setLongSuffixWidth] = useState(0)
 
-  const shortRef = useRef<HTMLSpanElement>(null)
-  const longRef = useRef<HTMLSpanElement>(null)
+  const shortPrefixRef = useRef<HTMLSpanElement>(null)
+  const longPrefixRef = useRef<HTMLSpanElement>(null)
+  const shortSuffixRef = useRef<HTMLSpanElement>(null)
+  const longSuffixRef = useRef<HTMLSpanElement>(null)
 
-  const [styles, api] = useSpring(() => ({
-    from: { width: 0 },
+  const [springs, api] = useSpring(() => ({
+    from: { prefix: 0, suffix: 0 },
     config: { tension: 240, friction: 28 },
   }))
 
   useLayoutEffect(() => {
-    const shortEl = shortRef.current
-    const longEl = longRef.current
-    if (!shortEl || !longEl) return
+    const sp = shortPrefixRef.current
+    const lp = longPrefixRef.current
+    const ss = shortSuffixRef.current
+    const ls = longSuffixRef.current
+    if (!sp || !lp || !ss || !ls) return
 
-    const shortRect = shortEl.getBoundingClientRect()
-    const longRect = longEl.getBoundingClientRect()
-    const s = Math.ceil(shortRect.width)
-    const l = Math.ceil(longRect.width)
-    setShortWidth(s)
-    setLongWidth(l)
-    api.set({ width: s })
+    const spw = Math.ceil(sp.getBoundingClientRect().width)
+    const lpw = Math.ceil(lp.getBoundingClientRect().width)
+    const ssw = Math.ceil(ss.getBoundingClientRect().width)
+    const lsw = Math.ceil(ls.getBoundingClientRect().width)
+
+    setShortPrefixWidth(spw)
+    setLongPrefixWidth(lpw)
+    setShortSuffixWidth(ssw)
+    setLongSuffixWidth(lsw)
+
+    api.set({ prefix: spw, suffix: ssw })
   }, [api])
 
   useLayoutEffect(() => {
-    if (!shortWidth || !longWidth) return
+    if (!shortPrefixWidth || !longPrefixWidth || !shortSuffixWidth || !longSuffixWidth) return
     void api.start({
-      width: isHovered ? longWidth : shortWidth,
+      prefix: isHovered ? longPrefixWidth : shortPrefixWidth,
+      suffix: isHovered ? longSuffixWidth : shortSuffixWidth,
     })
-  }, [api, isHovered, longWidth, shortWidth])
+  }, [api, isHovered, shortPrefixWidth, longPrefixWidth, shortSuffixWidth, longSuffixWidth])
 
   const handleMouseEnter = useCallback(() => setIsHovered(true), [])
   const handleMouseLeave = useCallback(() => setIsHovered(false), [])
