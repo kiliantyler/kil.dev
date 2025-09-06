@@ -134,7 +134,7 @@ function createStyles(paths: Point[][]): string {
   return `${kf.join('\n\n')}\n\n${rules.join('\n')}`
 }
 
-function GridLights() {
+export function GridLights() {
   const containerRef = useRef<HTMLDivElement>(null)
   const [styleText, setStyleText] = useState<string>('')
   const numLights = LIGHT_GRID.NUM_LIGHTS
@@ -192,5 +192,3 @@ function GridLights() {
     </div>
   )
 }
-
-export { GridLights }

@@ -15,7 +15,7 @@ function getActiveIndex(items: readonly NavigationItem[], pathname: string) {
   return index
 }
 
-function NavigationLava() {
+export function NavLava() {
   const pathname = usePathname()
   const containerRef = React.useRef<HTMLDivElement | null>(null)
   const linkRefs = React.useRef<Record<string, HTMLAnchorElement | null>>({})
@@ -155,5 +155,3 @@ function NavigationLava() {
     </nav>
   )
 }
-
-export { NavigationLava }

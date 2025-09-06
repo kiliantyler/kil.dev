@@ -8,7 +8,7 @@ import Image from 'next/image'
 import posthog from 'posthog-js'
 import { useCallback, useEffect, useState, type KeyboardEvent } from 'react'
 
-function ProfileImage() {
+export function ProfileImage() {
   const [useConfused, setUseConfused] = useState(false)
   const [isGrumpy, setIsGrumpy] = useState(false)
 
@@ -78,5 +78,3 @@ function ProfileImage() {
     </div>
   )
 }
-
-export { ProfileImage }

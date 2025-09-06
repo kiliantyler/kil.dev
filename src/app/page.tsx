@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   title: 'Kilian Tyler | Site Reliability Engineer',
 }
 
-function HomepageContent() {
+export default function Homepage() {
   return (
     <div className="bg-background text-foreground relative flex min-h-screen flex-col">
       <Background />
@@ -21,8 +21,4 @@ function HomepageContent() {
       </div>
     </div>
   )
-}
-
-export default function Homepage() {
-  return <HomepageContent />
 }

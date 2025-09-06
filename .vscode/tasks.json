@@ -11,7 +11,8 @@
       ],
       "options": {
         "cwd": "${workspaceFolder}"
-      }
+      },
+      "problemMatcher": []
     },
     {
       "label": "bun format:write",
@@ -51,7 +52,8 @@
       ],
       "options": {
         "cwd": "${workspaceFolder}"
-      }
+      },
+      "problemMatcher": []
     }
   ]
 }
