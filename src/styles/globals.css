@@ -119,6 +119,7 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  color-scheme: dark;
 }
 
 /* Custom utilities */
@@ -139,7 +140,9 @@ html {
   --separator-thickness: 0.5px;
   scrollbar-gutter: stable both-edges;
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in oklch, var(--primary) 65%, transparent) transparent;
+  background-color: var(--background);
+  color-scheme: light;
+  scrollbar-color: color-mix(in oklch, var(--primary) 65%, transparent) var(--background);
 }
 
 /* WebKit/Chromium */
@@ -149,7 +152,7 @@ html::-webkit-scrollbar {
 }
 
 html::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--background);
 }
 
 html::-webkit-scrollbar-thumb {
