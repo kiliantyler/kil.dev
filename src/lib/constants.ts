@@ -11,7 +11,7 @@ export const CONTENT = {
 
 export const NAVIGATION = [
   { label: 'Home', href: '/' },
-  { label: 'About', href: '#about' },
+  { label: 'About', href: '/about' },
   { label: 'Experience', href: '#experience' },
   { label: 'Projects', href: '/projects' },
 ] as const
