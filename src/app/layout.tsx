@@ -1,6 +1,9 @@
 import { Providers } from '@/components/providers/providers'
 import '@/styles/globals.css'
 
+import { Background } from '@/components/layout/background'
+import { Footer } from '@/components/layout/footer'
+import { Header } from '@/components/layout/header'
 import { type Metadata } from 'next'
 import { Noto_Sans, Space_Grotesk } from 'next/font/google'
 
@@ -25,9 +28,18 @@ const notoSans = Noto_Sans({
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${spaceGrotesk.variable} ${notoSans.variable}`} suppressHydrationWarning>
-      <body className="font-sans flex min-h-screen flex-col">
+      <body className="font-sans flex min-h-screen flex-col bg-background text-foreground">
         <Providers>
-          <main>{children}</main>
+          <div className="relative flex min-h-screen flex-col">
+            <Background />
+            <div className="relative z-20 flex size-full flex-1 flex-col overflow-x-hidden">
+              <div className="layout-container flex h-full flex-1 flex-col">
+                <Header />
+                <main className="flex-1">{children}</main>
+                <Footer />
+              </div>
+            </div>
+          </div>
         </Providers>
       </body>
     </html>
