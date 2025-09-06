@@ -6,10 +6,14 @@ import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 export function Header() {
   return (
-    <header className="flex items-center justify-between border-solid whitespace-nowrap sticky top-0 z-50 w-full bg-background/90 px-10 py-8 border-b border-border">
-      <HomeLogo />
-      <NavLava />
-      <div className="flex items-center gap-3">
+    <header className="grid grid-cols-[1fr_auto_1fr] items-center border-solid whitespace-nowrap sticky top-0 z-50 w-full bg-background/90 px-10 py-8 border-b border-border">
+      <div className="justify-self-start">
+        <HomeLogo />
+      </div>
+      <div className="justify-self-center">
+        <NavLava />
+      </div>
+      <div className="flex items-center gap-3 justify-self-end">
         <ThemeToggle />
         <GitHubButton />
         <LinkedInButton />
