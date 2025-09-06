@@ -2,7 +2,6 @@
 
 import { Card } from '@/components/ui/card'
 import type { Project } from '@/types'
-import { ProjectFlipIndicator } from './flip-indicator'
 import { RepoButton } from './repo-button'
 import { ProjectTechIcons } from './tech-icons'
 import { VisitButton } from './visit-button'
@@ -17,8 +16,7 @@ export function ProjectCardBack({ project }: ProjectCardBackProps) {
   const visitButton = project.href ? <VisitButton href={project.href} title={project.title} id={project.id} /> : null
 
   return (
-    <Card className="absolute inset-0 p-6 [backface-visibility:hidden] rotate-y-180 transition-shadow group-hover:shadow-md group-hover:ring-2 group-hover:ring-primary group-hover:ring-offset-2 group-hover:ring-offset-background">
-      <ProjectFlipIndicator />
+    <Card className="absolute inset-0 p-6 [backface-visibility:hidden] transition-shadow group-hover:shadow-md group-hover:ring-2 group-hover:ring-primary group-hover:ring-offset-2 group-hover:ring-offset-background">
       <div className="flex h-full flex-col">
         <div className="mb-3 text-sm text-muted-foreground">
           {project.year ? `${project.year} • ` : ''}
