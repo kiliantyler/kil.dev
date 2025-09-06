@@ -19,6 +19,7 @@ export function NavLava() {
   const pathname = usePathname()
   const containerRef = React.useRef<HTMLDivElement | null>(null)
   const linkRefs = React.useRef<Record<string, HTMLAnchorElement | null>>({})
+  const hasBootedRef = React.useRef(false)
 
   const [indicator, setIndicator] = React.useState<{ left: number; width: number; visible: boolean; animate: boolean }>(
     {
@@ -48,12 +49,13 @@ export function NavLava() {
     setIndicator(prev => ({ ...prev, visible: false }))
   }, [])
 
-  // On mount or route change, snap to active route if available
+  // On mount or route change: animate after first mount, snap on first boot
   React.useLayoutEffect(() => {
     if (activeIndex >= 0) {
       if (!NAVIGATION[activeIndex]) return
       const key = NAVIGATION[activeIndex].href
-      moveIndicatorTo(key, false)
+      moveIndicatorTo(key, hasBootedRef.current)
+      hasBootedRef.current = true
       return
     }
     hideIndicator()
@@ -122,6 +124,7 @@ export function NavLava() {
         {NAVIGATION.map(item => {
           const isExternal = item.href.startsWith('http')
           const isActive = !item.href.startsWith('#') && item.href === pathname
+          const showFallback = isActive && !indicator.visible
           return (
             <Link
               key={item.href}
@@ -129,6 +132,17 @@ export function NavLava() {
               ref={node => {
                 if (node) {
                   linkRefs.current[item.href] = node
+                  if (isActive && !hasBootedRef.current) {
+                    const container = containerRef.current
+                    if (container) {
+                      const containerRect = container.getBoundingClientRect()
+                      const targetRect = node.getBoundingClientRect()
+                      const left = targetRect.left - containerRect.left
+                      const width = Math.max(8, targetRect.width - 8)
+                      setIndicator({ left, width, visible: true, animate: false })
+                      hasBootedRef.current = true
+                    }
+                  }
                 }
               }}
               className={cn(
@@ -144,7 +158,20 @@ export function NavLava() {
                 target: '_blank',
                 rel: 'noopener noreferrer',
               })}>
-              <span className="relative">
+              {/* Initial SSR fallback so active link is highlighted immediately */}
+              {showFallback && (
+                <>
+                  <span
+                    aria-hidden="true"
+                    className="absolute top-0 bottom-0 left-1 right-1 z-0 rounded-md bg-accent/35 blur-[1.5px] shadow-sm"
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="absolute top-0 bottom-0 left-1 right-1 z-0 rounded-md bg-accent/60 backdrop-blur-sm shadow-sm"
+                  />
+                </>
+              )}
+              <span className="relative z-10">
                 {item.label}
                 <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-current transition-all duration-300 ease-out group-hover:w-full" />
               </span>
