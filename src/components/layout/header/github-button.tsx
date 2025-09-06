@@ -16,7 +16,6 @@ export function GitHubButton() {
         captureSocialLinkClicked('github', EXTERNAL_LINKS.GITHUB)
       }}>
       <GitHubIcon className="size-5" />
-      <span className="hidden md:inline">GitHub</span>
     </LinkButton>
   )
 }

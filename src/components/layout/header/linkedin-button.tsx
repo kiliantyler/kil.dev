@@ -15,7 +15,6 @@ export function LinkedInButton() {
         captureSocialLinkClicked('linkedin', EXTERNAL_LINKS.LINKEDIN)
       }}>
       <LinkedInIcon className="size-5" />
-      <span className="hidden md:inline">LinkedIn</span>
     </LinkButton>
   )
 }
