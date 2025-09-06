@@ -31,36 +31,40 @@ export default function AboutPage() {
                       <p className="text-sm uppercase tracking-wide text-muted-foreground">Quick facts</p>
                       <dl className="grid gap-3">
                         <div className="grid grid-cols-[auto_1fr] items-baseline gap-3">
-                          <dt className="text-primary font-medium">Mode</dt>
-                          <dd className="text-muted-foreground">Dark mode, always</dd>
+                          <dt className="text-muted-foreground">Mode</dt>
+                          <dd className="text-primary font-medium">Dark mode, always</dd>
                         </div>
                         <div className="grid grid-cols-[auto_1fr] items-baseline gap-3">
-                          <dt className="text-primary font-medium">Shell</dt>
-                          <dd className="text-muted-foreground">
+                          <dt className="text-muted-foreground">Shell</dt>
+                          <dd className="text-primary font-medium">
                             <Link href="https://fishshell.com">fish</Link>
                           </dd>
                         </div>
                         <div className="grid grid-cols-[auto_1fr] items-baseline gap-3">
-                          <dt className="text-primary font-medium">Terminal</dt>
-                          <dd className="text-muted-foreground">
+                          <dt className="text-muted-foreground">Terminal</dt>
+                          <dd className="text-primary font-medium">
                             <Link href="https://ghostty.app">Ghostty</Link>
                           </dd>
                         </div>
                         <div className="grid grid-cols-[auto_1fr] items-baseline gap-3">
-                          <dt className="text-primary font-medium">Editor</dt>
-                          <dd className="text-muted-foreground">
+                          <dt className="text-muted-foreground">Editor</dt>
+                          <dd className="text-primary font-medium">
                             <Link href="https://cursor.com">Cursor</Link>
                           </dd>
                         </div>
                         <div className="grid grid-cols-[auto_1fr] items-baseline gap-3">
-                          <dt className="text-primary font-medium">OS</dt>
-                          <dd className="text-muted-foreground">
-                            <Link href="https://www.apple.com/macos">macOS</Link> (Windows for gaming)
+                          <dt className="text-muted-foreground">OS</dt>
+                          <dd className="text-primary font-medium">
+                            <Link href="https://www.apple.com/macos">macOS</Link>{' '}
+                            <span className="text-muted-foreground text-xs font-normal">(Windows for gaming)</span>
                           </dd>
                         </div>
                         <div className="grid grid-cols-[auto_1fr] items-baseline gap-3">
-                          <dt className="text-primary font-medium">Pets</dt>
-                          <dd className="text-muted-foreground">6 total — 3 dogs, 3 cats (Pictured below)</dd>
+                          <dt className="text-muted-foreground">Pets</dt>
+                          <dd className="text-primary font-medium">
+                            3 dogs, 3 cats{' '}
+                            <span className="text-muted-foreground text-xs font-normal">(Pictured below)</span>
+                          </dd>
                         </div>
                       </dl>
                     </div>
