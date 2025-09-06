@@ -16,5 +16,3 @@ export function Header() {
     </header>
   )
 }
-
-export { GitHubButton, Header }
