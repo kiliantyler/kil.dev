@@ -6,6 +6,8 @@
   "scripts": {
     "build": "next build",
     "check": "eslint . && tsc --noEmit",
+    "check:all": "bun run typecheck && bun run format:check && bun run lint",
+    "fix:all": "bun run format:write && bun run lint:fix",
     "dev": "next dev --turbo",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
     "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",

@@ -44,6 +44,32 @@
       ]
     },
     {
+      "label": "bun check:all",
+      "type": "shell",
+      "command": "bun",
+      "args": [
+        "run",
+        "check:all"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "bun fix:all",
+      "type": "shell",
+      "command": "bun",
+      "args": [
+        "run",
+        "fix:all"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "bun build",
       "type": "shell",
       "command": "bun",
