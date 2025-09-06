@@ -1,0 +1,57 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "bun format:check",
+      "type": "shell",
+      "command": "bun",
+      "args": [
+        "run",
+        "format:check"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "bun format:write",
+      "type": "shell",
+      "command": "bun",
+      "args": [
+        "run",
+        "format:write"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "bun check",
+      "type": "shell",
+      "command": "bun",
+      "args": [
+        "run",
+        "check"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [
+        "$eslint-stylish",
+        "$tsc"
+      ]
+    },
+    {
+      "label": "bun build",
+      "type": "shell",
+      "command": "bun",
+      "args": [
+        "run",
+        "build"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    }
+  ]
+}

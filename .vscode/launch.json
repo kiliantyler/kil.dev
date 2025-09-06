@@ -1,0 +1,29 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Next.js: Debug (Launch dev)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "bun",
+      "cwd": "${workspaceFolder}",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "env": {
+        "NODE_OPTIONS": "--inspect=9229"
+      },
+      "console": "integratedTerminal",
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "started server on .*:(\\d+)",
+        "uriFormat": "http://localhost:%s"
+      },
+      "skipFiles": [
+        "<node_internals>/**",
+        "**/node_modules/**"
+      ]
+    },
+  ]
+}
