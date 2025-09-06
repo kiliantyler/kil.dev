@@ -25,6 +25,7 @@ export function ThemeToggle() {
 
   const [open, setOpen] = useState(false)
   const [openedViaKeyboard, setOpenedViaKeyboard] = useState(false)
+  const [tooltipHold, setTooltipHold] = useState(false)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const optionRefA = useRef<HTMLButtonElement | null>(null)
@@ -142,6 +143,16 @@ export function ThemeToggle() {
     }
   }, [open, openedViaKeyboard])
 
+  useEffect(() => {
+    if (open) {
+      setTooltipHold(false)
+      return
+    }
+    setTooltipHold(true)
+    const id = window.setTimeout(() => setTooltipHold(false), 150)
+    return () => window.clearTimeout(id)
+  }, [open])
+
   const handleTriggerKeyDown = useCallback(
     (e: ReactKeyboardEvent<HTMLButtonElement>) => {
       if (e.key === 'Enter' || e.key === ' ') {
@@ -227,7 +238,7 @@ export function ThemeToggle() {
           </Button>
         </TooltipTrigger>
         <TooltipContent side="bottom">
-          {open
+          {open || tooltipHold
             ? currentPreference === 'system'
               ? 'System'
               : currentPreference === 'dark'
