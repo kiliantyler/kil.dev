@@ -135,14 +135,17 @@
 
 /* Firefox */
 html {
+  --scrollbar-size: 12px;
+  --separator-thickness: 0.5px;
+  scrollbar-gutter: stable both-edges;
   scrollbar-width: thin;
   scrollbar-color: color-mix(in oklch, var(--primary) 65%, transparent) transparent;
 }
 
 /* WebKit/Chromium */
 html::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
 }
 
 html::-webkit-scrollbar-track {
