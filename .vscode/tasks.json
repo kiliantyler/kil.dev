@@ -24,7 +24,8 @@
       ],
       "options": {
         "cwd": "${workspaceFolder}"
-      }
+      },
+      "problemMatcher": []
     },
     {
       "label": "bun check",
