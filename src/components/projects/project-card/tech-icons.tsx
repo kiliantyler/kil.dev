@@ -9,7 +9,7 @@ interface ProjectTechIconsProps {
   tags: SkillName[]
 }
 
-function ProjectTechIcons({ tags }: ProjectTechIconsProps) {
+export function ProjectTechIcons({ tags }: ProjectTechIconsProps) {
   if (!tags?.length) return null
 
   return (
@@ -76,5 +76,3 @@ function ProjectTechIcons({ tags }: ProjectTechIconsProps) {
     </div>
   )
 }
-
-export { ProjectTechIcons }

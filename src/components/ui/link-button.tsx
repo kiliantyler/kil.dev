@@ -11,7 +11,7 @@ interface LinkButtonProps
   className?: string
 }
 
-function LinkButton({ href, external = false, children, className, ...props }: LinkButtonProps) {
+export function LinkButton({ href, external = false, children, className, ...props }: LinkButtonProps) {
   const linkProps = external ? { target: '_blank', rel: 'noopener noreferrer' } : {}
 
   return (
@@ -22,5 +22,3 @@ function LinkButton({ href, external = false, children, className, ...props }: L
     </Button>
   )
 }
-
-export { LinkButton }

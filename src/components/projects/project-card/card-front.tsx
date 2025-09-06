@@ -1,9 +1,9 @@
 'use client'
 
-import { ProjectFlipIndicator } from '@/components/projects/project-flip-indicator'
 import { Card } from '@/components/ui/card'
 import type { StaticImageData } from 'next/image'
 import Image from 'next/image'
+import { ProjectFlipIndicator } from './flip-indicator'
 
 interface ProjectCardFrontProps {
   imageSrc: StaticImageData
@@ -11,7 +11,7 @@ interface ProjectCardFrontProps {
   title: string
 }
 
-function ProjectCardFront({ imageSrc, imageAlt, title }: ProjectCardFrontProps) {
+export function ProjectCardFront({ imageSrc, imageAlt, title }: ProjectCardFrontProps) {
   return (
     <Card className="absolute inset-0 overflow-hidden p-0 gap-0 [backface-visibility:hidden] transition-shadow group-hover:shadow-md group-hover:ring-2 group-hover:ring-primary group-hover:ring-offset-2 group-hover:ring-offset-background">
       <Image
@@ -31,5 +31,3 @@ function ProjectCardFront({ imageSrc, imageAlt, title }: ProjectCardFrontProps) 
     </Card>
   )
 }
-
-export { ProjectCardFront }

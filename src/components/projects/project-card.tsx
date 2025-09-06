@@ -1,16 +1,16 @@
 'use client'
 
-import { ProjectCardBack } from '@/components/projects/project-card-back'
-import { ProjectCardFront } from '@/components/projects/project-card-front'
+import { captureProjectCardFlipped } from '@/hooks/posthog'
 import type { Project } from '@/types'
-import posthog from 'posthog-js'
 import { useCallback, useRef, useState } from 'react'
+import { ProjectCardBack } from './project-card/card-back'
+import { ProjectCardFront } from './project-card/card-front'
 
 interface ProjectCardProps {
   project: Project
 }
 
-function ProjectCard({ project }: ProjectCardProps) {
+export function ProjectCard({ project }: ProjectCardProps) {
   const [flipped, setFlipped] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const frameRequestRef = useRef<number | null>(null)
@@ -20,10 +20,7 @@ function ProjectCard({ project }: ProjectCardProps) {
   const handleToggle = useCallback(() => {
     setFlipped(prev => {
       const next = !prev
-      posthog.capture('project_card_flipped', {
-        projectId: project.id,
-        flippedTo: next ? 'back' : 'front',
-      })
+      captureProjectCardFlipped(project.id, next ? 'back' : 'front')
       return next
     })
   }, [project.id])
@@ -111,5 +108,3 @@ function ProjectCard({ project }: ProjectCardProps) {
     </div>
   )
 }
-
-export { ProjectCard }

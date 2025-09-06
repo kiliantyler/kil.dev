@@ -10,7 +10,7 @@ type LocationWithMapTooltipProps = {
   longitude?: number
 }
 
-function LocationWithMapTooltip({
+export function LocationWithMapTooltip({
   locationLabel = CONTENT.LOCATION,
   latitude = 41.4993,
   longitude = -81.6944,
@@ -52,5 +52,3 @@ function LocationWithMapTooltip({
     </TooltipProvider>
   )
 }
-
-export { LocationWithMapTooltip }

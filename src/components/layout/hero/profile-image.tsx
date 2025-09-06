@@ -1,11 +1,11 @@
 'use client'
 
+import { captureProfileImageClicked } from '@/hooks/posthog'
 import Confused from '@/images/cartoon-confused.jpg'
 import Grumpy from '@/images/cartoon-grumpy.jpg'
 import Headshot from '@/images/cartoon-headshot.jpg'
 import { CONTENT } from '@/lib/constants'
 import Image from 'next/image'
-import posthog from 'posthog-js'
 import { useCallback, useEffect, useState, type KeyboardEvent } from 'react'
 
 export function ProfileImage() {
@@ -29,11 +29,7 @@ export function ProfileImage() {
   const handleClick = useCallback(() => {
     if (isGrumpy) return
     setIsGrumpy(true)
-    posthog.capture('profile_image_clicked', {
-      interaction: 'click',
-      newState: 'grumpy',
-      wasConfused: useConfused,
-    })
+    captureProfileImageClicked('click', 'grumpy', useConfused)
   }, [isGrumpy, useConfused])
 
   const handlePointerLeave = useCallback(() => {

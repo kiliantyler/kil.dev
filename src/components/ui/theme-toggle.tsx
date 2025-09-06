@@ -2,7 +2,6 @@
 
 import { Moon, Sun } from 'lucide-react'
 import { useTheme } from 'next-themes'
-import posthog from 'posthog-js'
 import { useCallback } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -13,24 +12,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { captureThemeChanged } from '@/hooks/posthog'
 
 export function ThemeToggle() {
   const { setTheme } = useTheme()
 
-  const handleSetLight = useCallback(() => {
-    setTheme('light')
-    posthog.capture('theme_changed', { theme: 'light' })
-  }, [setTheme])
-
-  const handleSetDark = useCallback(() => {
-    setTheme('dark')
-    posthog.capture('theme_changed', { theme: 'dark' })
-  }, [setTheme])
-
-  const handleSetSystem = useCallback(() => {
-    setTheme('system')
-    posthog.capture('theme_changed', { theme: 'system' })
-  }, [setTheme])
+  const handleThemeChange = useCallback(
+    (theme: string) => {
+      setTheme(theme)
+      captureThemeChanged(theme)
+    },
+    [setTheme],
+  )
 
   return (
     <DropdownMenu>
@@ -45,11 +38,11 @@ export function ThemeToggle() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={handleSetLight}>Light</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleThemeChange('light')}>Light</DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleSetDark}>Dark</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleThemeChange('dark')}>Dark</DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleSetSystem}>System</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleThemeChange('system')}>System</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )
