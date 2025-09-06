@@ -50,3 +50,10 @@ export interface Project {
   imageSrc: StaticImageData
   imageAlt: string
 }
+
+export interface QuickFact {
+  label: string
+  value: string | React.ReactNode
+  href?: string
+  note?: string
+}

@@ -34,3 +34,12 @@ export const LIGHT_GRID = {
   GLOW_NEAR_PX: 5,
   GLOW_FAR_PX: 10,
 } as const
+
+export const QUICK_FACTS = [
+  { label: 'Mode', value: 'Dark mode', note: '(always)' },
+  { label: 'Shell', value: 'fish', href: 'https://fishshell.com' },
+  { label: 'Terminal', value: 'Ghostty', href: 'https://ghostty.app' },
+  { label: 'Editor', value: 'Cursor', href: 'https://cursor.com' },
+  { label: 'OS', value: 'macOS', href: 'https://www.apple.com/macos', note: '(Windows for gaming)' },
+  { label: 'Pets', value: '3 dogs, 3 cats', note: '(Pictured below)' },
+] satisfies { label: string; value: string; href?: string; note?: string }[]

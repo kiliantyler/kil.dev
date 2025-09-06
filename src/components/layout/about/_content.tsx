@@ -14,7 +14,6 @@ export function AboutContent() {
           <main className="flex flex-1 items-center px-10 py-20 md:px-20 lg:px-40">
             <div className="w-full">
               <AboutMeContent />
-
               <PetsContent />
             </div>
           </main>
