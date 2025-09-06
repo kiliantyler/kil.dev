@@ -27,7 +27,9 @@ export function HomeLogo() {
       onBlur={handleBlur}>
       <div>
         <h2 className="relative text-xl leading-tight font-bold text-foreground whitespace-nowrap">
-          <span aria-hidden="true">{'{ '}</span>
+          <span aria-hidden="true" className="inline-block -translate-y-[0.125rem]">
+            {'{ '}
+          </span>
           <span className="inline-block align-top">
             <span className="relative inline-block align-top">
               <span aria-hidden="true" className="invisible">
@@ -71,7 +73,9 @@ export function HomeLogo() {
               <span>Ops</span>
             </span>
           </span>
-          <span aria-hidden="true">{' }'}</span>
+          <span aria-hidden="true" className="inline-block -translate-y-[0.125rem]">
+            {' }'}
+          </span>
         </h2>
       </div>
     </Link>
