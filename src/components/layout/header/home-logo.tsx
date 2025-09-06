@@ -67,44 +67,76 @@ export function HomeLogo() {
         onMouseLeave={handleMouseLeave}
         onFocus={handleFocus}
         onBlur={handleBlur}>
-        <h2 className="relative text-xl leading-tight font-bold text-foreground">
-          {/* Hidden measuring spans for width calculations */}
+        <h2 className="relative text-xl leading-tight font-bold text-foreground whitespace-nowrap">
+          {/* hidden measuring spans */}
           <span
-            ref={shortRef}
+            ref={shortPrefixRef}
             aria-hidden="true"
             className="absolute opacity-0 pointer-events-none select-none whitespace-nowrap">
-            {shortContent}
+            Kil
           </span>
           <span
-            ref={longRef}
+            ref={longPrefixRef}
             aria-hidden="true"
             className="absolute opacity-0 pointer-events-none select-none whitespace-nowrap">
-            {longContent}
+            Kilian
           </span>
+          <span
+            ref={shortSuffixRef}
+            aria-hidden="true"
+            className="absolute opacity-0 pointer-events-none select-none whitespace-nowrap">
+            Dev
+          </span>
+          <span
+            ref={longSuffixRef}
+            aria-hidden="true"
+            className="absolute opacity-0 pointer-events-none select-none whitespace-nowrap">
+            DevOps
+          </span>
+
           <span aria-hidden="true">{'{ '}</span>
-          <animated.span
-            style={{ width: styles.width }}
-            className="relative inline-block align-top overflow-hidden whitespace-nowrap">
+
+          {/* Prefix: kil -> Kilian */}
+          <animated.span style={{ width: springs.prefix }} className="relative inline-block align-top overflow-hidden">
             <span aria-hidden="true" className="invisible">
-              {longContent}
+              Kilian
             </span>
             <span aria-hidden="true" className="absolute inset-0">
               <animated.span
                 className="absolute inset-0"
-                style={{
-                  clipPath: styles.width.to(w => `inset(0 ${Math.max(longWidth - w, 0)}px 0 0)`),
-                }}>
-                {longContent}
+                style={{ clipPath: springs.prefix.to(w => `inset(0 ${Math.max(longPrefixWidth - w, 0)}px 0 0)`) }}>
+                Kilian
               </animated.span>
               <animated.span
-                className="absolute inset-0"
-                style={{
-                  clipPath: styles.width.to(w => `inset(0 0 0 ${Math.max(w - shortWidth, 0)}px)`),
-                }}>
-                {shortContent}
+                className="absolute inset-0 z-10"
+                style={{ clipPath: springs.prefix.to(w => `inset(0 0 0 ${Math.max(w - shortPrefixWidth, 0)}px)`) }}>
+                Kil
               </animated.span>
             </span>
           </animated.span>
+
+          {/* Dot: moves naturally as prefix grows */}
+          <span>.</span>
+
+          {/* Suffix: Dev -> DevOps */}
+          <animated.span style={{ width: springs.suffix }} className="relative inline-block align-top overflow-hidden">
+            <span aria-hidden="true" className="invisible">
+              DevOps
+            </span>
+            <span aria-hidden="true" className="absolute inset-0">
+              <animated.span
+                className="absolute inset-0"
+                style={{ clipPath: springs.suffix.to(w => `inset(0 ${Math.max(longSuffixWidth - w, 0)}px 0 0)`) }}>
+                DevOps
+              </animated.span>
+              <animated.span
+                className="absolute inset-0 z-10"
+                style={{ clipPath: springs.suffix.to(w => `inset(0 0 0 ${Math.max(w - shortSuffixWidth, 0)}px)`) }}>
+                Dev
+              </animated.span>
+            </span>
+          </animated.span>
+
           <span aria-hidden="true">{' }'}</span>
         </h2>
       </div>
