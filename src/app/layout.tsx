@@ -1,4 +1,4 @@
-import { Providers } from '@/app/providers'
+import { Providers } from '@/components/providers/providers'
 import '@/styles/globals.css'
 
 import { type Metadata } from 'next'

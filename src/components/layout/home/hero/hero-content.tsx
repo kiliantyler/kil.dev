@@ -1,6 +1,6 @@
 import { LinkButton } from '@/components/ui/link-button'
+import { MapTooltip } from '@/components/ui/map-tooltip'
 import { CONTENT } from '@/lib/constants'
-import { MapTooltip } from './map-tooltip'
 
 export function HeroContent() {
   return (
