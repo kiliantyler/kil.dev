@@ -31,6 +31,11 @@ export function ThemeToggle() {
   const optionRefA = useRef<HTMLButtonElement | null>(null)
   const optionRefB = useRef<HTMLButtonElement | null>(null)
 
+  const [isMounted, setIsMounted] = useState(false)
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
   const injectCircleBlurTransitionStyles = useCallback((originXPercent: number, originYPercent: number) => {
     const styleId = `theme-transition-${Date.now()}`
     const style = document.createElement('style')
@@ -250,6 +255,7 @@ export function ThemeToggle() {
 
       <div
         id="theme-options"
+        suppressHydrationWarning
         role="menu"
         aria-label="Select theme"
         aria-hidden={!open}
@@ -261,30 +267,32 @@ export function ThemeToggle() {
           'md:left-auto md:top-1/2 md:right-full md:-translate-y-1/2 md:translate-x-0 md:mt-0 md:mr-2 md:flex-row',
           open ? 'pointer-events-auto' : 'pointer-events-none',
         )}>
-        {optionsToShow.map((opt, idx) => (
-          <Tooltip key={opt.value}>
-            <TooltipTrigger asChild>
-              <Button
-                ref={idx === 0 ? optionRefA : optionRefB}
-                onClick={e => handleThemeChange(opt.value, e)}
-                role="menuitem"
-                aria-label={opt.label}
-                title={opt.label}
-                variant="ghost"
-                size="icon"
-                className={cn(
-                  'transition-all duration-200 ease-out hover:bg-accent/70',
-                  open
-                    ? 'opacity-100 translate-y-0 md:translate-x-0 scale-100'
-                    : 'opacity-0 -translate-y-2 md:translate-x-2 md:translate-y-0 scale-95',
-                )}
-                style={{ transitionDelay: `${idx * 60}ms` }}>
-                <opt.Icon className="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>{opt.label}</TooltipContent>
-          </Tooltip>
-        ))}
+        {isMounted
+          ? optionsToShow.map((opt, idx) => (
+              <Tooltip key={opt.value}>
+                <TooltipTrigger asChild>
+                  <Button
+                    ref={idx === 0 ? optionRefA : optionRefB}
+                    onClick={e => handleThemeChange(opt.value, e)}
+                    role="menuitem"
+                    aria-label={opt.label}
+                    title={opt.label}
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      'transition-all duration-200 ease-out hover:bg-accent/70',
+                      open
+                        ? 'opacity-100 translate-y-0 md:translate-x-0 scale-100'
+                        : 'opacity-0 -translate-y-2 md:translate-x-2 md:translate-y-0 scale-95',
+                    )}
+                    style={{ transitionDelay: `${idx * 60}ms` }}>
+                    <opt.Icon className="size-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{opt.label}</TooltipContent>
+              </Tooltip>
+            ))
+          : null}
       </div>
     </div>
   )
