@@ -104,7 +104,7 @@ export function NavLava() {
         <span
           aria-hidden="true"
           className={cn(
-            'pointer-events-none absolute top-1 bottom-1 z-0 rounded-md bg-accent/35 blur-[1.5px] shadow-sm will-change-[transform,width]',
+            'pointer-events-none absolute top-1 bottom-1 z-0 rounded-md bg-primary/40 blur-[1.5px] shadow-sm will-change-[transform,width]',
             indicator.animate && 'transition-[transform,width,opacity] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]',
             indicator.visible ? 'opacity-100' : 'opacity-0',
           )}
@@ -117,7 +117,7 @@ export function NavLava() {
         <span
           aria-hidden="true"
           className={cn(
-            'pointer-events-none absolute top-1 bottom-1 z-10 rounded-md bg-accent/60 backdrop-blur-sm shadow-sm will-change-[transform,width]',
+            'pointer-events-none absolute top-1 bottom-1 z-10 rounded-md bg-primary backdrop-blur-sm shadow-sm will-change-[transform,width]',
             indicator.animate &&
               'transition-[transform,width,opacity] duration-450 ease-[cubic-bezier(0.2,0.8,0.16,1)]',
             indicator.visible ? 'opacity-100' : 'opacity-0',
@@ -159,11 +159,11 @@ export function NavLava() {
                 <>
                   <span
                     aria-hidden="true"
-                    className="absolute top-0 bottom-0 left-1 right-1 z-0 rounded-md bg-accent/35 blur-[1.5px] shadow-sm"
+                    className="absolute top-0 bottom-0 left-1 right-1 z-0 rounded-md bg-primary/40 blur-[1.5px] shadow-sm"
                   />
                   <span
                     aria-hidden="true"
-                    className="absolute top-0 bottom-0 left-1 right-1 z-0 rounded-md bg-accent/60 backdrop-blur-sm shadow-sm"
+                    className="absolute top-0 bottom-0 left-1 right-1 z-0 rounded-md bg-primary backdrop-blur-sm shadow-sm"
                   />
                 </>
               )}
