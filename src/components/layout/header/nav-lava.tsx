@@ -84,6 +84,21 @@ export function NavLava() {
     hideIndicator()
   }, [activeIndex, hideIndicator, moveIndicatorTo])
 
+  const handleBlurContainer = React.useCallback(
+    (event: React.FocusEvent<HTMLDivElement>) => {
+      const container = containerRef.current
+      const next = event.relatedTarget as Node | null
+      if (!container || (next && container.contains(next))) return
+      setHoveredKey(null)
+      if (activeIndex >= 0 && NAVIGATION[activeIndex]) {
+        moveIndicatorTo(NAVIGATION[activeIndex].href, true)
+        return
+      }
+      hideIndicator()
+    },
+    [activeIndex, moveIndicatorTo, hideIndicator],
+  )
+
   const handleKeyDown = React.useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return
     event.preventDefault()
@@ -104,6 +119,7 @@ export function NavLava() {
         ref={containerRef}
         className="relative flex items-center gap-1 rounded-lg p-1"
         onMouseLeave={handleMouseLeaveContainer}
+        onBlur={handleBlurContainer}
         onKeyDown={handleKeyDown}
         role="menubar"
         aria-orientation="horizontal">
