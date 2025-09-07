@@ -34,11 +34,16 @@ export function PetCardBack({ pet }: PetCardBackProps) {
       <div aria-hidden className="absolute inset-0">
         <div className="relative h-full w-full">
           <Image src={pet.image} alt="" fill priority={false} className="object-cover scale-110 scale-x-[-1] blur-xl" />
-          <div className="absolute inset-0 bg-background/40" />
+          <div className="absolute inset-0 bg-white/60 dark:bg-black/50 backdrop-blur-md" />
         </div>
       </div>
 
       <div className="relative z-10 flex h-full flex-col">
+        <h3
+          className="text-2xl md:text-3xl font-extrabold tracking-tight card-back-shadow mb-2"
+          aria-label={`Pet name: ${pet.name}`}>
+          {pet.name}
+        </h3>
         <div className="mb-3 text-sm card-back-shadow">
           <dl className="grid grid-cols-[auto_1fr] items-baseline gap-x-3 gap-y-1">
             <dt className="text-primary font-bold">Breed:</dt>

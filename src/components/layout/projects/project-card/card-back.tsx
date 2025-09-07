@@ -29,7 +29,7 @@ export function ProjectCardBack({ project }: ProjectCardBackProps) {
             priority={false}
             className="object-cover scale-110 scale-x-[-1] blur-xl"
           />
-          <div className="absolute inset-0 bg-background/40" />
+          <div className="absolute inset-0 bg-white/60 dark:bg-black/50 backdrop-blur-md" />
         </div>
       </div>
 
