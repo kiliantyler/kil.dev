@@ -45,3 +45,10 @@ export function captureProfileImageClicked(interaction: string, newState: string
 export function captureDarkModeEasterEgg() {
   posthog.capture('dark_mode_easter_egg')
 }
+
+export function capturePetCardFlipped(petId: string, flippedTo: string) {
+  posthog.capture('pet_card_flipped', {
+    petId: petId,
+    flippedTo: flippedTo,
+  })
+}
