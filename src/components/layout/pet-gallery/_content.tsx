@@ -1,5 +1,6 @@
 import { SectionLabel } from '@/components/ui/section-label'
 import { cn } from '@/lib/utils'
+import { list } from '@vercel/blob'
 import { promises as fs } from 'fs'
 import sizeOf from 'image-size'
 import Image from 'next/image'
@@ -15,7 +16,51 @@ type GalleryImage = {
 
 const allowedExtensions = new Set(['jpg', 'jpeg', 'png', 'webp', 'avif', 'gif'])
 
-async function getPetGalleryImages(): Promise<GalleryImage[]> {
+async function getPetGalleryImagesFromBlob(): Promise<GalleryImage[] | null> {
+  try {
+    // Try to find the pre-generated manifest first for accurate dimensions
+    const { blobs: manifestBlobs } = await list({
+      prefix: 'pet-gallery/manifest.json',
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+    })
+
+    const manifestUrl = manifestBlobs[0]?.url
+    if (manifestUrl) {
+      const res = await fetch(manifestUrl, { cache: 'no-store' })
+      if (!res.ok) return null
+      const data = (await res.json()) as { images: GalleryImage[] }
+      if (Array.isArray(data?.images) && data.images.length > 0) return data.images
+    }
+
+    // If no manifest, list blobs under the pet-gallery/ prefix
+    const { blobs } = await list({ prefix: 'pet-gallery/', token: process.env.BLOB_READ_WRITE_TOKEN })
+    if (!blobs || blobs.length === 0) return null
+
+    const images: GalleryImage[] = blobs
+      .filter(b => {
+        const name = b.pathname.split('/').pop() ?? ''
+        const ext = name.split('.').pop()?.toLowerCase()
+        return Boolean(ext && allowedExtensions.has(ext))
+      })
+      .sort((a, b) => (a.pathname < b.pathname ? -1 : 1))
+      .map(b => {
+        const name = b.pathname.split('/').pop() ?? ''
+        const alt = name
+          .replace(/\.[^.]+$/, '')
+          .replace(/[-_]+/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+        // Fallback dimensions if manifest is not available
+        return { fileName: name, url: b.url, alt, width: 1200, height: 800 }
+      })
+
+    return images
+  } catch {
+    return null
+  }
+}
+
+async function getPetGalleryImagesFromLocal(): Promise<GalleryImage[]> {
   const directoryPath = path.join(process.cwd(), 'src', 'images', 'pet-gallery')
 
   let entries: string[]
@@ -54,7 +99,8 @@ async function getPetGalleryImages(): Promise<GalleryImage[]> {
 }
 
 export async function PetGalleryContent() {
-  const images = await getPetGalleryImages()
+  const imagesFromBlob = await getPetGalleryImagesFromBlob()
+  const images = imagesFromBlob ?? (await getPetGalleryImagesFromLocal())
 
   return (
     <div className="px-10 py-16 md:px-20 lg:px-40">

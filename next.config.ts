@@ -7,6 +7,13 @@ const config: NextConfig = {
     minimumCacheTTL: 31536000, // 1 year
     formats: ['image/avif', 'image/webp'],
     dangerouslyAllowSVG: true,
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'fjuww9floqc2ihpu.public.blob.vercel-storage.com',
+        pathname: '/**',
+      },
+    ],
   },
   async rewrites() {
     return [
