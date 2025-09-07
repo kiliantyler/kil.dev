@@ -1,30 +1,18 @@
 'use client'
 
 import { captureProfileImageClicked } from '@/hooks/posthog'
+import { useHash } from '@/hooks/use-hash'
 import Confused from '@/images/cartoon-confused.jpg'
 import Grumpy from '@/images/cartoon-grumpy.jpg'
 import Headshot from '@/images/cartoon-headshot.jpg'
 import { CONTENT } from '@/lib/constants'
 import Image from 'next/image'
-import { useCallback, useEffect, useState, type KeyboardEvent } from 'react'
+import { useCallback, useState, type KeyboardEvent } from 'react'
 
 export function ProfileImage() {
-  const [useConfused, setUseConfused] = useState(false)
+  const hash = useHash()
+  const useConfused = hash === '#YouWereAlreadyHere'
   const [isGrumpy, setIsGrumpy] = useState(false)
-
-  const updateFromHash = useCallback(() => {
-    if (typeof window === 'undefined') return
-    const isConfused = window.location.hash === '#YouWereAlreadyHere'
-    setUseConfused(isConfused)
-  }, [])
-
-  useEffect(() => {
-    updateFromHash()
-    window.addEventListener('hashchange', updateFromHash, { passive: true } as EventListenerOptions)
-    return () => {
-      window.removeEventListener('hashchange', updateFromHash as EventListener)
-    }
-  }, [updateFromHash])
 
   const handleClick = useCallback(() => {
     if (isGrumpy) return
