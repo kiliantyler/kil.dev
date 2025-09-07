@@ -1,3 +1,6 @@
+'use client'
+
+import { captureCompanyLogoClicked } from '@/hooks/posthog'
 import type { WorkExperience } from '@/lib/experience'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -23,7 +26,8 @@ export function CompanyMarker({ item }: { item: WorkExperience }) {
           target="_blank"
           rel="noopener noreferrer"
           aria-label={`Open ${item.company} homepage`}
-          className="absolute -left-[14px] top-5 block rounded-md overflow-hidden ring-2 ring-background focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary">
+          className="absolute -left-[14px] top-5 block rounded-md overflow-hidden ring-2 ring-background focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
+          onClick={() => captureCompanyLogoClicked(item.id, item.companyUrl!)}>
           {logo}
         </Link>
       )

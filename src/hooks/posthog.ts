@@ -65,3 +65,10 @@ export function captureWorkHighlightsToggled(companyId: string, expanded: boolea
     expanded: expanded,
   })
 }
+
+export function captureCompanyLogoClicked(companyId: string, companyUrl: string) {
+  posthog.capture('company_logo_clicked', {
+    companyId: companyId,
+    href: companyUrl,
+  })
+}
