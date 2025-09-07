@@ -25,6 +25,10 @@ export function ProjectCard({ project }: ProjectCardProps) {
       onFlipChange={handleFlipChange}
       front={<ProjectCardFront imageSrc={project.imageSrc} imageAlt={project.imageAlt} title={project.title} />}
       back={<ProjectCardBack project={project} />}
+      flipLabelFrontDesktop={'Learn more'}
+      flipLabelFrontMobile={'Tap to learn more'}
+      flipLabelBackDesktop={'Go back'}
+      flipLabelBackMobile={'Tap to go back'}
     />
   )
 }
