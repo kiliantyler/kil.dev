@@ -1,4 +1,4 @@
-import { PetCard } from '@/components/layout/about/pets/pet-card'
+import { PetCard } from '@/components/layout/about/pets/pet-card/_content'
 import { SectionLabel } from '@/components/ui/section-label'
 import { PETS } from '@/lib/pets'
 

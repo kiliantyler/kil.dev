@@ -17,4 +17,4 @@ export const PETS: Pet[] = [
 //tali birthday 2015-9-24
 // Lilith & Azazel birthday 2021-04-13
 // Gozer birthday 2016-04-15
-// Milim birthday 20
+// Milim birthday 2024-03-09
