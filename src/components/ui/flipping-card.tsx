@@ -52,11 +52,34 @@ export function FlippingCard({ front, back, className, ariaLabel, onFlipChange }
     const clampedX = Math.max(-1, Math.min(1, percentX))
     const clampedY = Math.max(-1, Math.min(1, percentY))
 
-    const maxTilt = 10
+    const maxTilt = 12
     const rotateY = clampedX * maxTilt
     const rotateX = -clampedY * maxTilt
 
     tiltEl.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`
+
+    // Dynamic raised shadow: move shadow with tilt direction
+    const magnitudeNear = 2
+    const magnitudeFarScale = 1.25
+    const blurNear = 0.9
+    const blurFar = 1.8
+    const highlightBlur = 0.7
+
+    const shadowX = clampedX * magnitudeNear
+    const shadowY = clampedY * magnitudeNear
+
+    // Theme-aware alphas
+    const isDark = document.documentElement.classList.contains('dark')
+    const nearAlpha = isDark ? 0.6 : 0.28
+    const farAlpha = isDark ? 0.3 : 0.15
+    const highlightAlpha = isDark ? 0.1 : 0.4
+
+    const shadowFilter =
+      `drop-shadow(${shadowX}px ${shadowY}px ${blurNear}px rgba(0,0,0,${nearAlpha})) ` +
+      `drop-shadow(${shadowX * magnitudeFarScale}px ${shadowY * magnitudeFarScale}px ${blurFar}px rgba(0,0,0,${farAlpha})) ` +
+      `drop-shadow(${-shadowX}px ${-shadowY}px ${highlightBlur}px rgba(255,255,255,${highlightAlpha}))`
+
+    tiltEl.style.setProperty('--card-back-shadow', shadowFilter)
   }, [])
 
   const handlePointerMove = useCallback(
@@ -83,6 +106,7 @@ export function FlippingCard({ front, back, className, ariaLabel, onFlipChange }
       frameRequestRef.current = null
     }
     tiltEl.style.transform = ''
+    tiltEl.style.removeProperty('--card-back-shadow')
   }, [])
 
   return (
