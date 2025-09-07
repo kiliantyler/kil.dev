@@ -155,6 +155,11 @@ html {
   scrollbar-color: color-mix(in oklch, var(--primary) 65%, transparent) var(--background);
 }
 
+/* Ensure dark mode updates the UA color-scheme to restyle scrollbars/gutter */
+html.dark {
+  color-scheme: dark;
+}
+
 /* WebKit/Chromium */
 html::-webkit-scrollbar {
   width: var(--scrollbar-size);

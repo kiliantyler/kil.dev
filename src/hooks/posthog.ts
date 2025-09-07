@@ -41,3 +41,7 @@ export function captureProfileImageClicked(interaction: string, newState: string
     wasConfused: wasConfused,
   })
 }
+
+export function captureDarkModeEasterEgg() {
+  posthog.capture('dark_mode_easter_egg')
+}
