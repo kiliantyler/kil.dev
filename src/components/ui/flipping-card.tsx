@@ -7,12 +7,26 @@ import { FlipIndicator } from './flip-indicator'
 interface FlippingCardProps {
   front: React.ReactNode
   back: React.ReactNode
+  flipLabelFrontDesktop?: string
+  flipLabelFrontMobile?: string
+  flipLabelBackDesktop?: string
+  flipLabelBackMobile?: string
   className?: string
   ariaLabel?: string
   onFlipChange?: (flipped: boolean) => void
 }
 
-export function FlippingCard({ front, back, className, ariaLabel, onFlipChange }: FlippingCardProps) {
+export function FlippingCard({
+  front,
+  back,
+  className,
+  ariaLabel,
+  onFlipChange,
+  flipLabelFrontDesktop,
+  flipLabelFrontMobile,
+  flipLabelBackDesktop,
+  flipLabelBackMobile,
+}: FlippingCardProps) {
   const [flipped, setFlipped] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const frameRequestRef = useRef<number | null>(null)
@@ -135,12 +149,12 @@ export function FlippingCard({ front, back, className, ariaLabel, onFlipChange }
           )}>
           <div className="absolute inset-0 rotate-y-0 [backface-visibility:hidden]">
             {front}
-            <FlipIndicator />
+            <FlipIndicator labelDesktop={flipLabelFrontDesktop} labelMobile={flipLabelFrontMobile} />
           </div>
 
           <div className="absolute inset-0 rotate-y-180 [backface-visibility:hidden]">
             {back}
-            <FlipIndicator labelDesktop="Flip back" labelMobile="Tap to flip back" />
+            <FlipIndicator labelDesktop={flipLabelBackDesktop} labelMobile={flipLabelBackMobile} />
           </div>
         </div>
       </div>
