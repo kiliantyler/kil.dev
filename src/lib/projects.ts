@@ -1,8 +1,8 @@
-import dotfilesImage from '@/images/projects/dotfiles.jpg'
-import kilDevImage from '@/images/projects/kil-dev.jpg'
-import kubernetesImage from '@/images/projects/kubernetes.jpg'
-import questnestImage from '@/images/projects/questnest.jpg'
-import tiaxslaughterImage from '@/images/projects/tiaxslaughter.jpg'
+import dotfilesImage from '@/images/projects/dotfiles.webp'
+import kilDevImage from '@/images/projects/kil-dev.webp'
+import kubernetesImage from '@/images/projects/kubernetes.webp'
+import questnestImage from '@/images/projects/questnest.webp'
+import tiaxslaughterImage from '@/images/projects/tiaxslaughter.webp'
 import type { Project } from '@/types'
 
 export const projects: Project[] = [

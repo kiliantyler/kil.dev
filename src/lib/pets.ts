@@ -1,9 +1,9 @@
-import azazelPhoto from '@/images/pets/azazel.jpg'
-import gozerPhoto from '@/images/pets/gozer.jpg'
-import lilithPhoto from '@/images/pets/lilith.jpg'
-import luxPhoto from '@/images/pets/lux.jpg'
-import milimPhoto from '@/images/pets/milim.jpg'
-import taliPhoto from '@/images/pets/tali.jpg'
+import azazelPhoto from '@/images/pets/azazel.webp'
+import gozerPhoto from '@/images/pets/gozer.webp'
+import lilithPhoto from '@/images/pets/lilith.webp'
+import luxPhoto from '@/images/pets/lux.webp'
+import milimPhoto from '@/images/pets/milim.webp'
+import taliPhoto from '@/images/pets/tali.webp'
 import type { Pet } from '@/types'
 
 export const PETS: Pet[] = [
