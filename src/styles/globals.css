@@ -83,6 +83,9 @@
   --sidebar-accent-foreground: oklch(0.26 0.04 255);
   --sidebar-border: oklch(0.9 0.01 255);
   --sidebar-ring: oklch(0.6 0.16 239);
+  /* Raised effect: dark shadow bottom-right + light highlight top-left */
+  --card-back-shadow: drop-shadow(0.5px 1px 1px rgba(0, 0, 0, 0.35))
+    drop-shadow(-0.5px -0.5px 1px rgba(255, 255, 255, 0.55));
 }
 
 .dark {
@@ -120,6 +123,9 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
   color-scheme: dark;
+  /* Raised effect for dark theme */
+  --card-back-shadow: drop-shadow(0.6px 1px 1px rgba(0, 0, 0, 0.8))
+    drop-shadow(-0.5px -0.5px 1px rgba(255, 255, 255, 0.22));
 }
 
 /* Custom utilities */
@@ -130,6 +136,10 @@
 @utility backdrop-blur-2xs {
   -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
+}
+
+@utility card-back-shadow {
+  filter: var(--card-back-shadow);
 }
 
 /* Scrollbar */

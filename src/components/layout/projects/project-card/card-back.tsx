@@ -34,12 +34,12 @@ export function ProjectCardBack({ project }: ProjectCardBackProps) {
       </div>
 
       <div className="relative z-10 flex h-full flex-col">
-        <div className="mb-3 text-sm text-muted-foreground font-bold drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">
+        <div className="mb-3 text-sm text-muted-foreground font-bold card-back-shadow">
           {project.year ? `${project.year} • ` : ''}
           {project.status === 'wip' ? 'Work in progress' : project.status === 'archived' ? 'Archived' : 'Live'}
         </div>
-        <p className="text-sm leading-relaxed drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">{project.description}</p>
-        <div className="mt-auto flex items-center justify-between pt-6 drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">
+        <p className="text-sm leading-relaxed card-back-shadow">{project.description}</p>
+        <div className="mt-auto flex items-center justify-between pt-6 card-back-shadow">
           {project.tags?.length ? <ProjectTechIcons skills={resolveSkills(project.tags)} /> : <span />}
           {hasLinks ? (
             <div className="flex justify-end gap-2">

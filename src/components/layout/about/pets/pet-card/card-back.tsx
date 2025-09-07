@@ -39,7 +39,7 @@ export function PetCardBack({ pet }: PetCardBackProps) {
       </div>
 
       <div className="relative z-10 flex h-full flex-col">
-        <div className="mb-3 text-sm drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">
+        <div className="mb-3 text-sm card-back-shadow">
           <dl className="grid grid-cols-[auto_1fr] items-baseline gap-x-3 gap-y-1">
             <dt className="text-primary font-bold">Breed:</dt>
             <dd className="font-medium">{pet.breed}</dd>
@@ -52,7 +52,7 @@ export function PetCardBack({ pet }: PetCardBackProps) {
             </dd>
           </dl>
         </div>
-        <p className="text-sm leading-relaxed drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">{pet.description}</p>
+        <p className="text-sm leading-relaxed card-back-shadow">{pet.description}</p>
         <div className="mt-auto pt-6">
           <span aria-hidden className="opacity-0">
             _
