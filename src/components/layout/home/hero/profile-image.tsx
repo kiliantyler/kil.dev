@@ -2,9 +2,9 @@
 
 import { captureProfileImageClicked } from '@/hooks/posthog'
 import { useHash } from '@/hooks/use-hash'
-import Confused from '@/images/cartoon-confused.jpg'
-import Grumpy from '@/images/cartoon-grumpy.jpg'
-import Headshot from '@/images/cartoon-headshot.jpg'
+import Confused from '@/images/headshot/cartoon-confused.jpg'
+import Grumpy from '@/images/headshot/cartoon-grumpy.jpg'
+import Headshot from '@/images/headshot/cartoon-headshot.jpg'
 import { CONTENT } from '@/lib/constants'
 import Image from 'next/image'
 import { useCallback, useState, type KeyboardEvent } from 'react'
