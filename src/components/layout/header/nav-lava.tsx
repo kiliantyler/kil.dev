@@ -35,6 +35,7 @@ export function NavLava() {
       animate: false,
     },
   )
+  const [hoveredKey, setHoveredKey] = React.useState<string | null>(null)
 
   const activeIndex = React.useMemo(() => getActiveIndex(NAVIGATION, pathname ?? ''), [pathname])
 
