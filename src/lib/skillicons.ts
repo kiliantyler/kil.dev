@@ -8,6 +8,11 @@ export type SkillIconRef =
       format?: DashboardIconFormat
     }
 
+export type SkillInfo = {
+  icon: SkillIconRef
+  url: string
+}
+
 export const SKILLS = {
   Next: { icon: 'nextjs', url: 'https://nextjs.org' },
   Tailwind: { icon: 'tailwind', url: 'https://tailwindcss.com' },
@@ -24,7 +29,7 @@ export const SKILLS = {
   FluxCD: { icon: { source: 'dashboardicons', name: 'flux-cd', format: 'webp' }, url: 'https://fluxcd.io' },
   Talos: { icon: { source: 'dashboardicons', name: 'talos', format: 'webp' }, url: 'https://talos.dev' },
   '1Password': { icon: { source: 'dashboardicons', name: '1password', format: 'webp' }, url: 'https://1password.com' },
-} as const
+} as const satisfies Record<string, SkillInfo>
 
 export type SkillName = keyof typeof SKILLS
 export type SkillIconKey = (typeof SKILLS)[SkillName]['icon']
@@ -42,4 +47,11 @@ export function getSkillIconUrl(icon: SkillIconRef): string {
 
   // Fallback to syvixor if an unexpected value slips through
   return `/api/image/skills/`
+}
+
+// Fully resolved skill entry with its name and info
+export type SkillEntry = { name: SkillName } & SkillInfo
+
+export function resolveSkills(names: SkillName[]): SkillEntry[] {
+  return names.map(name => ({ name, ...SKILLS[name] }))
 }
