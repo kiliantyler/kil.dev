@@ -1,5 +1,5 @@
-import { ModeToggleLink } from '@/components/ui/mode-toggle-link'
 import Link from 'next/link'
+import { ModeToggleLink, ModeToggleNote } from './mode-toggle-link'
 
 export function QuickFact({ fact }: { fact: { label: string; value: string; href?: string; note?: string } }) {
   return (
@@ -8,8 +8,7 @@ export function QuickFact({ fact }: { fact: { label: string; value: string; href
       <dd className="text-primary font-medium">
         {fact.label === 'Mode' ? (
           <>
-            <ModeToggleLink />{' '}
-            {fact.note ? <span className="text-muted-foreground text-xs font-normal">{fact.note}</span> : null}
+            <ModeToggleLink /> <ModeToggleNote />
           </>
         ) : typeof fact.value === 'string' && fact.href ? (
           <>

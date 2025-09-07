@@ -7,6 +7,16 @@ import { Button } from '@/components/ui/button'
 import { useThemeTransition } from '@/components/ui/theme-toggle'
 import { captureDarkModeEasterEgg } from '@/hooks/posthog'
 
+export function ModeToggleNote() {
+  const { resolvedTheme } = useTheme()
+
+  return (
+    <span className="text-muted-foreground text-xs font-normal">
+      {resolvedTheme === 'dark' ? '(good choice)' : '(why are you in light mode?)'}
+    </span>
+  )
+}
+
 export function ModeToggleLink() {
   const { resolvedTheme, setTheme } = useTheme()
   const { startTransition } = useThemeTransition()

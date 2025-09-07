@@ -36,7 +36,7 @@ export const LIGHT_GRID = {
 } as const
 
 export const QUICK_FACTS = [
-  { label: 'Mode', value: 'Dark mode', note: '(always)' },
+  { label: 'Mode', value: 'Dark mode' },
   { label: 'Shell', value: 'fish', href: 'https://fishshell.com' },
   { label: 'Terminal', value: 'Ghostty', href: 'https://ghostty.app' },
   { label: 'Editor', value: 'Cursor', href: 'https://cursor.com' },
