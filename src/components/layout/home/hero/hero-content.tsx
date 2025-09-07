@@ -12,7 +12,7 @@ export function HeroContent() {
       </div>
       <div className="flex flex-wrap justify-center gap-4 lg:flex-nowrap lg:justify-start">
         <LinkButton
-          href="#"
+          href="/experience"
           className="bg-primary hover:bg-primary/90 h-12 min-w-[140px] gap-2 rounded-md px-6 text-base font-bold text-primary-foreground shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
           aria-label="View Experience">
           <span className="md:hidden">Experience</span>

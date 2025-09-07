@@ -2,24 +2,12 @@
 
 import { Card } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { calculateAgeYears, formatDateFull } from '@/lib/utils'
 import type { Pet } from '@/types'
 import Image from 'next/image'
 
 function formatBirthday(dateString: string) {
-  const date = new Date(dateString)
-  if (isNaN(date.getTime())) return dateString
-  return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
-}
-
-function calculateAgeYears(dateString: string) {
-  const birth = new Date(dateString)
-  if (isNaN(birth.getTime())) return null
-  const now = new Date()
-  let years = now.getFullYear() - birth.getFullYear()
-  const beforeBirthdayThisYear =
-    now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())
-  if (beforeBirthdayThisYear) years--
-  return Math.max(0, years)
+  return formatDateFull(dateString)
 }
 
 interface PetCardBackProps {
