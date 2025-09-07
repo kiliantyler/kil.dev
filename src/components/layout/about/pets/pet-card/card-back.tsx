@@ -1,6 +1,7 @@
 'use client'
 
 import { Card } from '@/components/ui/card'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import type { Pet } from '@/types'
 import Image from 'next/image'
 
@@ -38,32 +39,34 @@ export function PetCardBack({ pet }: PetCardBackProps) {
         </div>
       </div>
 
-      <div className="relative z-10 flex h-full flex-col">
-        <h3
-          className="text-2xl md:text-3xl font-extrabold tracking-tight card-back-shadow mb-2"
-          aria-label={`Pet name: ${pet.name}`}>
-          {pet.name}
-        </h3>
-        <div className="mb-3 text-sm card-back-shadow">
-          <dl className="grid grid-cols-[auto_1fr] items-baseline gap-x-3 gap-y-1">
-            <dt className="text-primary font-bold">Breed:</dt>
-            <dd className="font-medium">{pet.breed}</dd>
-            <dt className="text-primary font-bold">Gender:</dt>
-            <dd className="font-medium">{pet.gender}</dd>
-            <dt className="text-primary font-bold">Birthday:</dt>
-            <dd className="font-medium">
-              {formatBirthday(pet.birthday)}
-              {ageYears != null ? ` (${ageYears} ${ageYears === 1 ? 'year' : 'years'})` : null}
-            </dd>
-          </dl>
+      <ScrollArea className="relative z-10 h-full">
+        <div className="flex flex-col pr-2">
+          <h3
+            className="text-2xl md:text-3xl font-extrabold tracking-tight card-back-shadow mb-2"
+            aria-label={`Pet name: ${pet.name}`}>
+            {pet.name}
+          </h3>
+          <div className="mb-3 text-sm card-back-shadow">
+            <dl className="grid grid-cols-[auto_1fr] items-baseline gap-x-3 gap-y-1">
+              <dt className="text-primary font-bold">Breed:</dt>
+              <dd className="font-medium">{pet.breed}</dd>
+              <dt className="text-primary font-bold">Gender:</dt>
+              <dd className="font-medium">{pet.gender}</dd>
+              <dt className="text-primary font-bold">Birthday:</dt>
+              <dd className="font-medium">
+                {formatBirthday(pet.birthday)}
+                {ageYears != null ? ` (${ageYears} ${ageYears === 1 ? 'year' : 'years'})` : null}
+              </dd>
+            </dl>
+          </div>
+          <p className="text-sm leading-relaxed card-back-shadow">{pet.description}</p>
+          <div className="pt-6">
+            <span aria-hidden className="opacity-0">
+              _
+            </span>
+          </div>
         </div>
-        <p className="text-sm leading-relaxed card-back-shadow">{pet.description}</p>
-        <div className="mt-auto pt-6">
-          <span aria-hidden className="opacity-0">
-            _
-          </span>
-        </div>
-      </div>
+      </ScrollArea>
     </Card>
   )
 }
