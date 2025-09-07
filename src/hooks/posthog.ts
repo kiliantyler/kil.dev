@@ -58,3 +58,10 @@ export function captureLadybirdDetected(userAgent: string) {
     userAgent: userAgent,
   })
 }
+
+export function captureWorkHighlightsToggled(companyId: string, expanded: boolean) {
+  posthog.capture('work_highlights_toggled', {
+    companyId: companyId,
+    expanded: expanded,
+  })
+}

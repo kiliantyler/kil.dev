@@ -1,7 +1,11 @@
+'use client'
+
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { captureWorkHighlightsToggled } from '@/hooks/posthog'
 import type { WorkExperience } from '@/lib/experience'
 import type { resolveSkills } from '@/lib/skillicons'
 import { ChevronDown } from 'lucide-react'
+import { useCallback, useRef, useState } from 'react'
 import { HighlightsList } from './highlights-list'
 import { SkillsBlock } from './skills-block'
 
@@ -11,8 +15,21 @@ interface CollapsibleHighlightsProps {
 }
 
 export function CollapsibleHighlights({ item, skillsEntries }: CollapsibleHighlightsProps) {
+  const [open, setOpen] = useState(false)
+  const didCaptureRef = useRef(false)
+  const handleOpenChange = useCallback(
+    (next: boolean) => {
+      setOpen(next)
+      if (next && !didCaptureRef.current) {
+        captureWorkHighlightsToggled(item.id, true)
+        didCaptureRef.current = true
+      }
+    },
+    [item.id],
+  )
+
   return (
-    <Collapsible className="group/collapsible">
+    <Collapsible className="group/collapsible" open={open} onOpenChange={handleOpenChange}>
       <CollapsibleTrigger asChild>
         <span
           role="button"
