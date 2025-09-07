@@ -11,7 +11,7 @@ export function ModeToggleNote() {
   const { resolvedTheme } = useTheme()
 
   return (
-    <span className="text-muted-foreground text-xs font-normal">
+    <span suppressHydrationWarning className="text-muted-foreground text-xs font-normal">
       {resolvedTheme === 'dark' ? '(good choice)' : '(why are you in light mode?)'}
     </span>
   )
