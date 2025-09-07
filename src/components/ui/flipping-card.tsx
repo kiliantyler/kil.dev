@@ -133,8 +133,10 @@ export function FlippingCard({ front, back, className, ariaLabel, onFlipChange }
             'relative h-full w-full [transform-style:preserve-3d] transition-transform duration-500 ease-out',
             flipped ? 'rotate-y-180' : '',
           )}>
-          {front}
-          <FlipIndicator className="[backface-visibility:hidden]" />
+          <div className="absolute inset-0 rotate-y-0 [backface-visibility:hidden]">
+            {front}
+            <FlipIndicator />
+          </div>
 
           <div className="absolute inset-0 rotate-y-180 [backface-visibility:hidden]">
             {back}
