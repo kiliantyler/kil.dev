@@ -27,6 +27,10 @@ export function PetCard({ pet, onFlipChange }: PetCardProps) {
       onFlipChange={handleFlipChange}
       front={<PetCardFront imageSrc={pet.image} imageAlt={pet.imageAlt} name={pet.name} />}
       back={<PetCardBack pet={pet} />}
+      flipLabelFrontDesktop={`Meet ${pet.name}`}
+      flipLabelFrontMobile={`Tap to meet ${pet.name}`}
+      flipLabelBackDesktop={`Go back to ${pet.name}`}
+      flipLabelBackMobile={`Tap to go back to ${pet.name}`}
     />
   )
 }
