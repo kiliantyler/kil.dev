@@ -76,6 +76,7 @@ export function NavLava() {
   }, [activeIndex, moveIndicatorTo, hideIndicator])
 
   const handleMouseLeaveContainer = React.useCallback(() => {
+    setHoveredKey(null)
     if (activeIndex >= 0) {
       if (!NAVIGATION[activeIndex]) return
       moveIndicatorTo(NAVIGATION[activeIndex].href, true)
@@ -154,7 +155,7 @@ export function NavLava() {
         {NAVIGATION.map(item => {
           const isExternal = item.href.startsWith('http')
           const isActive = !item.href.startsWith('#') && item.href === pathname
-          const showFallback = isActive && !indicator.visible
+          const showFallback = isActive && !indicator.visible && (!hoveredKey || hoveredKey === item.href)
           return (
             <Link
               key={item.href}
@@ -165,14 +166,21 @@ export function NavLava() {
                 }
               }}
               className={cn(
-                'relative z-10 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground outline-none transition-colors',
-                'hover:text-accent-foreground focus:text-accent-foreground',
-                isActive ? 'text-accent-foreground' : 'text-muted-foreground',
+                'relative z-10 rounded-md px-3 py-2 text-sm font-medium outline-none transition-colors',
+                NAV_TEXT.base,
+                NAV_TEXT.hover,
+                isActive && (!hoveredKey || hoveredKey === item.href) ? NAV_TEXT.active : undefined,
               )}
               aria-current={isActive ? 'page' : undefined}
               role="menuitem"
-              onMouseEnter={() => moveIndicatorTo(item.href, true)}
-              onFocus={() => moveIndicatorTo(item.href, true)}
+              onMouseEnter={() => {
+                setHoveredKey(item.href)
+                moveIndicatorTo(item.href, true)
+              }}
+              onFocus={() => {
+                setHoveredKey(item.href)
+                moveIndicatorTo(item.href, true)
+              }}
               {...(isExternal && {
                 target: '_blank',
                 rel: 'noopener noreferrer',
