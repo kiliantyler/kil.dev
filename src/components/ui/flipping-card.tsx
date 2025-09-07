@@ -1,7 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { FlipIndicator } from './flip-indicator'
 
 interface FlippingCardProps {
@@ -18,14 +18,17 @@ export function FlippingCard({ front, back, className, ariaLabel, onFlipChange }
   const frameRequestRef = useRef<number | null>(null)
   const pendingPointer = useRef<{ x: number; y: number } | null>(null)
   const tiltRef = useRef<HTMLDivElement | null>(null)
+  const lastNotifiedRef = useRef(flipped)
 
   const handleToggle = useCallback(() => {
-    setFlipped(prev => {
-      const next = !prev
-      onFlipChange?.(next)
-      return next
-    })
-  }, [onFlipChange])
+    setFlipped(prev => !prev)
+  }, [])
+
+  useEffect(() => {
+    if (flipped === lastNotifiedRef.current) return
+    lastNotifiedRef.current = flipped
+    onFlipChange?.(flipped)
+  }, [flipped, onFlipChange])
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {

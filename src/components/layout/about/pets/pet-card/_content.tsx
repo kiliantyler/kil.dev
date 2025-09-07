@@ -9,14 +9,16 @@ import { PetCardFront } from './card-front'
 
 interface PetCardProps {
   pet: Pet
+  onFlipChange?: (petId: string, flipped: boolean) => void
 }
 
-export function PetCard({ pet }: PetCardProps) {
+export function PetCard({ pet, onFlipChange }: PetCardProps) {
   const handleFlipChange = useCallback(
     (flipped: boolean) => {
       capturePetCardFlipped(pet.id, flipped ? 'back' : 'front')
+      onFlipChange?.(pet.id, flipped)
     },
-    [pet.id],
+    [pet.id, onFlipChange],
   )
 
   return (
