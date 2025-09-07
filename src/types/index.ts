@@ -57,3 +57,14 @@ export interface QuickFact {
   href?: string
   note?: string
 }
+
+export interface Pet {
+  id: string
+  name: string
+  breed: string
+  birthday: string
+  gender: string
+  description: string
+  image: StaticImageData
+  imageAlt: string
+}

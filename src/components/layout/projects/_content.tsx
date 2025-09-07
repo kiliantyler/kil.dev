@@ -1,7 +1,7 @@
 import { SectionLabel } from '@/components/ui/section-label'
 import { projects } from '@/lib/projects'
 import type { Project } from '@/types'
-import { ProjectCard } from './project-card'
+import { ProjectCard } from './project-card/_content'
 
 function ProjectsGrid({ items }: { items: Project[] }) {
   if (!items || items.length === 0) {
