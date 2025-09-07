@@ -52,3 +52,9 @@ export function capturePetCardFlipped(petId: string, flippedTo: string) {
     flippedTo: flippedTo,
   })
 }
+
+export function captureLadybirdDetected(userAgent: string) {
+  posthog.capture('ladybird_browser_detected', {
+    userAgent: userAgent,
+  })
+}

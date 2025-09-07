@@ -1,18 +1,37 @@
 'use client'
 
-import { captureProfileImageClicked } from '@/hooks/posthog'
+import { captureLadybirdDetected, captureProfileImageClicked } from '@/hooks/posthog'
 import { useHash } from '@/hooks/use-hash'
 import Confused from '@/images/headshot/cartoon-confused.jpg'
 import Grumpy from '@/images/headshot/cartoon-grumpy.jpg'
 import Headshot from '@/images/headshot/cartoon-headshot.jpg'
+import Ladybird from '@/images/headshot/cartoon-ladybird.jpg'
 import { CONTENT } from '@/lib/constants'
 import Image from 'next/image'
-import { useCallback, useState, type KeyboardEvent } from 'react'
+import { useCallback, useEffect, useState, type KeyboardEvent } from 'react'
 
 export function ProfileImage() {
   const hash = useHash()
   const useConfused = hash === '#YouWereAlreadyHere'
   const [isGrumpy, setIsGrumpy] = useState(false)
+  const [isLadybird, setIsLadybird] = useState(false)
+
+  useEffect(() => {
+    if (typeof navigator === 'undefined') return
+    const ua = navigator.userAgent || ''
+    if (ua.toLowerCase().includes('ladybird')) {
+      setIsLadybird(true)
+      try {
+        if (typeof window !== 'undefined') {
+          const alreadyCaptured = window.sessionStorage.getItem('ladybird_detected_event') === '1'
+          if (!alreadyCaptured) {
+            captureLadybirdDetected(ua)
+            window.sessionStorage.setItem('ladybird_detected_event', '1')
+          }
+        }
+      } catch {}
+    }
+  }, [])
 
   const handleClick = useCallback(() => {
     if (isGrumpy) return
@@ -31,9 +50,9 @@ export function ProfileImage() {
     }
   }, [])
 
-  const defaultImageSrc = useConfused ? Confused : Headshot
+  const defaultImageSrc = isLadybird ? Ladybird : useConfused ? Confused : Headshot
   const imageSrc = isGrumpy ? Grumpy : defaultImageSrc
-  const imageAlt = `${CONTENT.NAME} ${isGrumpy ? 'grumpy' : useConfused ? 'confused' : 'headshot'}`
+  const imageAlt = `${CONTENT.NAME} ${isGrumpy ? 'grumpy' : isLadybird ? 'ladybird' : useConfused ? 'confused' : 'headshot'}`
 
   return (
     <div
