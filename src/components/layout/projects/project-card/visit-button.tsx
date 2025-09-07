@@ -12,7 +12,7 @@ export function VisitButton({ href, title, id }: VisitButtonProps) {
     <LinkButton
       href={href}
       external={href.startsWith('http')}
-      variant="secondary"
+      variant="default"
       className="h-9 rounded-md px-3 text-xs font-semibold"
       aria-label={`Open ${title} website`}
       onClick={e => {
