@@ -1,43 +1,33 @@
 'use client'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import type { SkillName } from '@/lib/skillicons'
-import { SKILLS, getSkillIconUrl } from '@/lib/skillicons'
+import type { SkillEntry } from '@/lib/skillicons'
+import { getSkillIconUrl } from '@/lib/skillicons'
 import Image from 'next/image'
+import Link from 'next/link'
 
 interface ProjectTechIconsProps {
-  tags: SkillName[]
+  skills: SkillEntry[]
 }
 
-export function ProjectTechIcons({ tags }: ProjectTechIconsProps) {
-  if (!tags?.length) return null
-
+export function ProjectTechIcons({ skills }: ProjectTechIconsProps) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {tags.map(tag => {
-        const skill = SKILLS[tag]
-        if (!skill) {
-          return (
-            <span key={tag} className="bg-transparent text-secondary-foreground rounded-md px-2 py-1 text-xs">
-              {tag}
-            </span>
-          )
-        }
-
+      {skills.map(({ name, icon, url }) => {
         return (
-          <Tooltip key={tag}>
+          <Tooltip key={name}>
             <TooltipTrigger asChild>
               {(() => {
-                const homepage = skill.url
+                const homepage = url
                 const content = (
                   <span
                     role="img"
-                    aria-label={tag}
+                    aria-label={name}
                     className="inline-flex items-center justify-center size-[28px] rounded-md ring-1 ring-border overflow-hidden">
                     <span className="relative size-full">
                       <Image
-                        src={getSkillIconUrl(skill.icon)}
-                        alt={tag}
+                        src={getSkillIconUrl(icon)}
+                        alt={name}
                         fill
                         sizes="28px"
                         className="object-contain"
@@ -50,11 +40,11 @@ export function ProjectTechIcons({ tags }: ProjectTechIconsProps) {
                 if (!homepage) return content
 
                 return (
-                  <a
+                  <Link
                     href={homepage}
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label={`Open ${tag} homepage`}
+                    aria-label={`Open ${name} homepage`}
                     onClick={e => {
                       e.stopPropagation()
                     }}
@@ -65,11 +55,11 @@ export function ProjectTechIcons({ tags }: ProjectTechIconsProps) {
                     }}
                     className="inline-flex items-center justify-center focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary rounded-md">
                     {content}
-                  </a>
+                  </Link>
                 )
               })()}
             </TooltipTrigger>
-            <TooltipContent>{tag}</TooltipContent>
+            <TooltipContent>{name}</TooltipContent>
           </Tooltip>
         )
       })}
