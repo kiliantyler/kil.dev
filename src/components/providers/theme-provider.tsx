@@ -1,7 +1,7 @@
 'use client'
 
 import { getAvailableThemes, getDefaultThemeForNow, SEASONAL_THEMES } from '@/lib/theme-runtime'
-import { type Theme, type ThemeName } from '@/lib/themes'
+import { themes, type Theme, type ThemeName } from '@/lib/themes'
 import * as React from 'react'
 
 type SystemTheme = 'light' | 'dark'
@@ -71,6 +71,7 @@ function applyClasses(preference: Theme, system: SystemTheme | undefined) {
   const pref: Theme = preference !== 'system' && !allowed.includes(preference) ? 'system' : preference
   const remove = (cls: string) => root.classList.remove(cls)
   const add = (cls: string) => root.classList.add(cls)
+  const allThemeClassNames: ThemeName[] = themes.map(t => t.name)
 
   if (pref === 'system') {
     const effective = system ?? 'light'
@@ -78,20 +79,21 @@ function applyClasses(preference: Theme, system: SystemTheme | undefined) {
     if (!root.classList.contains(effective)) add(effective)
     const other = effective === 'dark' ? 'light' : 'dark'
     if (root.classList.contains(other)) remove(other)
-    // Seasonal overlay when active
-    if (seasonalDefault && seasonalDefault !== 'system') {
-      if (!root.classList.contains(seasonalDefault)) add(seasonalDefault)
-      // Do not remove seasonal here
-    } else {
-      remove('halloween')
-      remove('cyberpunk')
+    // Seasonal overlay when active; otherwise ensure non-system theme classes are removed
+    const overlay = seasonalDefault !== 'system' ? seasonalDefault : undefined
+    for (const cls of allThemeClassNames) {
+      if (cls === 'light' || cls === 'dark') continue
+      if (overlay && cls === overlay) {
+        if (!root.classList.contains(cls)) add(cls)
+      } else {
+        if (root.classList.contains(cls)) remove(cls)
+      }
     }
     return
   }
 
   // Explicit theme preference
-  const cssClasses = ['dark', 'light', 'halloween', 'cyberpunk']
-  for (const c of cssClasses) remove(c)
+  for (const c of allThemeClassNames) remove(c)
   add(pref)
 }
 

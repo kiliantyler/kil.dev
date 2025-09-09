@@ -2,7 +2,7 @@
 
 import { useTheme } from '@/components/providers/theme-provider'
 import { getDefaultThemeForNow } from '@/lib/theme-runtime'
-import { type ThemeName } from '@/lib/themes'
+import { themes, type ThemeName } from '@/lib/themes'
 import { useEffect } from 'react'
 
 function setThemeCookie(value: string) {
@@ -21,7 +21,11 @@ export function ThemeCookieSync() {
       try {
         const root = document.documentElement
         // Layer seasonal on top of system-effective (dark/light) without removing it
-        root.classList.remove('halloween', 'cyberpunk')
+        const allThemeClassNames = themes.map(t => t.name)
+        for (const cls of allThemeClassNames) {
+          if (cls === 'light' || cls === 'dark') continue
+          root.classList.remove(cls)
+        }
         root.classList.add(seasonal)
       } catch {}
       // Preserve the user's selected preference of "system" in the cookie
