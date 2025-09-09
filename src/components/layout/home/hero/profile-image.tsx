@@ -4,47 +4,32 @@ import { useTheme } from '@/components/providers/theme-provider'
 import { captureLadybirdDetected, captureProfileImageClicked } from '@/hooks/posthog'
 import { useHash } from '@/hooks/use-hash'
 import Confused from '@/images/headshot/cartoon-confused.webp'
-import Cyberpunk from '@/images/headshot/cartoon-cyberpunk.webp'
 import Grumpy from '@/images/headshot/cartoon-grumpy.webp'
-import Halloween from '@/images/headshot/cartoon-halloween.webp'
-import Headshot from '@/images/headshot/cartoon-headshot.webp'
 import Ladybird from '@/images/headshot/cartoon-ladybird.webp'
 import { CONTENT } from '@/lib/content'
 import { getThemeHeadshot, type ThemeName } from '@/lib/themes'
 import Image, { type StaticImageData } from 'next/image'
-import { useCallback, useEffect, useLayoutEffect, useState, type KeyboardEvent } from 'react'
+import { useCallback, useEffect, useState, type KeyboardEvent } from 'react'
 
 export function ProfileImage() {
   const hash = useHash()
   const [mounted, setMounted] = useState(false)
   const [isImageLoaded, setIsImageLoaded] = useState(true)
-  const [cookieTheme, setCookieTheme] = useState<string | null>(null)
   const useConfused = mounted && hash === '#YouWereAlreadyHere'
   const [isGrumpy, setIsGrumpy] = useState(false)
   const [isLadybird, setIsLadybird] = useState(false)
-  const [isHalloween, setIsHalloween] = useState(false)
 
-  type ProfileVariant = 'grumpy' | 'cyberpunk' | 'halloween' | 'ladybird' | 'confused' | 'default'
+  type ProfileVariant = 'grumpy' | 'ladybird' | 'confused' | 'default'
+  type NonThemeVariant = Exclude<ProfileVariant, 'default'>
 
-  const VARIANT_TO_IMAGE: Record<ProfileVariant, StaticImageData> = {
+  const VARIANT_TO_IMAGE: Record<NonThemeVariant, StaticImageData> = {
     grumpy: Grumpy,
-    cyberpunk: Cyberpunk,
-    halloween: Halloween,
     ladybird: Ladybird,
     confused: Confused,
-    default: Headshot,
   }
 
-  function computeVariant(
-    isGrumpyFlag: boolean,
-    isCyberpunkFlag: boolean,
-    isHalloweenFlag: boolean,
-    isLadybirdFlag: boolean,
-    useConfusedFlag: boolean,
-  ): ProfileVariant {
+  function computeVariant(isGrumpyFlag: boolean, isLadybirdFlag: boolean, useConfusedFlag: boolean): ProfileVariant {
     if (isGrumpyFlag) return 'grumpy'
-    if (isCyberpunkFlag) return 'cyberpunk'
-    if (isHalloweenFlag) return 'halloween'
     if (isLadybirdFlag) return 'ladybird'
     if (useConfusedFlag) return 'confused'
     return 'default'
@@ -53,9 +38,6 @@ export function ProfileImage() {
   useEffect(() => {
     if (typeof navigator === 'undefined') return
     const ua = navigator.userAgent || ''
-    if (ua.toLowerCase().includes('halloween')) {
-      setIsHalloween(true)
-    }
     if (ua.toLowerCase().includes('ladybird')) {
       setIsLadybird(true)
       try {
@@ -68,14 +50,6 @@ export function ProfileImage() {
         }
       } catch {}
     }
-  }, [])
-
-  // Read theme preference cookie as early as possible on the client
-  useLayoutEffect(() => {
-    if (typeof document === 'undefined') return
-    const themeMatch = /(?:^|; )theme=([^;]+)/.exec(document.cookie)
-    const raw = themeMatch?.[1]
-    setCookieTheme(typeof raw === 'string' && raw.length > 0 ? decodeURIComponent(raw) : null)
   }, [])
 
   useEffect(() => {
@@ -126,16 +100,17 @@ export function ProfileImage() {
     return () => observer.disconnect()
   }, [theme.resolvedTheme])
 
-  const isCyberpunk = cookieTheme === 'cyberpunk' || (mounted && cssTheme === 'cyberpunk')
-  const variant = computeVariant(isGrumpy, isCyberpunk, isHalloween, isLadybird, useConfused)
+  const variant = computeVariant(isGrumpy, isLadybird, useConfused)
   const baseImageForTheme = getThemeHeadshot(cssTheme)
-  const imageSrc = variant === 'default' ? baseImageForTheme : VARIANT_TO_IMAGE[variant]
-  const altSuffix = variant === 'default' || variant === 'cyberpunk' || variant === 'halloween' ? 'headshot' : variant
+  let imageSrc: StaticImageData = baseImageForTheme
+  if (variant !== 'default') {
+    imageSrc = VARIANT_TO_IMAGE[variant]
+  }
+  const altSuffix = variant === 'default' ? 'headshot' : variant
   const imageAlt = `${CONTENT.NAME} ${altSuffix}`
 
-  const isEnvDrivenVariant =
-    variant === 'cyberpunk' || variant === 'ladybird' || variant === 'confused' || variant === 'halloween'
-  const isBaseThemeVariant = !isGrumpy && !isLadybird && !isHalloween && !useConfused
+  const isEnvDrivenVariant = variant === 'ladybird' || variant === 'confused'
+  const isBaseThemeVariant = !isGrumpy && !isLadybird && !useConfused
 
   useEffect(() => {
     if (!mounted) return
