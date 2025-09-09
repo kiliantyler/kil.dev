@@ -1,7 +1,7 @@
 'use client'
 
 import { getAvailableThemes, getDefaultThemeForNow, SEASONAL_THEMES } from '@/lib/theme-runtime'
-import { type Theme } from '@/lib/themes'
+import { type Theme, type ThemeName } from '@/lib/themes'
 import * as React from 'react'
 
 type SystemTheme = 'light' | 'dark'
@@ -11,6 +11,7 @@ type ThemeContextValue = {
   setTheme: (theme: Theme) => void
   resolvedTheme: Theme | SystemTheme | undefined
   systemTheme: SystemTheme | undefined
+  initialAppliedThemeName?: ThemeName
 }
 
 const ThemeContext = React.createContext<ThemeContextValue | undefined>(undefined)
@@ -94,7 +95,13 @@ function applyClasses(preference: Theme, system: SystemTheme | undefined) {
   add(pref)
 }
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
+export function ThemeProvider({
+  children,
+  initialAppliedTheme,
+}: {
+  children: React.ReactNode
+  initialAppliedTheme?: ThemeName
+}) {
   const [theme, setThemeState] = React.useState<Theme | undefined>(undefined)
   const [systemTheme, setSystemTheme] = React.useState<SystemTheme | undefined>(undefined)
 
@@ -115,9 +122,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       writeCookieTheme(initialPref)
     }
 
-    // Ensure classes match preference immediately after mount
-    applyClasses(initialPref, getSystemTheme())
-  }, [])
+    // Ensure classes match preference immediately after mount; if a server computed initial theme exists, keep it
+    if (!initialAppliedTheme) {
+      applyClasses(initialPref, getSystemTheme())
+    }
+  }, [initialAppliedTheme])
 
   // Watch OS theme changes
   React.useEffect(() => {
@@ -195,8 +204,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [theme, systemTheme])
 
   const value: ThemeContextValue = React.useMemo(
-    () => ({ theme, setTheme, resolvedTheme, systemTheme }),
-    [theme, setTheme, resolvedTheme, systemTheme],
+    () => ({ theme, setTheme, resolvedTheme, systemTheme, initialAppliedThemeName: initialAppliedTheme }),
+    [theme, setTheme, resolvedTheme, systemTheme, initialAppliedTheme],
   )
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>

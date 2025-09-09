@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { captureThemeChanged } from '@/hooks/posthog'
 import { getAvailableThemes, getDefaultThemeForNow } from '@/lib/theme-runtime'
-import { getThemeIcon, getThemeLabel, themeIcons, type Theme } from '@/lib/themes'
+import { getThemeIcon, getThemeLabel, type Theme } from '@/lib/themes'
 import { cn } from '@/lib/utils'
 
 function SystemIcon({ className }: { className?: string }) {
@@ -28,7 +28,7 @@ export function ThemeToggle({
   onFlyoutWidthChange?: (width: number) => void
   onOpenChange?: (open: boolean) => void
 } = {}) {
-  const { theme, setTheme, resolvedTheme, systemTheme } = useTheme()
+  const { theme, setTheme, resolvedTheme, systemTheme, initialAppliedThemeName } = useTheme()
   const { startTransition } = useThemeTransition()
 
   const currentPreference: Theme = theme ?? 'system'
@@ -346,16 +346,9 @@ export function ThemeToggle({
                   return <Icon className="h-[1.2rem] w-[1.2rem]" />
                 })()
               : (() => {
-                  const LightIcon: IconComponent =
-                    themeIcons.light ?? ((props: { className?: string }) => <span {...props} />)
-                  const DarkIcon: IconComponent =
-                    themeIcons.dark ?? ((props: { className?: string }) => <span {...props} />)
-                  return (
-                    <>
-                      <LightIcon className="h-[1.2rem] w-[1.2rem] dark:hidden" />
-                      <DarkIcon className="h-[1.2rem] w-[1.2rem] hidden dark:block" />
-                    </>
-                  )
+                  const initial = (initialAppliedThemeName ?? 'light') as Theme
+                  const InitialIcon: IconComponent = getThemeIcon(initial, SystemIcon)
+                  return <InitialIcon className="h-[1.2rem] w-[1.2rem]" />
                 })()}
             <span className="sr-only">Toggle theme menu</span>
           </Button>

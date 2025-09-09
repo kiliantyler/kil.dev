@@ -10,6 +10,7 @@ import Halloween from '@/images/headshot/cartoon-halloween.webp'
 import Headshot from '@/images/headshot/cartoon-headshot.webp'
 import Ladybird from '@/images/headshot/cartoon-ladybird.webp'
 import { CONTENT } from '@/lib/content'
+import { getThemeHeadshot, type ThemeName } from '@/lib/themes'
 import Image, { type StaticImageData } from 'next/image'
 import { useCallback, useEffect, useLayoutEffect, useState, type KeyboardEvent } from 'react'
 
@@ -98,9 +99,37 @@ export function ProfileImage() {
     }
   }, [])
   const theme = useTheme()
-  const isCyberpunk = cookieTheme === 'cyberpunk' || (mounted && theme.resolvedTheme === 'cyberpunk')
+  // Initialize from SSR-provided initial applied theme to avoid image flash on first paint
+  const [cssTheme, setCssTheme] = useState<ThemeName>(theme.initialAppliedThemeName ?? 'light')
+
+  // Track the current CSS theme class on <html> to pick base image by theme
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    const root = document.documentElement
+
+    const computeCssTheme = (): ThemeName => {
+      // Prefer explicit class among known css themes
+      const known: ThemeName[] = ['halloween', 'cyberpunk', 'dark', 'light']
+      for (const k of known) {
+        if (root.classList.contains(k)) return k
+      }
+      // Fallback to resolved theme if it's a css theme
+      const r = theme.resolvedTheme
+      return r === 'dark' || r === 'light' ? r : 'light'
+    }
+
+    const update = () => setCssTheme(computeCssTheme())
+    update()
+
+    const observer = new MutationObserver(update)
+    observer.observe(root, { attributes: true, attributeFilter: ['class'] })
+    return () => observer.disconnect()
+  }, [theme.resolvedTheme])
+
+  const isCyberpunk = cookieTheme === 'cyberpunk' || (mounted && cssTheme === 'cyberpunk')
   const variant = computeVariant(isGrumpy, isCyberpunk, isHalloween, isLadybird, useConfused)
-  const imageSrc = VARIANT_TO_IMAGE[variant]
+  const baseImageForTheme = getThemeHeadshot(cssTheme)
+  const imageSrc = variant === 'default' ? baseImageForTheme : VARIANT_TO_IMAGE[variant]
   const altSuffix = variant === 'default' || variant === 'cyberpunk' || variant === 'halloween' ? 'headshot' : variant
   const imageAlt = `${CONTENT.NAME} ${altSuffix}`
 
@@ -138,35 +167,15 @@ export function ProfileImage() {
           className={`${isEnvDrivenVariant && !isImageLoaded ? 'opacity-100' : 'opacity-0'} absolute inset-0 rounded-lg bg-muted animate-pulse transition-opacity duration-500`}
         />
         {isBaseThemeVariant ? (
-          <>
-            <Image
-              alt={imageAlt}
-              src={Headshot}
-              className="rounded-lg transition-transform duration-500 ease-(--ease-fluid) translate-y-0 scale-100 transform-gpu group-hover:-translate-y-1 group-hover:scale-105 cyberpunk:hidden"
-              loading="eager"
-              priority
-              fill
-              sizes="(min-width: 1024px) 500px, 100vw"
-            />
-            <Image
-              alt={imageAlt}
-              src={Cyberpunk}
-              className="hidden rounded-lg transition-transform duration-500 ease-(--ease-fluid) translate-y-0 scale-100 transform-gpu group-hover:-translate-y-1 group-hover:scale-105 cyberpunk:block"
-              loading="eager"
-              priority
-              fill
-              sizes="(min-width: 1024px) 500px, 100vw"
-            />
-            <Image
-              alt={imageAlt}
-              src={Halloween}
-              className="hidden rounded-lg transition-transform duration-500 ease-(--ease-fluid) translate-y-0 scale-100 transform-gpu group-hover:-translate-y-1 group-hover:scale-105 halloween:block"
-              loading="eager"
-              priority
-              fill
-              sizes="(min-width: 1024px) 500px, 100vw"
-            />
-          </>
+          <Image
+            alt={imageAlt}
+            src={baseImageForTheme}
+            className="rounded-lg transition-transform duration-500 ease-(--ease-fluid) translate-y-0 scale-100 transform-gpu group-hover:-translate-y-1 group-hover:scale-105"
+            loading="eager"
+            priority
+            fill
+            sizes="(min-width: 1024px) 500px, 100vw"
+          />
         ) : (
           <Image
             alt={imageAlt}

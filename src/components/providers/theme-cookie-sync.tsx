@@ -2,7 +2,7 @@
 
 import { useTheme } from '@/components/providers/theme-provider'
 import { getDefaultThemeForNow } from '@/lib/theme-runtime'
-import { type CssTheme } from '@/lib/themes'
+import { type ThemeName } from '@/lib/themes'
 import { useEffect } from 'react'
 
 function setThemeCookie(value: string) {
@@ -17,7 +17,7 @@ export function ThemeCookieSync() {
   useEffect(() => {
     const seasonalDefault = getDefaultThemeForNow()
     if (theme === 'system' && seasonalDefault !== 'system') {
-      const seasonal: CssTheme = seasonalDefault as CssTheme
+      const seasonal: ThemeName = seasonalDefault
       try {
         const root = document.documentElement
         // Layer seasonal on top of system-effective (dark/light) without removing it

@@ -5,6 +5,7 @@ import { Background } from '@/components/layout/background'
 import { Footer } from '@/components/layout/footer'
 import { Header } from '@/components/layout/header'
 import { buildInitThemeScript, getDefaultThemeForNow } from '@/lib/theme-runtime'
+import { type ThemeName } from '@/lib/themes'
 import { type Metadata } from 'next'
 import { Noto_Sans, Space_Grotesk } from 'next/font/google'
 import { cookies } from 'next/headers'
@@ -39,6 +40,12 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     if (seasonalDefault !== 'system') return `${baseSystem || 'dark'} ${seasonalDefault}`.trim()
     return baseSystem
   })()
+
+  const initialAppliedTheme: ThemeName = (() => {
+    if (themeCookie && themeCookie !== 'system') return themeCookie as ThemeName
+    if (seasonalDefault !== 'system') return seasonalDefault
+    return (baseSystem || 'light') as ThemeName
+  })()
   return (
     <html
       lang="en"
@@ -56,7 +63,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         />
       </head>
       <body className="font-sans flex min-h-screen flex-col bg-background text-foreground">
-        <Providers>
+        <Providers initialAppliedTheme={initialAppliedTheme}>
           <div className="relative flex min-h-screen flex-col">
             <Background />
             <div className="relative z-20 flex size-full flex-1 flex-col overflow-x-hidden">

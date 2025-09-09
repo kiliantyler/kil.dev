@@ -1,17 +1,20 @@
 'use client'
 
-import { getActiveSeasonalThemes, getCssThemesForNow } from '@/lib/theme-runtime'
+import type { ThemeName } from '@/lib/themes'
 import { PostHogProvider } from './posthog-provider'
 import { ThemeCookieSync } from './theme-cookie-sync'
 import { ThemeProvider } from './theme-provider'
 
-export function Providers({ children }: { children: React.ReactNode }) {
-  // Intentionally compute and ignore; seasonal exclusion handled by custom ThemeProvider
-  void getCssThemesForNow()
-  void getActiveSeasonalThemes()
+export function Providers({
+  children,
+  initialAppliedTheme,
+}: {
+  children: React.ReactNode
+  initialAppliedTheme: ThemeName
+}) {
   return (
     <PostHogProvider>
-      <ThemeProvider>
+      <ThemeProvider initialAppliedTheme={initialAppliedTheme}>
         <ThemeCookieSync />
         {children}
       </ThemeProvider>
