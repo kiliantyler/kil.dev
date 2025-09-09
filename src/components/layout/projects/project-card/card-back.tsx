@@ -29,17 +29,17 @@ export function ProjectCardBack({ project }: ProjectCardBackProps) {
             priority={false}
             className="object-cover scale-110 scale-x-[-1] blur-xl"
           />
-          <div className="absolute inset-0 bg-white/60 dark:bg-black/50 backdrop-blur-md" />
+          <div className="absolute inset-0 bg-(--card-backdrop) backdrop-blur-md card-back-shadow" />
         </div>
       </div>
 
       <div className="relative z-10 flex h-full flex-col">
-        <div className="mb-3 text-sm text-muted-foreground font-bold card-back-shadow">
+        <div className="mb-3 text-sm text-muted-foreground font-bold">
           {project.year ? `${project.year} • ` : ''}
           {project.status === 'wip' ? 'Work in progress' : project.status === 'archived' ? 'Archived' : 'Live'}
         </div>
-        <p className="text-sm leading-relaxed card-back-shadow">{project.description}</p>
-        <div className="mt-auto flex items-center justify-between pt-6 card-back-shadow">
+        <p className="text-sm leading-relaxed text-foreground">{project.description}</p>
+        <div className="mt-auto flex items-center justify-between pt-6">
           {project.tags?.length ? <ProjectTechIcons skills={resolveSkills(project.tags)} /> : <span />}
           {hasLinks ? (
             <div className="flex justify-end gap-2">

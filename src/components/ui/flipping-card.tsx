@@ -54,50 +54,65 @@ export function FlippingCard({
     [handleToggle],
   )
 
-  const applyTiltTransform = useCallback((x: number, y: number) => {
-    const tiltEl = tiltRef.current
-    const containerEl = containerRef.current
-    if (!tiltEl || !containerEl) return
+  const applyTiltTransform = useCallback(
+    (x: number, y: number) => {
+      const tiltEl = tiltRef.current
+      const containerEl = containerRef.current
+      if (!tiltEl || !containerEl) return
 
-    const rect = containerEl.getBoundingClientRect()
-    const centerX = rect.left + rect.width / 2
-    const centerY = rect.top + rect.height / 2
+      const rect = containerEl.getBoundingClientRect()
+      const centerX = rect.left + rect.width / 2
+      const centerY = rect.top + rect.height / 2
 
-    const percentX = (x - centerX) / (rect.width / 2)
-    const percentY = (y - centerY) / (rect.height / 2)
+      const percentX = (x - centerX) / (rect.width / 2)
+      const percentY = (y - centerY) / (rect.height / 2)
 
-    const clampedX = Math.max(-1, Math.min(1, percentX))
-    const clampedY = Math.max(-1, Math.min(1, percentY))
+      const clampedX = Math.max(-1, Math.min(1, percentX))
+      const clampedY = Math.max(-1, Math.min(1, percentY))
 
-    const maxTilt = 12
-    const rotateY = clampedX * maxTilt
-    const rotateX = -clampedY * maxTilt
+      const maxTilt = 12
+      const rotateY = clampedX * maxTilt
+      const rotateX = -clampedY * maxTilt
 
-    tiltEl.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`
+      tiltEl.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`
 
-    // Dynamic raised shadow: move shadow with tilt direction
-    const magnitudeNear = 2
-    const magnitudeFarScale = 1.25
-    const blurNear = 0.9
-    const blurFar = 1.8
-    const highlightBlur = 0.7
+      // Dynamic raised shadow: move shadow with tilt direction
+      const magnitudeNear = 2
+      const magnitudeFarScale = 1.25
+      const blurNear = 0.9
+      const blurFar = 1.8
+      const highlightBlur = 0.7
 
-    const shadowX = clampedX * magnitudeNear
-    const shadowY = clampedY * magnitudeNear
+      const shadowX = clampedX * magnitudeNear
+      const shadowY = clampedY * magnitudeNear
 
-    // Theme-aware alphas
-    const isDark = document.documentElement.classList.contains('dark')
-    const nearAlpha = isDark ? 0.6 : 0.28
-    const farAlpha = isDark ? 0.3 : 0.15
-    const highlightAlpha = isDark ? 0.1 : 0.4
+      // Read theme luminance hint from CSS var (set per-theme in globals.css)
+      const root = document.documentElement
+      const darklikeVar = getComputedStyle(root).getPropertyValue('--theme-darklike').trim()
+      const isDarkLike = darklikeVar === '1'
+      const nearAlpha = isDarkLike ? 0.6 : 0.28
+      const farAlpha = isDarkLike ? 0.3 : 0.15
+      const highlightAlpha = isDarkLike ? 0.1 : 0.25
 
-    const shadowFilter =
-      `drop-shadow(${shadowX}px ${shadowY}px ${blurNear}px rgba(0,0,0,${nearAlpha})) ` +
-      `drop-shadow(${shadowX * magnitudeFarScale}px ${shadowY * magnitudeFarScale}px ${blurFar}px rgba(0,0,0,${farAlpha})) ` +
-      `drop-shadow(${-shadowX}px ${-shadowY}px ${highlightBlur}px rgba(255,255,255,${highlightAlpha}))`
+      const dynamicShadow =
+        `drop-shadow(${shadowX}px ${shadowY}px ${blurNear}px rgba(0,0,0,${nearAlpha})) ` +
+        `drop-shadow(${shadowX * magnitudeFarScale}px ${shadowY * magnitudeFarScale}px ${blurFar}px rgba(0,0,0,${farAlpha})) ` +
+        `drop-shadow(${-shadowX}px ${-shadowY}px ${highlightBlur}px rgba(255,255,255,${highlightAlpha}))`
 
-    tiltEl.style.setProperty('--card-back-shadow', shadowFilter)
-  }, [])
+      // If back face is visible, keep theme base glow only (avoid hover color shift)
+      if (flipped) {
+        // Remove inline override so theme-scoped value applies
+        tiltEl.style.removeProperty('--card-back-shadow')
+        return
+      }
+
+      // Preserve theme-defined glow by appending dynamic shadow to THEME base (from root), not prior inline value
+      const base = getComputedStyle(root).getPropertyValue('--card-back-shadow').trim()
+      const combined = base ? `${base} ${dynamicShadow}` : dynamicShadow
+      tiltEl.style.setProperty('--card-back-shadow', combined)
+    },
+    [flipped],
+  )
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {

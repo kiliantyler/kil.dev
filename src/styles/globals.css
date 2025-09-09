@@ -84,9 +84,9 @@
   --sidebar-accent-foreground: oklch(0.26 0.04 255);
   --sidebar-border: oklch(0.9 0.01 255);
   --sidebar-ring: oklch(0.6 0.16 239);
-  /* Shared easing for transitions */
+  --theme-darklike: 0;
+  --card-backdrop: oklch(1 0 0 / 0.6);
   --ease-fluid: cubic-bezier(0.3, 0, 0, 1);
-  /* Raised effect (subtle): layered shadows */
   --card-back-shadow: drop-shadow(0.6px 1.2px 1px rgba(0, 0, 0, 0.28)) drop-shadow(1px 1.6px 1.4px rgba(0, 0, 0, 0.15))
     drop-shadow(-0.6px -0.6px 0.6px rgba(255, 255, 255, 0.4));
 }
@@ -125,8 +125,9 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  --theme-darklike: 1;
+  --card-backdrop: oklch(0 0 0 / 0.5);
   color-scheme: dark;
-  /* Raised effect for dark theme (subtle) */
   --card-back-shadow: drop-shadow(0.9px 1.6px 1.4px rgba(0, 0, 0, 0.6)) drop-shadow(1.6px 3px 2.2px rgba(0, 0, 0, 0.3))
     drop-shadow(-0.6px -0.6px 0.6px rgba(255, 255, 255, 0.1));
 }
@@ -139,34 +140,25 @@
   --card-foreground: oklch(98% 0 0);
   --popover: oklch(22% 0.09 300);
   --popover-foreground: oklch(98% 0 0);
-  /* Neon magenta primary */
   --primary: oklch(75% 0.28 328);
   --primary-foreground: oklch(12% 0.06 300);
-  /* Electric cyan secondary */
   --secondary: oklch(85% 0.15 205);
   --secondary-foreground: oklch(18% 0.05 300);
-  /* Muted as deep slate for contrast */
   --muted: oklch(26% 0.02 270);
   --muted-foreground: oklch(78% 0.02 270);
-  /* Accent neon yellow/green */
   --accent: oklch(92% 0.23 117);
   --accent-foreground: oklch(18% 0.06 300);
-  /* Danger in hot orange */
   --destructive: oklch(70% 0.23 35);
   --destructive-foreground: oklch(8% 0 0);
-  /* Surfaces and outlines */
   --border: oklch(34% 0.04 280);
   --input: oklch(34% 0.04 280);
-  /* Ring as vibrant purple */
   --ring: oklch(70% 0.22 300);
   --grid-color: oklch(85% 0.12 205 / 0.15);
-  /* Charts tuned to neon palette */
   --chart-1: oklch(76% 0.28 328);
   --chart-2: oklch(85% 0.15 205);
   --chart-3: oklch(92% 0.23 117);
   --chart-4: oklch(78% 0.22 292);
   --chart-5: oklch(82% 0.24 25);
-  /* Sidebar surfaces */
   --sidebar: oklch(18% 0.12 300);
   --sidebar-foreground: oklch(98% 0 0);
   --sidebar-primary: oklch(76% 0.28 328);
@@ -175,6 +167,8 @@
   --sidebar-accent-foreground: oklch(92% 0.02 270);
   --sidebar-border: oklch(34% 0.04 280);
   --sidebar-ring: oklch(70% 0.22 300);
+  --theme-darklike: 1;
+  --card-backdrop: oklch(0 0 0 / 0.6);
   color-scheme: dark;
   --card-back-shadow: drop-shadow(0 0 6px oklch(75% 0.28 328 / 0.5)) drop-shadow(0 0 10px oklch(85% 0.15 205 / 0.4))
     drop-shadow(0 0 14px oklch(92% 0.23 117 / 0.25));

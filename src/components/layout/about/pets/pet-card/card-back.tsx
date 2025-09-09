@@ -23,31 +23,31 @@ export function PetCardBack({ pet }: PetCardBackProps) {
       <div aria-hidden className="absolute inset-0">
         <div className="relative h-full w-full">
           <Image src={pet.image} alt="" fill priority={false} className="object-cover scale-110 scale-x-[-1] blur-xl" />
-          <div className="absolute inset-0 bg-white/60 dark:bg-black/50 backdrop-blur-md" />
+          <div className="absolute inset-0 bg-(--card-backdrop) backdrop-blur-md card-back-shadow" />
         </div>
       </div>
 
       <ScrollArea className="relative z-10 h-full">
         <div className="flex flex-col pr-2">
           <h3
-            className="text-2xl md:text-3xl font-extrabold tracking-tight card-back-shadow mb-2"
+            className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground mb-2"
             aria-label={`Pet name: ${pet.name}`}>
             {pet.name}
           </h3>
-          <div className="mb-3 text-sm card-back-shadow">
+          <div className="mb-3 text-sm text-muted-foreground">
             <dl className="grid grid-cols-[auto_1fr] items-baseline gap-x-3 gap-y-1">
               <dt className="text-primary font-bold">Breed:</dt>
-              <dd className="font-medium">{pet.breed}</dd>
+              <dd className="font-medium text-foreground">{pet.breed}</dd>
               <dt className="text-primary font-bold">Gender:</dt>
-              <dd className="font-medium">{pet.gender}</dd>
+              <dd className="font-medium text-foreground">{pet.gender}</dd>
               <dt className="text-primary font-bold">Birthday:</dt>
-              <dd className="font-medium">
+              <dd className="font-medium text-foreground">
                 {formatBirthday(pet.birthday)}
                 {ageYears != null ? ` (${ageYears} ${ageYears === 1 ? 'year' : 'years'})` : null}
               </dd>
             </dl>
           </div>
-          <p className="text-sm leading-relaxed card-back-shadow">{pet.description}</p>
+          <p className="text-sm leading-relaxed text-foreground">{pet.description}</p>
           <div className="pt-6">
             <span aria-hidden className="opacity-0">
               _
