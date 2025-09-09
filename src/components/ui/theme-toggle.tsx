@@ -102,6 +102,12 @@ export function ThemeToggle({
 
   const handleThemeChange = useCallback(
     (theme: Theme, event?: ReactMouseEvent) => {
+      // Keep 'system' as the stored preference; clear localStorage when selecting system
+      if (theme === 'system') {
+        try {
+          localStorage.setItem('theme', 'system')
+        } catch {}
+      }
       const nextEffectiveTheme = theme === 'system' ? (systemTheme ?? resolvedTheme) : theme
       if (nextEffectiveTheme === resolvedTheme) {
         setTheme(theme)
@@ -140,7 +146,7 @@ export function ThemeToggle({
   const iconByTheme = useMemo<Partial<Record<Theme, IconComponent>>>(() => ({ system: SystemIcon }), [])
 
   const allOptions: ThemeOption[] = useMemo(() => {
-    const themeList: readonly Theme[] = themeNames as readonly Theme[]
+    const themeList: readonly Theme[] = getAvailableThemes() as readonly Theme[]
     return themeList.map((t): ThemeOption => {
       const label: string = getThemeLabel(t)
       const resolvedIcon: IconComponent = iconByTheme[t] ?? getThemeIcon(t, SystemIcon)
@@ -303,8 +309,15 @@ export function ThemeToggle({
             {hydrated
               ? (() => {
                   if (currentPreference === 'system') {
+                    // When the menu is open, always show the system icon
                     if (open) {
                       return <SystemIcon className="h-[1.2rem] w-[1.2rem]" />
+                    }
+                    // When closed, show the current effective icon (seasonal if active, else light/dark)
+                    const seasonalDefault = getDefaultThemeForNow()
+                    if (seasonalDefault !== 'system') {
+                      const SeasonalIcon: IconComponent = getThemeIcon(seasonalDefault, SystemIcon)
+                      return <SeasonalIcon className="h-[1.2rem] w-[1.2rem]" />
                     }
                     const effective: Theme = (systemTheme ?? (resolvedTheme === 'dark' ? 'dark' : 'light')) as Theme
                     const EffectiveIcon: IconComponent = getThemeIcon(effective, SystemIcon)
@@ -329,9 +342,13 @@ export function ThemeToggle({
           </Button>
         </TooltipTrigger>
         <TooltipContent side="bottom">
-          {open || tooltipHold
-            ? `${currentPreference.slice(0, 1).toUpperCase()}${currentPreference.slice(1)}`
-            : 'Theme Toggle'}
+          {(() => {
+            if (open || tooltipHold) {
+              if (currentPreference === 'system') return 'System'
+              return `${currentPreference.slice(0, 1).toUpperCase()}${currentPreference.slice(1)}`
+            }
+            return 'Theme Toggle'
+          })()}
         </TooltipContent>
       </Tooltip>
 
