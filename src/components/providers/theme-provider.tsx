@@ -47,6 +47,13 @@ function writeStorageTheme(value: Theme) {
   } catch {}
 }
 
+function writeCookieSystemTheme(value: SystemTheme | undefined) {
+  if (!value) return
+  try {
+    document.cookie = `systemTheme=${encodeURIComponent(value)}; path=/; max-age=31536000; samesite=lax`
+  } catch {}
+}
+
 function getSystemTheme(): SystemTheme | undefined {
   if (typeof window === 'undefined') return undefined
   try {
@@ -97,7 +104,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const initialPref: Theme = stored !== 'system' && !allowed.includes(stored) ? 'system' : stored
 
     setThemeState(initialPref)
-    setSystemTheme(getSystemTheme())
+    const sys = getSystemTheme()
+    setSystemTheme(sys)
+    writeCookieSystemTheme(sys)
 
     // Persist normalization if it changed
     if (initialPref !== stored) {
@@ -116,6 +125,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const handler = () => {
       const sys = mq.matches ? 'dark' : 'light'
       setSystemTheme(sys)
+      writeCookieSystemTheme(sys)
       if ((theme ?? 'system') === 'system') applyClasses('system', sys)
     }
     const onStorage = (e: StorageEvent) => {

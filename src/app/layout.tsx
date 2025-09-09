@@ -31,9 +31,14 @@ const notoSans = Noto_Sans({
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const cookieStore = await cookies()
   const themeCookie = cookieStore.get('theme')?.value
+  const systemThemeCookie = cookieStore.get('systemTheme')?.value
   const seasonalDefault = getDefaultThemeForNow()
-  const initialThemeClass =
-    themeCookie && themeCookie !== 'system' ? themeCookie : seasonalDefault !== 'system' ? seasonalDefault : ''
+  const baseSystem = systemThemeCookie === 'dark' || systemThemeCookie === 'light' ? systemThemeCookie : ''
+  const initialThemeClass = (() => {
+    if (themeCookie && themeCookie !== 'system') return themeCookie
+    if (seasonalDefault !== 'system') return `${baseSystem || 'dark'} ${seasonalDefault}`.trim()
+    return baseSystem
+  })()
   return (
     <html
       lang="en"
@@ -46,7 +51,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <script
           dangerouslySetInnerHTML={{
             __html:
-              '(function(){try{var t=localStorage.getItem("theme");if(t&&t!=="system"){document.documentElement.classList.add(t)}}catch(e){}})();',
+              '(function(){try{var d=document.documentElement;var t=localStorage.getItem("theme");if(t&&t!=="system"){d.classList.add(t);return}var m=document.cookie.match(/(?:^|; )systemTheme=([^;]+)/);var sys=m?decodeURIComponent(m[1]):null;if(sys==="dark"||sys==="light"){d.classList.add(sys)}}catch(e){}})();',
           }}
         />
       </head>
