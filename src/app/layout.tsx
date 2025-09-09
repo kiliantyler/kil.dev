@@ -6,6 +6,7 @@ import { Footer } from '@/components/layout/footer'
 import { Header } from '@/components/layout/header'
 import { type Metadata } from 'next'
 import { Noto_Sans, Space_Grotesk } from 'next/font/google'
+import Script from 'next/script'
 
 export const metadata: Metadata = {
   title: 'Kilian Tyler | Site Reliability Engineer',
@@ -28,6 +29,11 @@ const notoSans = Noto_Sans({
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${spaceGrotesk.variable} ${notoSans.variable}`} suppressHydrationWarning>
+      <head>
+        <Script id="init-theme" strategy="beforeInteractive">
+          {`(function(){try{var m=document.cookie.match(/(?:^|; )theme=([^;]+)/);var v=m?decodeURIComponent(m[1]):null; if(v&&v!=='system'){document.documentElement.classList.add(v);} else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches){document.documentElement.classList.add('dark');}}catch(e){}})();`}
+        </Script>
+      </head>
       <body className="font-sans flex min-h-screen flex-col bg-background text-foreground">
         <Providers>
           <div className="relative flex min-h-screen flex-col">

@@ -1,6 +1,6 @@
-import { Moon, Sun } from 'lucide-react'
+import { Moon, Sun, Zap } from 'lucide-react'
 import type { ComponentType } from 'react'
-export const themeNames = ['system', 'light', 'dark'] as const
+export const themeNames = ['system', 'light', 'dark', 'cyberpunk'] as const
 
 export type Theme = (typeof themeNames)[number]
 
@@ -18,11 +18,13 @@ export const themeLabels: Partial<Record<Theme, string>> = {
   light: 'Light',
   dark: 'Dark',
   system: 'System',
+  cyberpunk: 'Cyberpunk',
 }
 
 export const themeIcons: Partial<Record<Theme, IconComponent>> = {
   light: Sun,
   dark: Moon,
+  cyberpunk: Zap,
   // add custom theme icons here, e.g. midnight: Star
 }
 
