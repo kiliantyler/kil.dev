@@ -1,6 +1,6 @@
 'use client'
 
-import { useTheme } from 'next-themes'
+import { useTheme } from '@/components/providers/theme-provider'
 import { useCallback } from 'react'
 
 import { Button } from '@/components/ui/button'

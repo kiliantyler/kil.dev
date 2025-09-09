@@ -1,14 +1,21 @@
 'use client'
 
+import { useTheme } from '@/components/providers/theme-provider'
 import { Laptop, Smartphone } from 'lucide-react'
-import { useTheme } from 'next-themes'
 import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent } from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { captureThemeChanged } from '@/hooks/posthog'
-import { getThemeIcon, getThemeLabel, themeIcons, themeNames, type Theme } from '@/lib/themes'
+import {
+  getAvailableThemes,
+  getDefaultThemeForNow,
+  getThemeIcon,
+  getThemeLabel,
+  themeIcons,
+  type Theme,
+} from '@/lib/themes'
 import { cn } from '@/lib/utils'
 
 function SystemIcon({ className }: { className?: string }) {

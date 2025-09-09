@@ -1,6 +1,7 @@
 'use client'
 
-import { useTheme } from 'next-themes'
+import { useTheme } from '@/components/providers/theme-provider'
+import { getDefaultThemeForNow, type CssTheme } from '@/lib/themes'
 import { useEffect } from 'react'
 
 function setThemeCookie(value: string) {

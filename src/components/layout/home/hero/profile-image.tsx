@@ -1,5 +1,6 @@
 'use client'
 
+import { useTheme } from '@/components/providers/theme-provider'
 import { captureLadybirdDetected, captureProfileImageClicked } from '@/hooks/posthog'
 import { useHash } from '@/hooks/use-hash'
 import Confused from '@/images/headshot/cartoon-confused.webp'
@@ -9,7 +10,6 @@ import Halloween from '@/images/headshot/cartoon-halloween.webp'
 import Headshot from '@/images/headshot/cartoon-headshot.webp'
 import Ladybird from '@/images/headshot/cartoon-ladybird.webp'
 import { CONTENT } from '@/lib/content'
-import { useTheme } from 'next-themes'
 import Image, { type StaticImageData } from 'next/image'
 import { useCallback, useEffect, useLayoutEffect, useState, type KeyboardEvent } from 'react'
 
