@@ -3,6 +3,7 @@
 
 @custom-variant dark (&:is(.dark *));
 @custom-variant cyberpunk (&:is(.cyberpunk *));
+@custom-variant halloween (&:is(.halloween *));
 
 @theme {
   --font-sans:
@@ -172,6 +173,48 @@
   color-scheme: dark;
   --card-back-shadow: drop-shadow(0 0 6px oklch(75% 0.28 328 / 0.5)) drop-shadow(0 0 10px oklch(85% 0.15 205 / 0.4))
     drop-shadow(0 0 14px oklch(92% 0.23 117 / 0.25));
+}
+
+/* Halloween theme */
+.halloween {
+  --background: oklch(18% 0.08 60);
+  --foreground: oklch(98% 0 0);
+  --card: oklch(22% 0.07 60);
+  --card-foreground: oklch(98% 0 0);
+  --popover: oklch(22% 0.07 60);
+  --popover-foreground: oklch(98% 0 0);
+  --primary: oklch(75% 0.27 70);
+  --primary-foreground: oklch(12% 0.04 60);
+  --secondary: oklch(78% 0.21 140);
+  --secondary-foreground: oklch(12% 0.02 60);
+  --muted: oklch(26% 0.02 60);
+  --muted-foreground: oklch(78% 0.02 60);
+  --accent: oklch(85% 0.25 135);
+  --accent-foreground: oklch(18% 0.04 60);
+  --destructive: oklch(60% 0.25 30);
+  --destructive-foreground: oklch(8% 0 0);
+  --border: oklch(34% 0.03 60);
+  --input: oklch(34% 0.03 60);
+  --ring: oklch(75% 0.27 70);
+  --grid-color: oklch(70% 0.12 70 / 0.15);
+  --chart-1: oklch(75% 0.27 70);
+  --chart-2: oklch(78% 0.21 140);
+  --chart-3: oklch(85% 0.25 135);
+  --chart-4: oklch(72% 0.18 20);
+  --chart-5: oklch(85% 0.06 95);
+  --sidebar: oklch(18% 0.08 60);
+  --sidebar-foreground: oklch(98% 0 0);
+  --sidebar-primary: oklch(75% 0.27 70);
+  --sidebar-primary-foreground: oklch(12% 0.04 60);
+  --sidebar-accent: oklch(26% 0.02 60);
+  --sidebar-accent-foreground: oklch(92% 0.02 60);
+  --sidebar-border: oklch(34% 0.03 60);
+  --sidebar-ring: oklch(75% 0.27 70);
+  --theme-darklike: 1;
+  --card-backdrop: oklch(0 0 0 / 0.6);
+  color-scheme: dark;
+  --card-back-shadow: drop-shadow(0 0 6px oklch(75% 0.27 70 / 0.5)) drop-shadow(0 0 10px oklch(78% 0.21 140 / 0.35))
+    drop-shadow(0 0 14px oklch(85% 0.25 135 / 0.25));
 }
 
 /* Custom utilities */

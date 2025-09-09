@@ -5,14 +5,13 @@ import { useHash } from '@/hooks/use-hash'
 import Confused from '@/images/headshot/cartoon-confused.webp'
 import Cyberpunk from '@/images/headshot/cartoon-cyberpunk.webp'
 import Grumpy from '@/images/headshot/cartoon-grumpy.webp'
+import Halloween from '@/images/headshot/cartoon-halloween.webp'
 import Headshot from '@/images/headshot/cartoon-headshot.webp'
 import Ladybird from '@/images/headshot/cartoon-ladybird.webp'
 import { CONTENT } from '@/lib/content'
 import { useTheme } from 'next-themes'
 import Image, { type StaticImageData } from 'next/image'
 import { useCallback, useEffect, useLayoutEffect, useState, type KeyboardEvent } from 'react'
-
-// Use Next.js Image with SSR for best LCP; hydration-safe variant gating is handled below
 
 export function ProfileImage() {
   const hash = useHash()
@@ -22,12 +21,14 @@ export function ProfileImage() {
   const useConfused = mounted && hash === '#YouWereAlreadyHere'
   const [isGrumpy, setIsGrumpy] = useState(false)
   const [isLadybird, setIsLadybird] = useState(false)
+  const [isHalloween, setIsHalloween] = useState(false)
 
-  type ProfileVariant = 'grumpy' | 'cyberpunk' | 'ladybird' | 'confused' | 'default'
+  type ProfileVariant = 'grumpy' | 'cyberpunk' | 'halloween' | 'ladybird' | 'confused' | 'default'
 
   const VARIANT_TO_IMAGE: Record<ProfileVariant, StaticImageData> = {
     grumpy: Grumpy,
     cyberpunk: Cyberpunk,
+    halloween: Halloween,
     ladybird: Ladybird,
     confused: Confused,
     default: Headshot,
@@ -36,11 +37,13 @@ export function ProfileImage() {
   function computeVariant(
     isGrumpyFlag: boolean,
     isCyberpunkFlag: boolean,
+    isHalloweenFlag: boolean,
     isLadybirdFlag: boolean,
     useConfusedFlag: boolean,
   ): ProfileVariant {
     if (isGrumpyFlag) return 'grumpy'
     if (isCyberpunkFlag) return 'cyberpunk'
+    if (isHalloweenFlag) return 'halloween'
     if (isLadybirdFlag) return 'ladybird'
     if (useConfusedFlag) return 'confused'
     return 'default'
@@ -49,6 +52,9 @@ export function ProfileImage() {
   useEffect(() => {
     if (typeof navigator === 'undefined') return
     const ua = navigator.userAgent || ''
+    if (ua.toLowerCase().includes('halloween')) {
+      setIsHalloween(true)
+    }
     if (ua.toLowerCase().includes('ladybird')) {
       setIsLadybird(true)
       try {
@@ -93,14 +99,14 @@ export function ProfileImage() {
   }, [])
   const theme = useTheme()
   const isCyberpunk = cookieTheme === 'cyberpunk' || (mounted && theme.resolvedTheme === 'cyberpunk')
-  const variant = computeVariant(isGrumpy, isCyberpunk, isLadybird, useConfused)
+  const variant = computeVariant(isGrumpy, isCyberpunk, isHalloween, isLadybird, useConfused)
   const imageSrc = VARIANT_TO_IMAGE[variant]
-  const altSuffix = variant === 'default' || variant === 'cyberpunk' ? 'headshot' : variant
+  const altSuffix = variant === 'default' || variant === 'cyberpunk' || variant === 'halloween' ? 'headshot' : variant
   const imageAlt = `${CONTENT.NAME} ${altSuffix}`
 
-  // Only show placeholder for environment-driven variants (not default or grumpy)
-  const isEnvDrivenVariant = variant === 'cyberpunk' || variant === 'ladybird' || variant === 'confused'
-  const isBaseThemeVariant = !isGrumpy && !isLadybird && !useConfused
+  const isEnvDrivenVariant =
+    variant === 'cyberpunk' || variant === 'ladybird' || variant === 'confused' || variant === 'halloween'
+  const isBaseThemeVariant = !isGrumpy && !isLadybird && !isHalloween && !useConfused
 
   useEffect(() => {
     if (!mounted) return
@@ -146,6 +152,15 @@ export function ProfileImage() {
               alt={imageAlt}
               src={Cyberpunk}
               className="hidden rounded-lg transition-transform duration-500 ease-(--ease-fluid) translate-y-0 scale-100 transform-gpu group-hover:-translate-y-1 group-hover:scale-105 cyberpunk:block"
+              loading="eager"
+              priority
+              fill
+              sizes="(min-width: 1024px) 500px, 100vw"
+            />
+            <Image
+              alt={imageAlt}
+              src={Halloween}
+              className="hidden rounded-lg transition-transform duration-500 ease-(--ease-fluid) translate-y-0 scale-100 transform-gpu group-hover:-translate-y-1 group-hover:scale-105 halloween:block"
               loading="eager"
               priority
               fill
