@@ -1,6 +1,6 @@
 'use client'
 
-import { getActiveSeasonalThemes, getCssThemesForNow } from '@/lib/themes'
+import { getActiveSeasonalThemes, getCssThemesForNow } from '@/lib/theme-runtime'
 import { PostHogProvider } from './posthog-provider'
 import { ThemeCookieSync } from './theme-cookie-sync'
 import { ThemeProvider } from './theme-provider'

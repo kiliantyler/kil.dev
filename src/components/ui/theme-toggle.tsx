@@ -8,14 +8,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType }
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { captureThemeChanged } from '@/hooks/posthog'
-import {
-  getAvailableThemes,
-  getDefaultThemeForNow,
-  getThemeIcon,
-  getThemeLabel,
-  themeIcons,
-  type Theme,
-} from '@/lib/themes'
+import { getAvailableThemes, getDefaultThemeForNow } from '@/lib/theme-runtime'
+import { getThemeIcon, getThemeLabel, themeIcons, type Theme } from '@/lib/themes'
 import { cn } from '@/lib/utils'
 
 function SystemIcon({ className }: { className?: string }) {
