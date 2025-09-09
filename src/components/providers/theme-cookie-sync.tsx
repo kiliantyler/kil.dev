@@ -13,7 +13,7 @@ export function ThemeCookieSync() {
   const { resolvedTheme, theme } = useTheme()
 
   useEffect(() => {
-    const chosen = resolvedTheme || theme || 'system'
+    const chosen = resolvedTheme ?? theme ?? 'system'
     setThemeCookie(chosen)
   }, [resolvedTheme, theme])
 
