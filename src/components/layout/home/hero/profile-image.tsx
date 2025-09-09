@@ -3,18 +3,48 @@
 import { captureLadybirdDetected, captureProfileImageClicked } from '@/hooks/posthog'
 import { useHash } from '@/hooks/use-hash'
 import Confused from '@/images/headshot/cartoon-confused.webp'
+import Cyberpunk from '@/images/headshot/cartoon-cyberpunk.webp'
 import Grumpy from '@/images/headshot/cartoon-grumpy.webp'
 import Headshot from '@/images/headshot/cartoon-headshot.webp'
 import Ladybird from '@/images/headshot/cartoon-ladybird.webp'
 import { CONTENT } from '@/lib/content'
-import Image from 'next/image'
-import { useCallback, useEffect, useState, type KeyboardEvent } from 'react'
+import { useTheme } from 'next-themes'
+import Image, { type StaticImageData } from 'next/image'
+import { useCallback, useEffect, useLayoutEffect, useState, type KeyboardEvent } from 'react'
+
+// Use Next.js Image with SSR for best LCP; hydration-safe variant gating is handled below
 
 export function ProfileImage() {
   const hash = useHash()
-  const useConfused = hash === '#YouWereAlreadyHere'
+  const [mounted, setMounted] = useState(false)
+  const [isImageLoaded, setIsImageLoaded] = useState(true)
+  const [cookieTheme, setCookieTheme] = useState<string | null>(null)
+  const useConfused = mounted && hash === '#YouWereAlreadyHere'
   const [isGrumpy, setIsGrumpy] = useState(false)
   const [isLadybird, setIsLadybird] = useState(false)
+
+  type ProfileVariant = 'grumpy' | 'cyberpunk' | 'ladybird' | 'confused' | 'default'
+
+  const VARIANT_TO_IMAGE: Record<ProfileVariant, StaticImageData> = {
+    grumpy: Grumpy,
+    cyberpunk: Cyberpunk,
+    ladybird: Ladybird,
+    confused: Confused,
+    default: Headshot,
+  }
+
+  function computeVariant(
+    isGrumpyFlag: boolean,
+    isCyberpunkFlag: boolean,
+    isLadybirdFlag: boolean,
+    useConfusedFlag: boolean,
+  ): ProfileVariant {
+    if (isGrumpyFlag) return 'grumpy'
+    if (isCyberpunkFlag) return 'cyberpunk'
+    if (isLadybirdFlag) return 'ladybird'
+    if (useConfusedFlag) return 'confused'
+    return 'default'
+  }
 
   useEffect(() => {
     if (typeof navigator === 'undefined') return
@@ -33,6 +63,18 @@ export function ProfileImage() {
     }
   }, [])
 
+  // Read theme preference cookie as early as possible on the client
+  useLayoutEffect(() => {
+    if (typeof document === 'undefined') return
+    const themeMatch = /(?:^|; )theme=([^;]+)/.exec(document.cookie)
+    const raw = themeMatch?.[1]
+    setCookieTheme(typeof raw === 'string' && raw.length > 0 ? decodeURIComponent(raw) : null)
+  }, [])
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   const handleClick = useCallback(() => {
     if (isGrumpy) return
     setIsGrumpy(true)
@@ -49,10 +91,25 @@ export function ProfileImage() {
       setIsGrumpy(true)
     }
   }, [])
+  const theme = useTheme()
+  const isCyberpunk = cookieTheme === 'cyberpunk' || (mounted && theme.resolvedTheme === 'cyberpunk')
+  const variant = computeVariant(isGrumpy, isCyberpunk, isLadybird, useConfused)
+  const imageSrc = VARIANT_TO_IMAGE[variant]
+  const altSuffix = variant === 'default' || variant === 'cyberpunk' ? 'headshot' : variant
+  const imageAlt = `${CONTENT.NAME} ${altSuffix}`
 
-  const defaultImageSrc = isLadybird ? Ladybird : useConfused ? Confused : Headshot
-  const imageSrc = isGrumpy ? Grumpy : defaultImageSrc
-  const imageAlt = `${CONTENT.NAME} ${isGrumpy ? 'grumpy' : isLadybird ? 'ladybird' : useConfused ? 'confused' : 'headshot'}`
+  // Only show placeholder for environment-driven variants (not default or grumpy)
+  const isEnvDrivenVariant = variant === 'cyberpunk' || variant === 'ladybird' || variant === 'confused'
+  const isBaseThemeVariant = !isGrumpy && !isLadybird && !useConfused
+
+  useEffect(() => {
+    if (!mounted) return
+    if (isEnvDrivenVariant) {
+      setIsImageLoaded(false)
+    } else {
+      setIsImageLoaded(true)
+    }
+  }, [mounted, isEnvDrivenVariant])
 
   return (
     <div
@@ -66,17 +123,47 @@ export function ProfileImage() {
       onPointerLeave={handlePointerLeave}
       onMouseLeave={handlePointerLeave}
       onBlur={handlePointerLeave}>
-      <div className="border-primary absolute -top-4 -left-4 h-full w-full -rotate-3 group-hover:scale-110 group-hover:translate-y-3 group-hover:translate-x-4 rounded-lg border-4 transition-transform duration-500 group-hover:rotate-0" />
-      <div className="relative h-auto w-full rounded-lg bg-cover bg-center bg-no-repeat shadow-2xl">
-        <Image
-          alt={imageAlt}
-          src={imageSrc}
-          className="rounded-lg transition-transform duration-500 group-hover:-translate-y-1 group-hover:scale-105"
-          loading="eager"
-          priority
-          width={500}
-          height={500}
+      <div className="border-primary absolute -top-4 -left-4 h-full w-full -rotate-3 group-hover:scale-110 group-hover:translate-y-3 group-hover:translate-x-4 rounded-lg border-4 transition-transform duration-500 ease-(--ease-fluid) group-hover:rotate-0" />
+      <div
+        className="relative aspect-square w-full rounded-lg bg-cover bg-center bg-no-repeat shadow-2xl"
+        aria-busy={!isImageLoaded}>
+        <div
+          aria-hidden
+          className={`${isEnvDrivenVariant && !isImageLoaded ? 'opacity-100' : 'opacity-0'} absolute inset-0 rounded-lg bg-muted animate-pulse transition-opacity duration-500`}
         />
+        {isBaseThemeVariant ? (
+          <>
+            <Image
+              alt={imageAlt}
+              src={Headshot}
+              className="rounded-lg transition-transform duration-500 ease-(--ease-fluid) translate-y-0 scale-100 transform-gpu group-hover:-translate-y-1 group-hover:scale-105 cyberpunk:hidden"
+              loading="eager"
+              priority
+              fill
+              sizes="(min-width: 1024px) 500px, 100vw"
+            />
+            <Image
+              alt={imageAlt}
+              src={Cyberpunk}
+              className="hidden rounded-lg transition-transform duration-500 ease-(--ease-fluid) translate-y-0 scale-100 transform-gpu group-hover:-translate-y-1 group-hover:scale-105 cyberpunk:block"
+              loading="eager"
+              priority
+              fill
+              sizes="(min-width: 1024px) 500px, 100vw"
+            />
+          </>
+        ) : (
+          <Image
+            alt={imageAlt}
+            src={imageSrc}
+            className={`${isEnvDrivenVariant && !isImageLoaded ? 'opacity-0' : 'opacity-100'} rounded-lg transition-transform duration-500 ease-(--ease-fluid) translate-y-0 scale-100 transform-gpu group-hover:-translate-y-1 group-hover:scale-105`}
+            loading="eager"
+            priority
+            fill
+            sizes="(min-width: 1024px) 500px, 100vw"
+            onLoad={() => setIsImageLoaded(true)}
+          />
+        )}
       </div>
     </div>
   )

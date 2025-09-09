@@ -20,7 +20,13 @@ function SystemIcon({ className }: { className?: string }) {
   )
 }
 
-export function ThemeToggle() {
+export function ThemeToggle({
+  onFlyoutWidthChange,
+  onOpenChange,
+}: {
+  onFlyoutWidthChange?: (width: number) => void
+  onOpenChange?: (open: boolean) => void
+} = {}) {
   const { theme, setTheme, resolvedTheme, systemTheme } = useTheme()
   const { startTransition } = useThemeTransition()
 
@@ -30,6 +36,7 @@ export function ThemeToggle() {
   const triggerRef = useRef<HTMLButtonElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([])
+  const optionsRef = useRef<HTMLDivElement | null>(null)
 
   const [hydrated, setHydrated] = useState(false)
   useEffect(() => {
@@ -157,6 +164,40 @@ export function ThemeToggle() {
     }
   }, [open, openedViaKeyboard])
 
+  // Notify parent of open state changes immediately
+  useEffect(() => {
+    onOpenChange?.(open)
+  }, [open, onOpenChange])
+
+  // Report flyout width to parent (for md+ horizontal layout)
+  useEffect(() => {
+    if (!onFlyoutWidthChange) return
+
+    const report = () => {
+      if (!open) {
+        onFlyoutWidthChange(0)
+        return
+      }
+      const isMd = typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches
+      if (!isMd) {
+        onFlyoutWidthChange(0)
+        return
+      }
+      const width = optionsRef.current?.getBoundingClientRect().width ?? 0
+      onFlyoutWidthChange(width)
+    }
+
+    report()
+    if (!open) return
+    const onResize = () => report()
+    window.addEventListener('resize', onResize)
+    const id = window.setTimeout(report, 0)
+    return () => {
+      window.removeEventListener('resize', onResize)
+      window.clearTimeout(id)
+    }
+  }, [open, onFlyoutWidthChange, optionsToShow.length])
+
   useEffect(() => {
     if (open) {
       setTooltipHold(false)
@@ -275,6 +316,7 @@ export function ThemeToggle() {
 
       <div
         id="theme-options"
+        ref={optionsRef}
         suppressHydrationWarning
         role="menu"
         aria-label="Select theme"
