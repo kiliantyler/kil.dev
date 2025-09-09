@@ -1,9 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
-export function HomeLogo() {
+export function HomeLogo({ condensed = false }: { condensed?: boolean }) {
   const shortContent = 'kil.dev'
   const longContent = 'Kilian.DevOps'
 
@@ -14,7 +14,10 @@ export function HomeLogo() {
   const handleFocus = useCallback(() => setIsHovered(true), [])
   const handleBlur = useCallback(() => setIsHovered(false), [])
 
-  const ariaLabel = isHovered ? `{ ${longContent} }` : `{ ${shortContent} }`
+  const ariaLabel = useMemo(() => {
+    if (condensed) return '{ }'
+    return isHovered ? `{ ${longContent} }` : `{ ${shortContent} }`
+  }, [condensed, isHovered, longContent, shortContent])
 
   return (
     <Link
@@ -30,51 +33,71 @@ export function HomeLogo() {
           <span aria-hidden="true" className="inline-block -translate-y-[0.125rem]">
             {'{ '}
           </span>
-          <span className="inline-block align-top">
-            <span className="relative inline-block align-top">
-              <span aria-hidden="true" className="invisible">
-                K
-              </span>
-              <span aria-hidden="true" className="absolute inset-0">
-                <span className="absolute left-0 top-0 transition-all duration-500 ease-out opacity-100 group-hover:opacity-0 translate-y-0 group-hover:-translate-y-0.5">
-                  k
-                </span>
-                <span className="absolute left-0 top-0 transition-all duration-500 ease-out opacity-0 group-hover:opacity-100 translate-y-0.5 group-hover:translate-y-0">
+          {/* Animated content wrapper collapses when condensed to slide right brace left */}
+          <span
+            aria-hidden="true"
+            className={
+              'inline-block align-top overflow-hidden transition-[max-width] duration-250 ease-out relative' +
+              (condensed ? ' max-w-0' : ' max-w-[30ch]')
+            }>
+            {/* Right-to-left fade overlay anchored to the right edge */}
+            <span
+              aria-hidden="true"
+              className={
+                'pointer-events-none absolute top-0 right-0 bottom-0 w-[6ch] bg-gradient-to-l from-background/90 to-transparent transition-opacity duration-250 ease-out z-10' +
+                (condensed ? ' opacity-100' : ' opacity-0')
+              }
+            />
+            <span className="inline-block align-top">
+              <span className="relative inline-block align-top">
+                <span aria-hidden="true" className="invisible">
                   K
                 </span>
-              </span>
-            </span>
-            <span aria-hidden="true">il</span>
-            <span
-              aria-hidden="true"
-              className="inline-block align-top overflow-hidden max-w-0 group-hover:max-w-[3ch] group-focus-visible:max-w-[3ch] transition-[max-width] duration-500 ease-out">
-              <span>ian</span>
-            </span>
-          </span>
-          <span aria-hidden="true">.</span>
-          <span className="inline-block align-top">
-            <span className="relative inline-block align-top">
-              <span aria-hidden="true" className="invisible">
-                D
-              </span>
-              <span aria-hidden="true" className="absolute inset-0">
-                <span className="absolute left-0 top-0 transition-all duration-500 ease-out opacity-100 group-hover:opacity-0 translate-y-0 group-hover:-translate-y-0.5">
-                  d
+                <span aria-hidden="true" className="absolute inset-0">
+                  <span className="absolute left-0 top-0 transition-all duration-500 ease-out opacity-100 group-hover:opacity-0 translate-y-0 group-hover:-translate-y-0.5">
+                    k
+                  </span>
+                  <span className="absolute left-0 top-0 transition-all duration-500 ease-out opacity-0 group-hover:opacity-100 translate-y-0.5 group-hover:translate-y-0">
+                    K
+                  </span>
                 </span>
-                <span className="absolute left-0 top-0 transition-all duration-500 ease-out opacity-0 group-hover:opacity-100 translate-y-0.5 group-hover:translate-y-0">
+              </span>
+              <span aria-hidden="true">il</span>
+              <span
+                aria-hidden="true"
+                className="inline-block align-top overflow-hidden max-w-0 group-hover:max-w-[3ch] group-focus-visible:max-w-[3ch] transition-[max-width] duration-500 ease-out">
+                <span>ian</span>
+              </span>
+            </span>
+            <span aria-hidden="true">.</span>
+            <span className="inline-block align-top">
+              <span className="relative inline-block align-top">
+                <span aria-hidden="true" className="invisible">
                   D
                 </span>
+                <span aria-hidden="true" className="absolute inset-0">
+                  <span className="absolute left-0 top-0 transition-all duration-500 ease-out opacity-100 group-hover:opacity-0 translate-y-0 group-hover:-translate-y-0.5">
+                    d
+                  </span>
+                  <span className="absolute left-0 top-0 transition-all duration-500 ease-out opacity-0 group-hover:opacity-100 translate-y-0.5 group-hover:translate-y-0">
+                    D
+                  </span>
+                </span>
+              </span>
+              <span aria-hidden="true">ev</span>
+              <span
+                aria-hidden="true"
+                className="inline-block align-top overflow-hidden max-w-0 group-hover:max-w-[3ch] group-focus-visible:max-w-[3ch] transition-[max-width] duration-500 ease-out">
+                <span>Ops</span>
               </span>
             </span>
-            <span aria-hidden="true">ev</span>
-            <span
-              aria-hidden="true"
-              className="inline-block align-top overflow-hidden max-w-0 group-hover:max-w-[3ch] group-focus-visible:max-w-[3ch] transition-[max-width] duration-500 ease-out">
-              <span>Ops</span>
-            </span>
           </span>
-          <span aria-hidden="true" className="inline-block -translate-y-[0.125rem]">
-            {' }'}
+          <span
+            aria-hidden="true"
+            className={
+              'inline-block -translate-y-[0.125rem] transition-[margin] duration-250 ease-out will-change-[margin]'
+            }>
+            {condensed ? '}' : ' }'}
           </span>
         </h2>
       </div>
