@@ -2,7 +2,7 @@
 
 import { FlippingCard } from '@/components/ui/flipping-card'
 import { capturePetCardFlipped } from '@/hooks/posthog'
-import type { Pet } from '@/types'
+import type { Pet } from '@/lib/pets'
 import { useCallback } from 'react'
 import { PetCardBack } from './card-back'
 import { PetCardFront } from './card-front'

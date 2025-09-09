@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import React from 'react'
 
-import { NAVIGATION } from '@/lib/constants'
+import { NAVIGATION } from '@/lib/navmenu'
 import { cn } from '@/lib/utils'
 
 type NavigationItem = (typeof NAVIGATION)[number]

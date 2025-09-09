@@ -1,8 +1,8 @@
 'use client'
 
 import { Card } from '@/components/ui/card'
+import type { Project } from '@/lib/projects'
 import { resolveSkills } from '@/lib/skillicons'
-import type { Project } from '@/types'
 import Image from 'next/image'
 import { RepoButton } from './repo-button'
 import { ProjectTechIcons } from './tech-icons'

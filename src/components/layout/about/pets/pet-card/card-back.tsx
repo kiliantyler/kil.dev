@@ -2,8 +2,8 @@
 
 import { Card } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import type { Pet } from '@/lib/pets'
 import { calculateAgeYears, formatDateFull } from '@/lib/utils'
-import type { Pet } from '@/types'
 import Image from 'next/image'
 
 function formatBirthday(dateString: string) {

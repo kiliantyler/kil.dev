@@ -2,7 +2,7 @@
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { CONTENT } from '@/lib/constants'
+import { CONTENT } from '@/lib/content'
 import { useMemo } from 'react'
 
 type MapTooltipProps = {
@@ -13,8 +13,8 @@ type MapTooltipProps = {
 
 export function MapTooltip({
   locationLabel = CONTENT.LOCATION,
-  latitude = 41.4993,
-  longitude = -81.6944,
+  latitude = CONTENT.MAP_LATITUDE,
+  longitude = CONTENT.MAP_LONGITUDE,
 }: MapTooltipProps) {
   const embedMapSrc = useMemo(() => {
     const deltaLat = 2.0

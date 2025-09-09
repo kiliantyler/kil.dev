@@ -1,4 +1,4 @@
-import type { QuickFact } from '@/types'
+import type { QuickFact } from '@/lib/quickfacts'
 import Link from 'next/link'
 import { ModeToggleLink, ModeToggleNote } from './mode-toggle-link'
 

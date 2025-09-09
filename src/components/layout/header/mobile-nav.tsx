@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { NAVIGATION } from '@/lib/constants'
+import { NAVIGATION } from '@/lib/navmenu'
 import { cn } from '@/lib/utils'
 
 export function MobileNav() {

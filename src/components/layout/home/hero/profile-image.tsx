@@ -6,7 +6,7 @@ import Confused from '@/images/headshot/cartoon-confused.webp'
 import Grumpy from '@/images/headshot/cartoon-grumpy.webp'
 import Headshot from '@/images/headshot/cartoon-headshot.webp'
 import Ladybird from '@/images/headshot/cartoon-ladybird.webp'
-import { CONTENT } from '@/lib/constants'
+import { CONTENT } from '@/lib/content'
 import Image from 'next/image'
 import { useCallback, useEffect, useState, type KeyboardEvent } from 'react'
 

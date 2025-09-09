@@ -1,4 +1,4 @@
-import type { Project } from '@/types'
+import type { Project } from '@/lib/projects'
 import { ProjectCard } from './project-card/_content'
 
 export function ProjectsGrid({ items }: { items: Project[] }) {

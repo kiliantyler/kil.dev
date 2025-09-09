@@ -1,23 +1,3 @@
-import type { ExternalLink, NavigationItem, QuickFact } from '@/types'
-
-export const EXTERNAL_LINKS: ExternalLink = {
-  GITHUB: 'https://github.com/kiliantyler/',
-  LINKEDIN: 'https://www.linkedin.com/in/kilian-tyler/',
-} as const
-
-export const CONTENT = {
-  NAME: 'Kilian Tyler',
-  TITLE: 'Site Reliability | DevOps Engineer',
-  LOCATION: 'Cleveland, Ohio',
-} as const
-
-export const NAVIGATION: NavigationItem[] = [
-  { label: 'Home', href: '/' },
-  { label: 'About', href: '/about' },
-  { label: 'Experience', href: '/experience' },
-  { label: 'Projects', href: '/projects' },
-] as const
-
 export const LIGHT_GRID = {
   // layout
   GRID_SIZE_PX: 40,
@@ -35,13 +15,4 @@ export const LIGHT_GRID = {
   COLOR_RGB: '3,169,244',
   GLOW_NEAR_PX: 5,
   GLOW_FAR_PX: 10,
-} as const
-
-export const QUICK_FACTS: QuickFact[] = [
-  { label: 'Mode', value: 'Dark mode' },
-  { label: 'Shell', value: 'fish', href: 'https://fishshell.com' },
-  { label: 'Terminal', value: 'Ghostty', href: 'https://ghostty.app' },
-  { label: 'Editor', value: 'Cursor', href: 'https://cursor.com' },
-  { label: 'OS', value: 'macOS', href: 'https://www.apple.com/macos', note: '(Windows for gaming)' },
-  { label: 'Pets', value: '3 dogs, 3 cats', note: '(Pictured below)' },
-]
+}

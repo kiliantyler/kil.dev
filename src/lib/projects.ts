@@ -3,7 +3,22 @@ import kilDevImage from '@/images/projects/kil-dev.webp'
 import kubernetesImage from '@/images/projects/kubernetes.webp'
 import questnestImage from '@/images/projects/questnest.webp'
 import tiaxslaughterImage from '@/images/projects/tiaxslaughter.webp'
-import type { Project } from '@/types'
+import type { Route } from 'next'
+import type { StaticImageData } from 'next/image'
+import type { SkillName } from './skillicons'
+
+export interface Project {
+  id: string
+  title: string
+  description: string
+  tags: SkillName[]
+  href?: Route
+  repo?: Route
+  year?: number
+  status?: 'live' | 'wip' | 'archived'
+  imageSrc: StaticImageData
+  imageAlt: string
+}
 
 export const projects: Project[] = [
   {

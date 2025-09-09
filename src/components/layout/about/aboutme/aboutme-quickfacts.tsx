@@ -1,5 +1,5 @@
 import { MapTooltip } from '@/components/ui/map-tooltip'
-import { QUICK_FACTS } from '@/lib/constants'
+import { QUICK_FACTS } from '@/lib/quickfacts'
 import { QuickFact } from './quick-fact'
 
 export function AboutMeQuickFacts() {
