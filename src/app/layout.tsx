@@ -4,8 +4,10 @@ import '@/styles/globals.css'
 import { Background } from '@/components/layout/background'
 import { Footer } from '@/components/layout/footer'
 import { Header } from '@/components/layout/header'
+import { buildInitThemeScript, getDefaultThemeForNow } from '@/lib/themes'
 import { type Metadata } from 'next'
 import { Noto_Sans, Space_Grotesk } from 'next/font/google'
+import { cookies } from 'next/headers'
 import Script from 'next/script'
 
 export const metadata: Metadata = {
@@ -26,13 +28,27 @@ const notoSans = Noto_Sans({
   variable: '--font-noto-sans',
 })
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const cookieStore = await cookies()
+  const themeCookie = cookieStore.get('theme')?.value
+  const seasonalDefault = getDefaultThemeForNow()
+  const initialThemeClass =
+    themeCookie && themeCookie !== 'system' ? themeCookie : seasonalDefault !== 'system' ? seasonalDefault : ''
   return (
-    <html lang="en" className={`${spaceGrotesk.variable} ${notoSans.variable}`} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${spaceGrotesk.variable} ${notoSans.variable} ${initialThemeClass}`}
+      suppressHydrationWarning>
       <head>
         <Script id="init-theme" strategy="beforeInteractive">
-          {`(function(){try{var m=document.cookie.match(/(?:^|; )theme=([^;]+)/);var v=m?decodeURIComponent(m[1]):null; if(v&&v!=='system'){document.documentElement.classList.add(v);} else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches){document.documentElement.classList.add('dark');}}catch(e){}})();`}
+          {buildInitThemeScript()}
         </Script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              '(function(){try{var t=localStorage.getItem("theme");if(t&&t!=="system"){document.documentElement.classList.add(t)}}catch(e){}})();',
+          }}
+        />
       </head>
       <body className="font-sans flex min-h-screen flex-col bg-background text-foreground">
         <Providers>
