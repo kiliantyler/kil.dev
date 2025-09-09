@@ -1,4 +1,4 @@
-import { LIGHT_GRID } from '@/lib/constants'
+import { LIGHT_GRID } from '@/lib/light-grid'
 import { GridLights } from './grid-lights'
 
 export function CircuitBackground() {

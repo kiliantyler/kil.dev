@@ -1,6 +1,6 @@
 'use client'
 
-import { LIGHT_GRID } from '@/lib/constants'
+import { LIGHT_GRID } from '@/lib/light-grid'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 type Point = { x: number; y: number }
