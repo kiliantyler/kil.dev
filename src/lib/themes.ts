@@ -55,7 +55,7 @@ const BASE_CSS_THEMES: CssTheme[] = ['light', 'dark', 'cyberpunk']
 
 // Add future seasonal themes here
 export const SEASONAL_THEMES: SeasonalThemeConfig[] = [
-  { theme: 'halloween', start: { month: 9, day: 9 }, end: { month: 11, day: 1 }, defaultDuring: true },
+  { theme: 'halloween', start: { month: 8, day: 9 }, end: { month: 9, day: 9 }, defaultDuring: true },
 ]
 
 function compareMonthDay(a: MonthDay, b: MonthDay): number {

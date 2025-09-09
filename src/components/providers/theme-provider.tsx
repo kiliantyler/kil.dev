@@ -1,6 +1,6 @@
 'use client'
 
-import { getDefaultThemeForNow, type Theme } from '@/lib/themes'
+import { getAvailableThemes, getDefaultThemeForNow, SEASONAL_THEMES, type Theme } from '@/lib/themes'
 import * as React from 'react'
 
 type SystemTheme = 'light' | 'dark'
@@ -58,10 +58,12 @@ function getSystemTheme(): SystemTheme | undefined {
 function applyClasses(preference: Theme, system: SystemTheme | undefined) {
   const root = document.documentElement
   const seasonalDefault = getDefaultThemeForNow()
+  const allowed = getAvailableThemes()
+  const pref: Theme = preference !== 'system' && !allowed.includes(preference) ? 'system' : preference
   const remove = (cls: string) => root.classList.remove(cls)
   const add = (cls: string) => root.classList.add(cls)
 
-  if (preference === 'system') {
+  if (pref === 'system') {
     const effective = system ?? 'light'
     // Ensure system dark/light present
     if (!root.classList.contains(effective)) add(effective)
@@ -81,20 +83,30 @@ function applyClasses(preference: Theme, system: SystemTheme | undefined) {
   // Explicit theme preference
   const cssClasses = ['dark', 'light', 'halloween', 'cyberpunk']
   for (const c of cssClasses) remove(c)
-  add(preference)
+  add(pref)
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = React.useState<Theme | undefined>(undefined)
   const [systemTheme, setSystemTheme] = React.useState<SystemTheme | undefined>(undefined)
 
-  // Initialize from storage/cookie
+  // Initialize from storage/cookie and normalize expired seasonal themes back to system
   React.useEffect(() => {
     const stored = readStorageTheme() ?? readCookieTheme() ?? 'system'
-    setThemeState(stored)
+    const allowed = getAvailableThemes()
+    const initialPref: Theme = stored !== 'system' && !allowed.includes(stored) ? 'system' : stored
+
+    setThemeState(initialPref)
     setSystemTheme(getSystemTheme())
+
+    // Persist normalization if it changed
+    if (initialPref !== stored) {
+      writeStorageTheme(initialPref)
+      writeCookieTheme(initialPref)
+    }
+
     // Ensure classes match preference immediately after mount
-    applyClasses(stored, getSystemTheme())
+    applyClasses(initialPref, getSystemTheme())
   }, [])
 
   // Watch OS theme changes
@@ -137,6 +149,33 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     writeCookieTheme(next)
     applyClasses(next, getSystemTheme())
   }, [])
+
+  // If user explicitly selected a seasonal theme, schedule a check at next midnight
+  // to auto-revert to 'system' when the seasonal theme expires while the tab is open.
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return
+    const currentPref = theme ?? 'system'
+    const isSeasonal = SEASONAL_THEMES.some(t => t.theme === currentPref)
+    if (!isSeasonal) return
+
+    const msUntilNextMidnight = () => {
+      const now = new Date()
+      const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 1)
+      return Math.max(250, next.getTime() - now.getTime())
+    }
+
+    const id = window.setTimeout(() => {
+      const allowed = getAvailableThemes()
+      if (currentPref !== 'system' && !allowed.includes(currentPref)) {
+        setTheme('system')
+      } else {
+        // Re-apply classes in case seasonal state changed but still valid
+        applyClasses(currentPref, getSystemTheme())
+      }
+    }, msUntilNextMidnight())
+
+    return () => window.clearTimeout(id)
+  }, [theme, setTheme])
 
   const resolvedTheme: Theme | SystemTheme | undefined = React.useMemo(() => {
     const pref = theme ?? 'system'
