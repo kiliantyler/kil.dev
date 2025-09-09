@@ -43,6 +43,20 @@ export function ThemeToggle({
     setHydrated(true)
   }, [])
 
+  // Prevent background scrolling on small screens when menu is open
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const isSm = !window.matchMedia('(min-width: 768px)').matches
+    if (!isSm) return
+    if (open) {
+      const prev = document.documentElement.style.overflow
+      document.documentElement.style.overflow = 'hidden'
+      return () => {
+        document.documentElement.style.overflow = prev
+      }
+    }
+  }, [open])
+
   const injectCircleBlurTransitionStyles = useCallback((originXPercent: number, originYPercent: number) => {
     const styleId = `theme-transition-${Date.now()}`
     const style = document.createElement('style')
@@ -276,7 +290,7 @@ export function ThemeToggle({
             }}
             onKeyDown={handleTriggerKeyDown}
             className={cn(
-              'hover:ring-accent hover:ring-1 hover:ring-offset-2 ring-offset-background transition-all duration-200',
+              'relative z-50 md:z-auto hover:ring-accent hover:ring-1 hover:ring-offset-2 ring-offset-background transition-all duration-200',
               open && 'ring-1 ring-accent ring-offset-2 scale-95 rotate-3',
             )}>
             {hydrated
@@ -314,6 +328,31 @@ export function ThemeToggle({
         </TooltipContent>
       </Tooltip>
 
+      {/* Mobile backdrop overlay */}
+      <div
+        aria-hidden={!open}
+        role="button"
+        tabIndex={open ? 0 : -1}
+        aria-label="Close theme menu"
+        onClick={() => {
+          setOpen(false)
+          setOpenedViaKeyboard(false)
+        }}
+        onKeyDown={e => {
+          if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            setOpen(false)
+            setOpenedViaKeyboard(false)
+          }
+        }}
+        className={cn(
+          'fixed inset-0 md:hidden z-40 transition-opacity duration-200',
+          open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
+          // Subtle flashy backdrop: tint + blur + vignette-ish gradient
+          'bg-black/40 backdrop-blur-sm',
+        )}
+      />
+
       <div
         id="theme-options"
         ref={optionsRef}
@@ -324,7 +363,7 @@ export function ThemeToggle({
         tabIndex={-1}
         onKeyDown={handleMenuKeyDown}
         className={cn(
-          'absolute left-1/2 top-full -translate-x-1/2 mt-2',
+          'absolute left-1/2 top-full -translate-x-1/2 mt-2 z-50',
           'flex flex-col items-center gap-2',
           'md:left-auto md:top-1/2 md:right-full md:-translate-y-1/2 md:translate-x-0 md:mt-0 md:mr-2 md:flex-row',
           open ? 'pointer-events-auto' : 'pointer-events-none',
