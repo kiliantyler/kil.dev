@@ -37,6 +37,8 @@ export function ThemeToggle({
   const { theme, setTheme, resolvedTheme, systemTheme } = useTheme()
   const { startTransition } = useThemeTransition()
 
+  const currentPreference: Theme = theme ?? 'system'
+
   const [open, setOpen] = useState(false)
   const [openedViaKeyboard, setOpenedViaKeyboard] = useState(false)
   const [tooltipHold, setTooltipHold] = useState(false)
@@ -101,17 +103,34 @@ export function ThemeToggle({
   }, [])
 
   const handleThemeChange = useCallback(
-    (theme: Theme, event?: ReactMouseEvent) => {
+    (nextPref: Theme, event?: ReactMouseEvent) => {
       // Keep 'system' as the stored preference; clear localStorage when selecting system
-      if (theme === 'system') {
+      if (nextPref === 'system') {
         try {
           localStorage.setItem('theme', 'system')
         } catch {}
       }
-      const nextEffectiveTheme = theme === 'system' ? (systemTheme ?? resolvedTheme) : theme
-      if (nextEffectiveTheme === resolvedTheme) {
-        setTheme(theme)
-        captureThemeChanged(theme)
+
+      // Compute the visual (CSS) theme for current and next preferences,
+      // treating the seasonal default as equivalent to explicitly selecting it.
+      const seasonalDefault = getDefaultThemeForNow()
+      const getVisualTheme = (pref: Theme): Theme => {
+        if (pref === 'system') {
+          if (seasonalDefault !== 'system') return seasonalDefault as Theme
+          const sys = (systemTheme ?? (resolvedTheme === 'dark' ? 'dark' : 'light')) as Theme
+          return sys
+        }
+        return pref
+      }
+
+      const currentVisual = getVisualTheme(currentPreference)
+      const nextVisual = getVisualTheme(nextPref)
+
+      // If the visual theme isn't changing (e.g., system seasonal -> explicit seasonal),
+      // update without animation.
+      if (currentVisual === nextVisual) {
+        setTheme(nextPref)
+        captureThemeChanged(nextPref)
         setOpen(false)
         return
       }
@@ -125,15 +144,21 @@ export function ThemeToggle({
 
       injectCircleBlurTransitionStyles(originXPercent, originYPercent)
       startTransition(() => {
-        setTheme(theme)
-        captureThemeChanged(theme)
+        setTheme(nextPref)
+        captureThemeChanged(nextPref)
       })
       setOpen(false)
     },
-    [injectCircleBlurTransitionStyles, resolvedTheme, setTheme, startTransition, systemTheme],
+    [
+      currentPreference,
+      injectCircleBlurTransitionStyles,
+      resolvedTheme,
+      setTheme,
+      startTransition,
+      systemTheme,
+    ],
   )
 
-  const currentPreference: Theme = (theme as Theme) ?? 'system'
   // Keep for future logic if needed; currently not used
   // const currentEffective: Theme =
   //   currentPreference === 'system'
