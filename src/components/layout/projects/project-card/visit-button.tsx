@@ -1,8 +1,9 @@
 import { LinkButton } from '@/components/ui/link-button'
 import { captureProjectVisitClicked } from '@/hooks/posthog'
+import type { Route } from 'next'
 
 interface VisitButtonProps {
-  href: string
+  href: Route
   title: string
   id: string
 }

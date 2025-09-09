@@ -1,6 +1,7 @@
+import type { Route } from 'next'
 import posthog from 'posthog-js'
 
-export function captureSocialLinkClicked(platform: string, href: string) {
+export function captureSocialLinkClicked(platform: string, href: Route) {
   posthog.capture('social_link_clicked', {
     platform: platform,
     href: href,
@@ -20,14 +21,14 @@ export function captureProjectCardFlipped(projectId: string, flippedTo: string) 
   })
 }
 
-export function captureProjectSourceClicked(projectId: string, source: string) {
+export function captureProjectSourceClicked(projectId: string, source: Route) {
   posthog.capture('project_source_clicked', {
     projectId: projectId,
     source: source,
   })
 }
 
-export function captureProjectVisitClicked(projectId: string, href: string) {
+export function captureProjectVisitClicked(projectId: string, href: Route) {
   posthog.capture('project_visit_clicked', {
     projectId: projectId,
     href: href,
@@ -66,7 +67,7 @@ export function captureWorkHighlightsToggled(companyId: string, expanded: boolea
   })
 }
 
-export function captureCompanyLogoClicked(companyId: string, companyUrl: string) {
+export function captureCompanyLogoClicked(companyId: string, companyUrl: Route) {
   posthog.capture('company_logo_clicked', {
     companyId: companyId,
     href: companyUrl,

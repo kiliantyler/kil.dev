@@ -1,3 +1,5 @@
+import type { Route } from 'next'
+
 export type DashboardIconFormat = 'webp' | 'svg' | 'png'
 
 export type SkillIconRef =
@@ -10,7 +12,7 @@ export type SkillIconRef =
 
 export type SkillInfo = {
   icon: SkillIconRef
-  url: string
+  url: Route
 }
 
 export const SKILLS = {

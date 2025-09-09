@@ -20,14 +20,15 @@ export function CompanyMarker({ item }: { item: WorkExperience }) {
     )
 
     if (item.companyUrl) {
+      const href = item.companyUrl
       return (
         <Link
-          href={item.companyUrl}
+          href={href}
           target="_blank"
           rel="noopener noreferrer"
           aria-label={`Open ${item.company} homepage`}
           className="absolute -left-[14px] top-5 block rounded-md overflow-hidden ring-2 ring-background focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
-          onClick={() => captureCompanyLogoClicked(item.id, item.companyUrl!)}>
+          onClick={() => captureCompanyLogoClicked(item.id, href)}>
           {logo}
         </Link>
       )

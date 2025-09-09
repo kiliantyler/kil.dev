@@ -1,7 +1,12 @@
+import type { QuickFact } from '@/types'
 import Link from 'next/link'
 import { ModeToggleLink, ModeToggleNote } from './mode-toggle-link'
 
-export function QuickFact({ fact }: { fact: { label: string; value: string; href?: string; note?: string } }) {
+interface QuickFactProps {
+  fact: QuickFact
+}
+
+export function QuickFact({ fact }: QuickFactProps) {
   return (
     <div key={fact.label} className="grid grid-cols-[auto_1fr] items-baseline gap-3">
       <dt className="text-muted-foreground">{fact.label}</dt>

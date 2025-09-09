@@ -1,14 +1,15 @@
 import type { SkillName } from '@/lib/skillicons'
+import type { Route } from 'next'
 import type { StaticImageData } from 'next/image'
 
 export interface NavigationItem {
   label: string
-  href: string
+  href: Route
 }
 
 export interface ExternalLink {
-  GITHUB: string
-  LINKEDIN: string
+  GITHUB: Route
+  LINKEDIN: Route
 }
 
 export interface Content {
@@ -43,8 +44,8 @@ export interface Project {
   title: string
   description: string
   tags: SkillName[]
-  href?: string
-  repo?: string
+  href?: Route
+  repo?: Route
   year?: number
   status?: 'live' | 'wip' | 'archived'
   imageSrc: StaticImageData
@@ -54,7 +55,7 @@ export interface Project {
 export interface QuickFact {
   label: string
   value: string | React.ReactNode
-  href?: string
+  href?: Route
   note?: string
 }
 

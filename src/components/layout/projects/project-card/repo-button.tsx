@@ -1,9 +1,10 @@
 import { GitHubIcon } from '@/components/icons/github'
 import { LinkButton } from '@/components/ui/link-button'
 import { captureProjectSourceClicked } from '@/hooks/posthog'
+import type { Route } from 'next'
 
 interface RepoButtonProps {
-  repo: string
+  repo: Route
   title: string
   id: string
 }

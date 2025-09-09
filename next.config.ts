@@ -3,6 +3,7 @@ import type { NextConfig } from 'next'
 import './src/env.js'
 
 const config: NextConfig = {
+  typedRoutes: true,
   images: {
     minimumCacheTTL: 31536000, // 1 year
     formats: ['image/avif', 'image/webp'],

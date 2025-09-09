@@ -1,6 +1,7 @@
 import draftKingsLogo from '@/images/logos/draftkings.webp'
 import newInnovationsLogo from '@/images/logos/newinnov.webp'
 import qgendaLogo from '@/images/logos/qgenda.webp'
+import type { Route } from 'next'
 import type { StaticImageData } from 'next/image'
 import type { SkillName } from './skillicons'
 
@@ -14,7 +15,7 @@ export interface WorkExperience {
   summary: string
   highlights?: string[]
   skills?: SkillName[]
-  companyUrl?: string
+  companyUrl?: Route
   companyLogoSrc?: StaticImageData
   companyLogoAlt?: string
 }
