@@ -69,12 +69,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <Script id="init-theme" strategy="beforeInteractive">
           {buildInitThemeScript()}
         </Script>
-        <script
-          dangerouslySetInnerHTML={{
-            __html:
-              '(function(){try{var d=document.documentElement;var t=localStorage.getItem("theme");if(t&&t!=="system"){d.classList.add(t);return}var m=document.cookie.match(/(?:^|; )systemTheme=([^;]+)/);var sys=m?decodeURIComponent(m[1]):null;if(sys==="dark"||sys==="light"){d.classList.add(sys)}}catch(e){}})();',
-          }}
-        />
+        <Script id="apply-system-theme" src="/scripts/apply-system-theme.js" strategy="beforeInteractive" />
       </head>
       <body className="font-sans flex min-h-screen flex-col bg-background text-foreground">
         <Providers initialAppliedTheme={initialAppliedTheme}>
