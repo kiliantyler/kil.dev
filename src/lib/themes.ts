@@ -67,3 +67,15 @@ export function getThemeHeadshot(theme: ThemeName): StaticImageData {
   const entry = themes.find(t => t.name === theme)
   return entry?.headshotImage ?? Headshot
 }
+
+// Runtime helpers for safe validation/guards
+export const KNOWN_THEMES = themes.map(t => t.name) as readonly ThemeName[]
+
+export function isThemeName(val: unknown): val is ThemeName {
+  if (typeof val !== 'string') return false
+  return (KNOWN_THEMES as readonly string[]).includes(val)
+}
+
+export function isSystemVal(val: unknown): val is BaseColor {
+  return val === 'dark' || val === 'light'
+}
