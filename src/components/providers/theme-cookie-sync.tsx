@@ -43,6 +43,22 @@ export function ThemeCookieSync() {
         root.classList.remove(overlay)
         delete root.dataset.seasonalOverlay
       }
+      // If an explicit theme is chosen (non-system), proactively remove all non-base theme classes
+      if (pref !== 'system') {
+        const allThemeClassNames = themes.map(t => t.name)
+        for (const cls of allThemeClassNames) {
+          if (cls === 'light' || cls === 'dark') continue
+          root.classList.remove(cls)
+        }
+        // Apply explicit base theme or add explicit non-base theme class
+        if (pref === 'light' || pref === 'dark') {
+          const other = pref === 'light' ? 'dark' : 'light'
+          root.classList.remove(other)
+          root.classList.add(pref)
+        } else {
+          root.classList.add(pref)
+        }
+      }
     } catch {}
     setThemeCookie(pref)
   }, [resolvedTheme, theme])
