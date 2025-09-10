@@ -46,7 +46,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   if (validatedThemeCookie) {
     initialThemeClass = validatedThemeCookie
   } else if (validatedSeasonalDefault) {
-    const sys = baseSystem === 'dark' || baseSystem === 'light' ? baseSystem : 'dark'
+    const sys = baseSystem === 'dark' || baseSystem === 'light' ? baseSystem : 'light'
     initialThemeClass = `${sys} ${validatedSeasonalDefault}`.trim()
   } else {
     initialThemeClass = baseSystem
