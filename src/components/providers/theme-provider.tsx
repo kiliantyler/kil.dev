@@ -23,7 +23,8 @@ function readCookieTheme(): Theme | undefined {
     if (match?.[1]) {
       const raw = match[1]
       const decoded = decodeURIComponent(raw)
-      return decoded as Theme
+      const validThemes: Theme[] = ['system', ...themes.map(t => t.name)]
+      return validThemes.includes(decoded as Theme) ? (decoded as Theme) : undefined
     }
   } catch {}
   return undefined

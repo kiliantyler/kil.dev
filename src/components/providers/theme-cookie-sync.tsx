@@ -28,14 +28,22 @@ export function ThemeCookieSync() {
           root.classList.remove(cls)
         }
         root.classList.add(seasonal)
+        root.dataset.seasonalOverlay = seasonal
       } catch {}
       // Preserve the user's selected preference of "system" in the cookie
       setThemeCookie('system')
       return
     }
-
     // Store the user's explicit preference (not the resolved/effective theme)
     const pref = theme ?? 'system'
+    try {
+      const root = document.documentElement
+      const overlay = root.dataset.seasonalOverlay
+      if (overlay) {
+        root.classList.remove(overlay)
+        delete root.dataset.seasonalOverlay
+      }
+    } catch {}
     setThemeCookie(pref)
   }, [resolvedTheme, theme])
 
