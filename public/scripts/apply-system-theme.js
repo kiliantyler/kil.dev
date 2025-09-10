@@ -13,7 +13,8 @@
     }
 
     var match = document.cookie.match(/(?:^|; )systemTheme=([^;]+)/)
-    var systemTheme = match ? decodeURIComponent(match[1]) : null
+    var captured = match && match[1] ? match[1] : null
+    var systemTheme = captured ? decodeURIComponent(captured) : null
 
     if (systemTheme === 'dark' || systemTheme === 'light') {
       root.classList.add(systemTheme)
