@@ -34,18 +34,32 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const themeCookie = cookieStore.get('theme')?.value
   const systemThemeCookie = cookieStore.get('systemTheme')?.value
   const seasonalDefault = getDefaultThemeForNow()
+  const isKnownTheme = (val: unknown): val is ThemeName => {
+    if (typeof val !== 'string') return false
+    return (KNOWN_THEMES as readonly string[]).includes(val)
+  }
   const baseSystem = systemThemeCookie === 'dark' || systemThemeCookie === 'light' ? systemThemeCookie : ''
-  const initialThemeClass = (() => {
-    if (themeCookie && themeCookie !== 'system') return themeCookie
-    if (seasonalDefault !== 'system') return `${baseSystem || 'dark'} ${seasonalDefault}`.trim()
-    return baseSystem
-  })()
+  const validatedThemeCookie: ThemeName | null = isKnownTheme(themeCookie) ? themeCookie : null
+  const validatedSeasonalDefault: ThemeName | null = isKnownTheme(seasonalDefault) ? seasonalDefault : null
 
-  const initialAppliedTheme: ThemeName = (() => {
-    if (themeCookie && themeCookie !== 'system') return themeCookie as ThemeName
-    if (seasonalDefault !== 'system') return seasonalDefault
-    return (baseSystem || 'light') as ThemeName
-  })()
+  let initialThemeClass = ''
+  if (validatedThemeCookie) {
+    initialThemeClass = validatedThemeCookie
+  } else if (validatedSeasonalDefault) {
+    const sys = baseSystem === 'dark' || baseSystem === 'light' ? baseSystem : 'dark'
+    initialThemeClass = `${sys} ${validatedSeasonalDefault}`.trim()
+  } else {
+    initialThemeClass = baseSystem
+  }
+
+  let initialAppliedTheme: ThemeName
+  if (validatedThemeCookie) {
+    initialAppliedTheme = validatedThemeCookie
+  } else if (validatedSeasonalDefault) {
+    initialAppliedTheme = validatedSeasonalDefault
+  } else {
+    initialAppliedTheme = baseSystem === 'dark' ? 'dark' : 'light'
+  }
   return (
     <html
       lang="en"
