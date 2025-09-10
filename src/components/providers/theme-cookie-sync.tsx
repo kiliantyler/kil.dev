@@ -7,7 +7,8 @@ import { useEffect } from 'react'
 
 function setThemeCookie(value: string) {
   try {
-    document.cookie = `theme=${encodeURIComponent(value)}; path=/; max-age=31536000; samesite=lax`
+    const isSecure = window.location.protocol === 'https:' ? '; secure' : ''
+    document.cookie = `theme=${encodeURIComponent(value)}; path=/; max-age=31536000; samesite=lax${isSecure}`
   } catch {}
 }
 

@@ -32,14 +32,17 @@ function readCookieTheme(): Theme | undefined {
 function readStorageTheme(): Theme | undefined {
   try {
     const v = localStorage.getItem('theme')
-    return v ? (v as Theme) : undefined
+    if (!v) return undefined
+    const validThemes: Theme[] = ['system', ...themes.map(t => t.name)]
+    return validThemes.includes(v as Theme) ? (v as Theme) : undefined
   } catch {}
   return undefined
 }
 
 function writeCookieTheme(value: Theme) {
   try {
-    document.cookie = `theme=${encodeURIComponent(value)}; path=/; max-age=31536000; samesite=lax`
+    const isSecure = window.location.protocol === 'https:' ? '; secure' : ''
+    document.cookie = `theme=${encodeURIComponent(value)}; path=/; max-age=31536000; samesite=lax${isSecure}`
   } catch {}
 }
 
@@ -52,7 +55,8 @@ function writeStorageTheme(value: Theme) {
 function writeCookieSystemTheme(value: SystemTheme | undefined) {
   if (!value) return
   try {
-    document.cookie = `systemTheme=${encodeURIComponent(value)}; path=/; max-age=31536000; samesite=lax`
+    const isSecure = window.location.protocol === 'https:' ? '; secure' : ''
+    document.cookie = `systemTheme=${encodeURIComponent(value)}; path=/; max-age=31536000; samesite=lax${isSecure}`
   } catch {}
 }
 
