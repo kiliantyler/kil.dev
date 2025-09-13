@@ -16,6 +16,13 @@ type ThemeContextValue = {
 
 const ThemeContext = React.createContext<ThemeContextValue | undefined>(undefined)
 
+function coerceToValidTheme(value: Theme | undefined): Theme {
+  const pref = value ?? 'system'
+  const allowed = getAvailableThemes()
+  if (pref !== 'system' && !allowed.includes(pref)) return 'system'
+  return pref
+}
+
 function readCookieTheme(): Theme | undefined {
   try {
     const re = /(?:^|; )theme=([^;]+)/
