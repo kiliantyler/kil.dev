@@ -8,7 +8,7 @@ const compat = new FlatCompat({
 
 export default defineConfig(
   {
-    ignores: ['.next', 'next-env.d.ts'],
+    ignores: ['.next', 'next-env.d.ts', 'src/lib/theme-bundle.ts'],
   },
   ...compat.extends('next/core-web-vitals'),
   {
