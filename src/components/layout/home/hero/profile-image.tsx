@@ -130,7 +130,7 @@ export function ProfileImage() {
             src={getThemeHeadshot(t.name)}
             data-theme={t.name}
             className="profile-img rounded-lg transition-transform duration-500 ease-(--ease-fluid) translate-y-0 scale-100 transform-gpu group-hover:-translate-y-1 group-hover:scale-105"
-            loading="eager"
+            loading={t.name === 'light' ? 'eager' : 'lazy'}
             priority={t.name === 'light'}
             fill
             sizes="(min-width: 1024px) 500px, 100vw"
