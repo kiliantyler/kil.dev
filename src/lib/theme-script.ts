@@ -67,7 +67,7 @@ function inRange(dt: Date, s: CompactDate, e: CompactDate): boolean {
 
 function getCookieTheme(): string | null {
   try {
-    const re = /(?:^|; )theme=([^;]+)/
+    const re = /(?:^|;\s*)theme=([^;]+)/
     const m = re.exec(document.cookie)
     return m ? decodeURIComponent(m[1]!) : null
   } catch {
