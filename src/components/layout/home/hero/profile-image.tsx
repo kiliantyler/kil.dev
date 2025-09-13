@@ -121,7 +121,7 @@ export function ProfileImage() {
       <div className="border-primary absolute -top-4 -left-4 h-full w-full -rotate-3 group-hover:scale-110 group-hover:translate-y-3 group-hover:translate-x-4 rounded-lg border-4 transition-transform duration-500 ease-(--ease-fluid) group-hover:rotate-0" />
       <div
         className="relative aspect-square w-full rounded-lg bg-cover bg-center bg-no-repeat shadow-2xl"
-        aria-busy={false}>
+        aria-busy={mounted && isEnvDrivenVariant && !isImageLoaded}>
         <style dangerouslySetInnerHTML={{ __html: profileImgCss }} />
         {themes.map(t => (
           <Image
