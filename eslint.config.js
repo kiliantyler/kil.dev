@@ -34,7 +34,7 @@ export default defineConfig(
     },
   },
   {
-    files: ['scripts/**/*.ts'],
+    files: ['scripts/build-theme-runtime.ts'],
     rules: {
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',
