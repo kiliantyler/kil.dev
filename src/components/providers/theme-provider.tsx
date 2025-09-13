@@ -23,6 +23,8 @@ function coerceToValidTheme(value: Theme | undefined): Theme {
   return pref
 }
 
+const VALID_THEMES: ReadonlyArray<Theme> = ['system', ...themes.map(t => t.name)]
+
 function readCookieTheme(): Theme | undefined {
   try {
     const re = /(?:^|; )theme=([^;]+)/
@@ -30,8 +32,7 @@ function readCookieTheme(): Theme | undefined {
     if (match?.[1]) {
       const raw = match[1]
       const decoded = decodeURIComponent(raw)
-      const validThemes: Theme[] = ['system', ...themes.map(t => t.name)]
-      return validThemes.includes(decoded as Theme) ? (decoded as Theme) : undefined
+      return VALID_THEMES.includes(decoded as Theme) ? (decoded as Theme) : undefined
     }
   } catch {}
   return undefined
@@ -41,8 +42,7 @@ function readStorageTheme(): Theme | undefined {
   try {
     const v = localStorage.getItem('theme')
     if (!v) return undefined
-    const validThemes: Theme[] = ['system', ...themes.map(t => t.name)]
-    return validThemes.includes(v as Theme) ? (v as Theme) : undefined
+    return VALID_THEMES.includes(v as Theme) ? (v as Theme) : undefined
   } catch {}
   return undefined
 }
@@ -54,8 +54,7 @@ function readCookieThemeMeta(): { theme: Theme | undefined; updatedAt: number | 
     const mTheme = reTheme.exec(document.cookie)
     const mTs = reTs.exec(document.cookie)
     const themeRaw = mTheme?.[1] ? decodeURIComponent(mTheme[1]) : undefined
-    const validThemes: Theme[] = ['system', ...themes.map(t => t.name)]
-    const theme: Theme | undefined = validThemes.includes(themeRaw as Theme) ? (themeRaw as Theme) : undefined
+    const theme: Theme | undefined = VALID_THEMES.includes(themeRaw as Theme) ? (themeRaw as Theme) : undefined
     const updatedAt = mTs?.[1] ? Number(mTs[1]) : undefined
     return { theme, updatedAt: Number.isFinite(updatedAt) ? updatedAt : undefined }
   } catch {}
@@ -66,9 +65,8 @@ function readStorageThemeMeta(): { theme: Theme | undefined; updatedAt: number |
   try {
     const themeStr = localStorage.getItem('theme') ?? undefined
     const tsStr = localStorage.getItem('theme_updatedAt') ?? undefined
-    const validThemes: Theme[] = ['system', ...themes.map(t => t.name)]
     const theme: Theme | undefined =
-      themeStr && validThemes.includes(themeStr as Theme) ? (themeStr as Theme) : undefined
+      themeStr && VALID_THEMES.includes(themeStr as Theme) ? (themeStr as Theme) : undefined
     const updatedAt = tsStr ? Number(tsStr) : undefined
     return { theme, updatedAt: Number.isFinite(updatedAt) ? updatedAt : undefined }
   } catch {}
