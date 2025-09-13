@@ -56,7 +56,7 @@ export function getThemeLabel(theme: Theme): string {
   const s = `${theme}`
   return s.slice(0, 1).toUpperCase() + s.slice(1)
 }
-export const THEME_BY_NAME = new Map(themes.map(t => [t.name, t] as const))
+export const THEME_BY_NAME = new Map<ThemeName, ThemeEntry>(themes.map(t => [t.name, t] as const))
 
 export function getThemeIcon(theme: Theme, systemIcon: IconComponent): IconComponent {
   if (theme === 'system') return systemIcon
