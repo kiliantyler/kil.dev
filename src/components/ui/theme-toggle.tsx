@@ -28,7 +28,7 @@ export function ThemeToggle({
   onFlyoutWidthChange?: (width: number) => void
   onOpenChange?: (open: boolean) => void
 } = {}) {
-  const { theme, setTheme, resolvedTheme, systemTheme, initialAppliedThemeName } = useTheme()
+  const { theme, setTheme, resolvedTheme, systemTheme } = useTheme()
   const { startTransition } = useThemeTransition()
 
   const currentPreference: Theme = theme ?? 'system'

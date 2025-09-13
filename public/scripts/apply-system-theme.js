@@ -1,4 +1,4 @@
-(function () {
+;(function () {
   try {
     var root = document.documentElement
 
@@ -30,5 +30,3 @@
     }
   } catch (_) {}
 })()
-
-
