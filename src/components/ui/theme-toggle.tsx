@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { captureThemeChanged } from '@/hooks/posthog'
 import { getAvailableThemes, getDefaultThemeForNow } from '@/lib/theme-runtime'
-import { getThemeIcon, getThemeLabel, type Theme } from '@/lib/themes'
+import { getThemeIcon, getThemeLabel, themes, type Theme } from '@/lib/themes'
 import { cn } from '@/lib/utils'
 
 function SystemIcon({ className }: { className?: string }) {
@@ -322,33 +322,15 @@ export function ThemeToggle({
             }}
             onKeyDown={handleTriggerKeyDown}
             className={cn(
-              'relative z-50 md:z-auto hover:ring-accent hover:ring-1 hover:ring-offset-2 ring-offset-background transition-all duration-200',
+              'relative z-50 md:z-auto hover:ring-accent hover:ring-1 hover:ring-offset-2 ring-offset-background',
+              hydrated ? 'transition-all duration-200' : 'transition-none',
               open && 'ring-1 ring-accent ring-offset-2 scale-95 rotate-3',
             )}>
-            {hydrated
-              ? (() => {
-                  if (currentPreference === 'system') {
-                    // When the menu is open, always show the system icon
-                    if (open) {
-                      return <SystemIcon className="h-[1.2rem] w-[1.2rem]" />
-                    }
-                    // When closed, show the current effective icon (seasonal if active, else light/dark)
-                    const seasonalDefault = getDefaultThemeForNow()
-                    if (seasonalDefault !== 'system') {
-                      const SeasonalIcon: IconComponent = getThemeIcon(seasonalDefault, SystemIcon)
-                      return <SeasonalIcon className="h-[1.2rem] w-[1.2rem]" />
-                    }
-                    const effective: Theme = (systemTheme ?? (resolvedTheme === 'dark' ? 'dark' : 'light')) as Theme
-                    const EffectiveIcon: IconComponent = getThemeIcon(effective, SystemIcon)
-                    return <EffectiveIcon className="h-[1.2rem] w-[1.2rem]" />
-                  }
-                  const Icon: IconComponent = getThemeIcon(currentPreference, SystemIcon)
-                  return <Icon className="h-[1.2rem] w-[1.2rem]" />
-                })()
-              : (() => {
-                  // Render a stable, theme-agnostic icon on the server to avoid hydration mismatches
-                  return <SystemIcon className="h-[1.2rem] w-[1.2rem]" />
-                })()}
+            <span className="relative inline-block align-middle">
+              {themes.map(theme => (
+                <theme.icon key={theme.name} className={`hidden ${theme.name}:inline-block h-[1.2rem] w-[1.2rem]`} />
+              ))}
+            </span>
             <span className="sr-only">Toggle theme menu</span>
           </Button>
         </TooltipTrigger>
