@@ -46,6 +46,33 @@ export function ThemeToggle({
     setHydrated(true)
   }, [])
 
+  // Build CSS that shows exactly one icon based on <html> theme classes
+  const themeIconCss = useMemo(() => {
+    const names = themes.map(t => t.name)
+    const nonBase = names.filter(n => n !== 'light' && n !== 'dark')
+    const rules: string[] = []
+    // Hide all by default
+    rules.push('.theme-icon{display:none}')
+    // Non-base themes win when their class is on <html>
+    for (const n of nonBase) {
+      rules.push(`html.${n} .theme-icon[data-theme="${n}"]{display:inline-block}`)
+    }
+    // Dark shows when .dark present and no non-base theme class active
+    if (names.includes('dark')) {
+      const notNonBase = nonBase.map(n => `:not(.${n})`).join('')
+      rules.push(`html.dark${notNonBase} .theme-icon[data-theme="dark"]{display:inline-block}`)
+    }
+    // Light shows when not dark and no non-base theme class active
+    if (names.includes('light')) {
+      const notOthers = ['dark', ...nonBase].map(n => `:not(.${n})`).join('')
+      rules.push(`html${notOthers} .theme-icon[data-theme="light"]{display:inline-block}`)
+    }
+    return rules.join('')
+  }, [])
+
+  const showSystemOverlay = hydrated && open && currentPreference === 'system'
+  const spinCss = `@keyframes kd-spin-trail{0%{transform:rotate(0deg) scale(1);filter:drop-shadow(0 0 0 rgba(0,0,0,0))}70%{transform:rotate(320deg) scale(1.1);filter:drop-shadow(0 0 0 rgba(0,0,0,0)) drop-shadow(0 0 6px color-mix(in oklch,var(--primary) 70%,transparent)) drop-shadow(0 0 12px color-mix(in oklch,var(--accent,var(--primary)) 50%,transparent))}100%{transform:rotate(360deg) scale(1);filter:drop-shadow(0 0 0 rgba(0,0,0,0))}}.theme-system-overlay-anim{animation:kd-spin-trail 260ms ease-out;will-change:transform,filter}`
+
   // Prevent background scrolling on small screens when menu is open
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -327,9 +354,28 @@ export function ThemeToggle({
               open && 'ring-1 ring-accent ring-offset-2 scale-95 rotate-3',
             )}>
             <span className="relative inline-block align-middle">
-              {themes.map(theme => (
-                <theme.icon key={theme.name} className={`hidden ${theme.name}:inline-block h-[1.2rem] w-[1.2rem]`} />
-              ))}
+              <style dangerouslySetInnerHTML={{ __html: themeIconCss }} />
+              <style dangerouslySetInnerHTML={{ __html: spinCss }} />
+              {themes.map(t => {
+                const IconComp = t.icon
+                return (
+                  <IconComp
+                    key={t.name}
+                    data-theme={t.name}
+                    className={cn(
+                      'theme-icon h-[1.2rem] w-[1.2rem] transition-opacity duration-200 ease-out',
+                      showSystemOverlay ? 'opacity-0' : 'opacity-100',
+                    )}
+                  />
+                )
+              })}
+              <span
+                className={cn(
+                  'absolute inset-0 grid place-items-center pointer-events-none transition-opacity duration-200 ease-out',
+                  showSystemOverlay ? 'opacity-100' : 'opacity-0',
+                )}>
+                <SystemIcon className={cn('h-[1.2rem] w-[1.2rem]', showSystemOverlay && 'theme-system-overlay-anim')} />
+              </span>
             </span>
             <span className="sr-only">Toggle theme menu</span>
           </Button>
