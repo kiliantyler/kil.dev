@@ -8,7 +8,7 @@ export type SeasonalThemeConfig = {
 }
 
 function hasTimeRange(entry: ThemeEntry): entry is ThemeEntry & { timeRange: { start: MonthDay; end: MonthDay } } {
-  return 'timeRange' in entry
+  return Object.prototype.hasOwnProperty.call(entry, 'timeRange')
 }
 
 export const SEASONAL_THEMES: SeasonalThemeConfig[] = themes
