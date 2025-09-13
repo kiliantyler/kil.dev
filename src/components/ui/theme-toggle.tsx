@@ -346,9 +346,8 @@ export function ThemeToggle({
                   return <Icon className="h-[1.2rem] w-[1.2rem]" />
                 })()
               : (() => {
-                  const initial = (initialAppliedThemeName ?? 'light') as Theme
-                  const InitialIcon: IconComponent = getThemeIcon(initial, SystemIcon)
-                  return <InitialIcon className="h-[1.2rem] w-[1.2rem]" />
+                  // Render a stable, theme-agnostic icon on the server to avoid hydration mismatches
+                  return <SystemIcon className="h-[1.2rem] w-[1.2rem]" />
                 })()}
             <span className="sr-only">Toggle theme menu</span>
           </Button>

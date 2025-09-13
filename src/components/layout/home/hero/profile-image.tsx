@@ -136,33 +136,30 @@ export function ProfileImage() {
       <div className="border-primary absolute -top-4 -left-4 h-full w-full -rotate-3 group-hover:scale-110 group-hover:translate-y-3 group-hover:translate-x-4 rounded-lg border-4 transition-transform duration-500 ease-(--ease-fluid) group-hover:rotate-0" />
       <div
         className="relative aspect-square w-full rounded-lg bg-cover bg-center bg-no-repeat shadow-2xl"
-        aria-busy={!isImageLoaded}>
-        <div
-          aria-hidden
-          className={`${isEnvDrivenVariant && !isImageLoaded ? 'opacity-100' : 'opacity-0'} absolute inset-0 rounded-lg bg-muted animate-pulse transition-opacity duration-500`}
-        />
-        {isBaseThemeVariant ? (
-          <Image
-            alt={imageAlt}
-            src={baseImageForTheme}
-            className="rounded-lg transition-transform duration-500 ease-(--ease-fluid) translate-y-0 scale-100 transform-gpu group-hover:-translate-y-1 group-hover:scale-105"
-            loading="eager"
-            priority
-            fill
-            sizes="(min-width: 1024px) 500px, 100vw"
-          />
-        ) : (
-          <Image
-            alt={imageAlt}
-            src={imageSrc}
-            className={`${isEnvDrivenVariant && !isImageLoaded ? 'opacity-0' : 'opacity-100'} rounded-lg transition-transform duration-500 ease-(--ease-fluid) translate-y-0 scale-100 transform-gpu group-hover:-translate-y-1 group-hover:scale-105`}
-            loading="eager"
-            priority
-            fill
-            sizes="(min-width: 1024px) 500px, 100vw"
-            onLoad={() => setIsImageLoaded(true)}
-          />
-        )}
+        aria-busy={false}>
+        {mounted &&
+          (isBaseThemeVariant ? (
+            <Image
+              alt={imageAlt}
+              src={baseImageForTheme}
+              className="rounded-lg transition-transform duration-500 ease-(--ease-fluid) translate-y-0 scale-100 transform-gpu group-hover:-translate-y-1 group-hover:scale-105"
+              loading="eager"
+              priority
+              fill
+              sizes="(min-width: 1024px) 500px, 100vw"
+            />
+          ) : (
+            <Image
+              alt={imageAlt}
+              src={imageSrc}
+              className={`${isEnvDrivenVariant && !isImageLoaded ? 'opacity-0' : 'opacity-100'} rounded-lg transition-transform duration-500 ease-(--ease-fluid) translate-y-0 scale-100 transform-gpu group-hover:-translate-y-1 group-hover:scale-105`}
+              loading="eager"
+              priority
+              fill
+              sizes="(min-width: 1024px) 500px, 100vw"
+              onLoad={() => setIsImageLoaded(true)}
+            />
+          ))}
       </div>
     </div>
   )

@@ -10,7 +10,7 @@ export function Providers({
   initialAppliedTheme,
 }: {
   children: React.ReactNode
-  initialAppliedTheme: ThemeName
+  initialAppliedTheme?: ThemeName
 }) {
   return (
     <PostHogProvider>

@@ -4,11 +4,9 @@ import '@/styles/globals.css'
 import { Background } from '@/components/layout/background'
 import { Footer } from '@/components/layout/footer'
 import { Header } from '@/components/layout/header'
-import { buildInitThemeScript, getDefaultThemeForNow } from '@/lib/theme-runtime'
-import { KNOWN_THEMES, type ThemeName } from '@/lib/themes'
+import { buildInitThemeScript, buildPreThemeScript } from '@/lib/theme-runtime'
 import { type Metadata } from 'next'
 import { Noto_Sans, Space_Grotesk } from 'next/font/google'
-import { cookies } from 'next/headers'
 import Script from 'next/script'
 
 export const metadata: Metadata = {
@@ -29,50 +27,17 @@ const notoSans = Noto_Sans({
   variable: '--font-noto-sans',
 })
 
-export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const cookieStore = await cookies()
-  const themeCookie = cookieStore.get('theme')?.value
-  const systemThemeCookie = cookieStore.get('systemTheme')?.value
-  const seasonalDefault = getDefaultThemeForNow()
-  const isKnownTheme = (val: unknown): val is ThemeName => {
-    if (typeof val !== 'string') return false
-    return (KNOWN_THEMES as readonly string[]).includes(val)
-  }
-  const baseSystem = systemThemeCookie === 'dark' || systemThemeCookie === 'light' ? systemThemeCookie : ''
-  const validatedThemeCookie: ThemeName | null = isKnownTheme(themeCookie) ? themeCookie : null
-  const validatedSeasonalDefault: ThemeName | null = isKnownTheme(seasonalDefault) ? seasonalDefault : null
-
-  let initialThemeClass = ''
-  if (validatedThemeCookie) {
-    initialThemeClass = validatedThemeCookie
-  } else if (validatedSeasonalDefault) {
-    const sys = baseSystem === 'dark' || baseSystem === 'light' ? baseSystem : 'light'
-    initialThemeClass = `${sys} ${validatedSeasonalDefault}`.trim()
-  } else {
-    initialThemeClass = baseSystem
-  }
-
-  let initialAppliedTheme: ThemeName
-  if (validatedThemeCookie) {
-    initialAppliedTheme = validatedThemeCookie
-  } else if (validatedSeasonalDefault) {
-    initialAppliedTheme = validatedSeasonalDefault
-  } else {
-    initialAppliedTheme = baseSystem === 'dark' ? 'dark' : 'light'
-  }
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html
-      lang="en"
-      className={`${spaceGrotesk.variable} ${notoSans.variable} ${initialThemeClass}`}
-      suppressHydrationWarning>
+    <html lang="en" className={`${spaceGrotesk.variable} ${notoSans.variable}`} suppressHydrationWarning>
       <head>
+        <script id="pre-theme" dangerouslySetInnerHTML={{ __html: buildPreThemeScript() }} />
         <Script id="init-theme" strategy="beforeInteractive">
           {buildInitThemeScript()}
         </Script>
-        <Script id="apply-system-theme" src="/scripts/apply-system-theme.js" strategy="beforeInteractive" />
       </head>
       <body className="font-sans flex min-h-screen flex-col bg-background text-foreground">
-        <Providers initialAppliedTheme={initialAppliedTheme}>
+        <Providers>
           <div className="relative flex min-h-screen flex-col">
             <Background />
             <div className="relative z-20 flex size-full flex-1 flex-col overflow-x-hidden">

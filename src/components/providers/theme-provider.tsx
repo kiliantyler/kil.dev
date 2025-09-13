@@ -109,11 +109,35 @@ export function ThemeProvider({
   children: React.ReactNode
   initialAppliedTheme?: ThemeName
 }) {
-  const [theme, setThemeState] = React.useState<Theme | undefined>(undefined)
-  const [systemTheme, setSystemTheme] = React.useState<SystemTheme | undefined>(undefined)
+  const [theme, setThemeState] = React.useState<Theme | undefined>(() => {
+    if (typeof document === 'undefined') return undefined
+    try {
+      const root = document.documentElement
+      const applied = (root.dataset.appliedTheme as Theme | undefined) ?? undefined
+      if (applied && applied !== 'light' && applied !== 'dark') return applied
+      // base theme might be dark/light; still set preference if storage has explicit
+      const ls = readStorageTheme()
+      const ck = readCookieTheme()
+      return ls ?? ck ?? undefined
+    } catch {
+      return undefined
+    }
+  })
+  const [systemTheme, setSystemTheme] = React.useState<SystemTheme | undefined>(() => {
+    if (typeof document === 'undefined') return undefined
+    try {
+      const root = document.documentElement
+      if (root.classList.contains('dark')) return 'dark'
+      if (root.classList.contains('light')) return 'light'
+      return getSystemTheme()
+    } catch {
+      return undefined
+    }
+  })
 
   // Initialize from storage/cookie and normalize expired seasonal themes back to system
-  React.useEffect(() => {
+  // Use layout effect to apply classes before paint to avoid light-theme flash
+  React.useLayoutEffect(() => {
     const stored = readStorageTheme() ?? readCookieTheme() ?? 'system'
     const allowed = getAvailableThemes()
     const initialPref: Theme = stored !== 'system' && !allowed.includes(stored) ? 'system' : stored
@@ -130,7 +154,15 @@ export function ThemeProvider({
     }
 
     // Ensure classes match preference immediately after mount; if a server computed initial theme exists, keep it
-    if (!initialAppliedTheme) {
+    const hasServerApplied = (() => {
+      try {
+        const root = document.documentElement
+        return !!root.dataset.appliedTheme
+      } catch {
+        return false
+      }
+    })()
+    if (!initialAppliedTheme && !hasServerApplied) {
       applyClasses(initialPref, getSystemTheme())
     }
   }, [initialAppliedTheme])
@@ -210,10 +242,14 @@ export function ThemeProvider({
     return pref
   }, [theme, systemTheme])
 
-  const value: ThemeContextValue = React.useMemo(
-    () => ({ theme, setTheme, resolvedTheme, systemTheme, initialAppliedThemeName: initialAppliedTheme }),
-    [theme, setTheme, resolvedTheme, systemTheme, initialAppliedTheme],
-  )
+  const value: ThemeContextValue = React.useMemo(() => {
+    const computedInitial =
+      initialAppliedTheme ??
+      (typeof document !== 'undefined'
+        ? ((document.documentElement.dataset.appliedTheme as ThemeName | undefined) ?? undefined)
+        : undefined)
+    return { theme, setTheme, resolvedTheme, systemTheme, initialAppliedThemeName: computedInitial }
+  }, [theme, setTheme, resolvedTheme, systemTheme, initialAppliedTheme])
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
 }
