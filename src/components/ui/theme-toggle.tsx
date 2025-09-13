@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType }
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { captureThemeChanged } from '@/hooks/posthog'
+import { buildPerThemeVariantCss } from '@/lib/theme-css'
 import { getAvailableThemes, getDefaultThemeForNow } from '@/lib/theme-runtime'
 import { getThemeIcon, getThemeLabel, themes, type Theme } from '@/lib/themes'
 import { cn } from '@/lib/utils'
@@ -48,26 +49,11 @@ export function ThemeToggle({
 
   // Build CSS that shows exactly one icon based on <html> theme classes
   const themeIconCss = useMemo(() => {
-    const names = themes.map(t => t.name)
-    const nonBase = names.filter(n => n !== 'light' && n !== 'dark')
-    const rules: string[] = []
-    // Hide all by default
-    rules.push('.theme-icon{display:none}')
-    // Non-base themes win when their class is on <html>
-    for (const n of nonBase) {
-      rules.push(`html.${n} .theme-icon[data-theme="${n}"]{display:inline-block}`)
-    }
-    // Dark shows when .dark present and no non-base theme class active
-    if (names.includes('dark')) {
-      const notNonBase = nonBase.map(n => `:not(.${n})`).join('')
-      rules.push(`html.dark${notNonBase} .theme-icon[data-theme="dark"]{display:inline-block}`)
-    }
-    // Light shows when not dark and no non-base theme class active
-    if (names.includes('light')) {
-      const notOthers = ['dark', ...nonBase].map(n => `:not(.${n})`).join('')
-      rules.push(`html${notOthers} .theme-icon[data-theme="light"]{display:inline-block}`)
-    }
-    return rules.join('')
+    return buildPerThemeVariantCss({
+      baseSelector: '.theme-icon',
+      variantAttr: 'data-theme',
+      display: 'inline-block',
+    })
   }, [])
 
   const showSystemOverlay = hydrated && open && currentPreference === 'system'
