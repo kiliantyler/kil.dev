@@ -125,13 +125,6 @@ export function ThemeToggle({
 
   const handleThemeChange = useCallback(
     (nextPref: Theme, event?: ReactMouseEvent) => {
-      // Keep 'system' as the stored preference; clear localStorage when selecting system
-      if (nextPref === 'system') {
-        try {
-          localStorage.setItem('theme', 'system')
-        } catch {}
-      }
-
       // Compute the visual (CSS) theme for current and next preferences,
       // treating the seasonal default as equivalent to explicitly selecting it.
       const seasonalDefault = getDefaultThemeForNow()
