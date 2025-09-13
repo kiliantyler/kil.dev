@@ -8,7 +8,6 @@
     "build:theme": "bun scripts/build-theme-runtime.ts",
     "prebuild": "bun run build:theme",
     "predev": "bun run build:theme",
-    "prepreview": "bun run build:theme",
     "check": "eslint . && tsc --noEmit",
     "check:all": "bun run typecheck && bun run format:check && bun run lint",
     "fix:all": "bun run format:write && bun run lint:fix",
