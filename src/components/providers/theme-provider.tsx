@@ -42,7 +42,8 @@ function readStorageTheme(): Theme | undefined {
 
 function writeCookieTheme(value: Theme) {
   try {
-    const isSecure = window.location.protocol === 'https:' ? '; secure' : ''
+    const isProduction = process.env.NODE_ENV === 'production'
+    const isSecure = window.location.protocol === 'https:' || isProduction ? '; secure' : ''
     document.cookie = `theme=${encodeURIComponent(value)}; path=/; max-age=31536000; samesite=lax${isSecure}`
   } catch {}
 }
@@ -56,7 +57,8 @@ function writeStorageTheme(value: Theme) {
 function writeCookieSystemTheme(value: SystemTheme | undefined) {
   if (!value) return
   try {
-    const isSecure = window.location.protocol === 'https:' ? '; secure' : ''
+    const isProduction = process.env.NODE_ENV === 'production'
+    const isSecure = window.location.protocol === 'https:' || isProduction ? '; secure' : ''
     document.cookie = `systemTheme=${encodeURIComponent(value)}; path=/; max-age=31536000; samesite=lax${isSecure}`
   } catch {}
 }
