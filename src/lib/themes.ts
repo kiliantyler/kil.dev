@@ -42,7 +42,7 @@ export const themes = [
     icon: Ghost,
     headshotImage: Halloween,
     baseColor: 'dark',
-    timeRange: { start: { month: 8, day: 15 }, end: { month: 11, day: 1 } },
+    timeRange: { start: { month: 10, day: 15 }, end: { month: 11, day: 1 } },
   },
 ] as const satisfies ReadonlyArray<ThemeConfig>
 
