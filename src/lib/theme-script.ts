@@ -84,11 +84,7 @@ function getLocalStorageTheme(): string | null {
 }
 
 function uniqueStrings(values: string[]): string[] {
-  const seen: Record<string, 1> = {}
-  for (const v of values) {
-    seen[v] = 1
-  }
-  return Object.keys(seen)
+  return [...new Set(values)]
 }
 
 function addDisableTransitionStyle(): HTMLStyleElement | null {
