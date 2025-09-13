@@ -131,7 +131,7 @@ export function initTheme(config: ThemeScriptConfig): void {
 
   const pref = isAllowed(lsTheme) ? lsTheme : isAllowed(cookieTheme) ? cookieTheme : 'system'
 
-  const baseClass = sysDark ? 'dark' : 'light'
+  const baseClass = sysDark ? 'dark' : ''
 
   let explicit: string | null = null
   let overlay: string | null = null
@@ -153,11 +153,11 @@ export function initTheme(config: ThemeScriptConfig): void {
   if (explicit) {
     targetClasses.push(explicit)
   } else {
-    targetClasses.push(baseClass)
+    if (baseClass) targetClasses.push(baseClass)
     if (overlay) targetClasses.push(overlay)
   }
 
-  const known = uniqueStrings([...config.base, ...config.seasonal.map(s => s.theme), 'light', 'dark'])
+  const known = uniqueStrings([...config.base, ...config.seasonal.map(s => s.theme), 'dark'])
 
   for (const cls of known) {
     if (!targetClasses.includes(cls)) {
