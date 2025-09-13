@@ -2,7 +2,6 @@
 
 import type { ThemeName } from '@/lib/themes'
 import { PostHogProvider } from './posthog-provider'
-import { ThemeCookieSync } from './theme-cookie-sync'
 import { ThemeProvider } from './theme-provider'
 
 export function Providers({
@@ -14,10 +13,7 @@ export function Providers({
 }) {
   return (
     <PostHogProvider>
-      <ThemeProvider initialAppliedTheme={initialAppliedTheme}>
-        <ThemeCookieSync />
-        {children}
-      </ThemeProvider>
+      <ThemeProvider initialAppliedTheme={initialAppliedTheme}>{children}</ThemeProvider>
     </PostHogProvider>
   )
 }
