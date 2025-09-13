@@ -6,6 +6,7 @@ import Confused from '@/images/headshot/cartoon-confused.webp'
 import Grumpy from '@/images/headshot/cartoon-grumpy.webp'
 import Ladybird from '@/images/headshot/cartoon-ladybird.webp'
 import { CONTENT } from '@/lib/content'
+import { buildPerThemeVariantCss } from '@/lib/theme-css'
 import { getThemeHeadshot, themes } from '@/lib/themes'
 import Image, { type StaticImageData } from 'next/image'
 import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from 'react'
@@ -92,18 +93,11 @@ export function ProfileImage() {
   }, [mounted, isEnvDrivenVariant])
 
   const profileImgCss = useMemo(() => {
-    const names = themes.map(t => t.name)
-    const nonBase = names.filter(n => n !== 'light' && n !== 'dark')
-    const rules: string[] = []
-    rules.push('.profile-img{display:none}')
-    for (const n of nonBase) rules.push(`html.${n} .profile-img[data-theme="${n}"]{display:block}`)
-    if (names.includes('dark'))
-      rules.push(`html.dark${nonBase.map(n => `:not(.${n})`).join('')} .profile-img[data-theme="dark"]{display:block}`)
-    if (names.includes('light'))
-      rules.push(
-        `html${['dark', ...nonBase].map(n => `:not(.${n})`).join('')} .profile-img[data-theme="light"]{display:block}`,
-      )
-    return rules.join('')
+    return buildPerThemeVariantCss({
+      baseSelector: '.profile-img',
+      variantAttr: 'data-theme',
+      display: 'block',
+    })
   }, [])
 
   return (
