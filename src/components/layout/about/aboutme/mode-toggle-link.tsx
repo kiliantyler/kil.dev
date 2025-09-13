@@ -6,32 +6,16 @@ import { useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { useThemeTransition } from '@/components/ui/theme-toggle'
 import { captureDarkModeEasterEgg } from '@/hooks/posthog'
-import { themes } from '@/lib/themes'
+import { buildBaseColorGateCss } from '@/lib/theme-css'
 
 export function ModeToggleNote() {
   const noteCss = useMemo(() => {
-    const names = themes.map(t => t.name)
-    const nonBase = names.filter(n => n !== 'light' && n !== 'dark')
-    const rules: string[] = []
-    // Hide all by default
-    rules.push('.mode-note{display:none}')
-    // Seasonal/custom themes: show based on their baseColor
-    for (const t of themes) {
-      if (t.name === 'light' || t.name === 'dark') continue
-      const target = t.baseColor === 'dark' ? '.mode-note--dark' : '.mode-note--light'
-      rules.push(`html.${t.name} ${target}{display:inline}`)
-    }
-    // Dark shows when .dark present and no non-base theme class active
-    if (names.includes('dark')) {
-      const notNonBase = nonBase.map(n => `:not(.${n})`).join('')
-      rules.push(`html.dark${notNonBase} .mode-note--dark{display:inline}`)
-    }
-    // Light shows when not dark and no non-base theme class active
-    if (names.includes('light')) {
-      const notOthers = ['dark', ...nonBase].map(n => `:not(.${n})`).join('')
-      rules.push(`html${notOthers} .mode-note--light{display:inline}`)
-    }
-    return rules.join('')
+    return buildBaseColorGateCss({
+      baseSelector: '.mode-note',
+      darkSelector: '.mode-note--dark',
+      lightSelector: '.mode-note--light',
+      display: 'inline',
+    })
   }, [])
 
   return (
