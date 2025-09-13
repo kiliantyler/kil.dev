@@ -181,20 +181,26 @@ export function ThemeProvider({
   // Initialize from storage/cookie and normalize expired seasonal themes back to system
   // Use layout effect to apply classes before paint to avoid light-theme flash
   React.useLayoutEffect(() => {
-    const stored = readStorageTheme() ?? readCookieTheme() ?? 'system'
-    const allowed = getAvailableThemes()
-    const initialPref: Theme = stored !== 'system' && !allowed.includes(stored) ? 'system' : stored
+    const { theme: lsTheme, updatedAt: lsUpdatedAt } = readStorageThemeMeta()
+    const { theme: ckTheme, updatedAt: ckUpdatedAt } = readCookieThemeMeta()
+
+    const lsTs = typeof lsUpdatedAt === 'number' ? lsUpdatedAt : -1
+    const ckTs = typeof ckUpdatedAt === 'number' ? ckUpdatedAt : -1
+
+    const source = lsTs >= ckTs ? 'localStorage' : 'cookie'
+    const pickedRaw = source === 'localStorage' ? (lsTheme ?? ckTheme) : (ckTheme ?? lsTheme)
+    const pickedTs = Math.max(lsTs, ckTs)
+    const initialPref: Theme = coerceToValidTheme(pickedRaw)
 
     setThemeState(initialPref)
     const sys = getSystemTheme()
     setSystemTheme(sys)
     writeCookieSystemTheme(sys)
 
-    // Persist normalization if it changed
-    if (initialPref !== stored) {
-      writeStorageTheme(initialPref)
-      writeCookieTheme(initialPref)
-    }
+    // Normalize both storage and cookie to the chosen value and timestamp
+    const tsToPersist = pickedTs > 0 ? pickedTs : Date.now()
+    writeStorageTheme(initialPref, tsToPersist)
+    writeCookieTheme(initialPref, tsToPersist)
 
     // Ensure classes match preference immediately after mount; if a server computed initial theme exists, keep it
     const hasServerApplied = (() => {
@@ -222,9 +228,11 @@ export function ThemeProvider({
     }
     const onStorage = (e: StorageEvent) => {
       if (e.key !== 'theme') return
-      const next = (e.newValue as Theme | null) ?? 'system'
+      // Re-read storage meta to get both value and timestamp
+      const { theme: lsTheme, updatedAt } = readStorageThemeMeta()
+      const next = coerceToValidTheme(lsTheme)
       setThemeState(next)
-      writeCookieTheme(next)
+      writeCookieTheme(next, updatedAt)
       applyClasses(next, getSystemTheme())
     }
     try {
