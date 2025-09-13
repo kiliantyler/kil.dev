@@ -23,7 +23,7 @@ export function ModeToggleNote() {
       <style>{noteCss}</style>
       {themes.map(t => (
         <span className="mode-note" data-theme={t.name} key={t.name}>
-          {t.darkModeNote}
+          {'darkModeNote' in t ? (t.darkModeNote ?? '') : ''}
         </span>
       ))}
     </span>

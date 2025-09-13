@@ -39,15 +39,15 @@ export const themes = [
     name: 'cyberpunk',
     icon: Zap,
     headshotImage: Cyberpunk,
-    baseColor: 'dark',
     darkModeNote: '(cyberpunk is cool, too)',
+    baseColor: 'dark',
   },
   {
     name: 'halloween',
     icon: Ghost,
     headshotImage: Halloween,
     baseColor: 'dark',
-    darkModeNote: '(Happy Halloween!)',
+    darkModeNote: '(Spooky Season!)',
     timeRange: { start: { month: 10, day: 15 }, end: { month: 11, day: 1 } },
   },
   {
