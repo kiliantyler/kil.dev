@@ -1,13 +1,12 @@
 'use client'
 
-import { env } from '@/env'
 import posthog from 'posthog-js'
 import { PostHogProvider as PHProvider } from 'posthog-js/react'
 import { useEffect } from 'react'
 
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
-  const isDev = env.NODE_ENV !== 'production'
-  const posthogKey = env.NEXT_PUBLIC_POSTHOG_KEY
+  const isDev = process.env.NODE_ENV !== 'production'
+  const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY
 
   useEffect(() => {
     if (isDev) return
