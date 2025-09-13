@@ -4,10 +4,9 @@ import '@/styles/globals.css'
 import { Background } from '@/components/layout/background'
 import { Footer } from '@/components/layout/footer'
 import { Header } from '@/components/layout/header'
-import { buildInitThemeScript, buildPreThemeScript } from '@/lib/theme-runtime'
+import { buildThemeScript } from '@/lib/theme-runtime'
 import { type Metadata } from 'next'
 import { Noto_Sans, Space_Grotesk } from 'next/font/google'
-import Script from 'next/script'
 
 export const metadata: Metadata = {
   title: 'Kilian Tyler | Site Reliability Engineer',
@@ -31,10 +30,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" className={`${spaceGrotesk.variable} ${notoSans.variable}`} suppressHydrationWarning>
       <head>
-        <script id="pre-theme" dangerouslySetInnerHTML={{ __html: buildPreThemeScript() }} />
-        <Script id="init-theme" strategy="beforeInteractive">
-          {buildInitThemeScript()}
-        </Script>
+        <script id="pre-theme" dangerouslySetInnerHTML={{ __html: buildThemeScript() }} />
       </head>
       <body className="font-sans flex min-h-screen flex-col bg-background text-foreground">
         <Providers>
