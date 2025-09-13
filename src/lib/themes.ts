@@ -74,7 +74,7 @@ export const KNOWN_THEMES = themes.map(t => t.name) as readonly ThemeName[]
 
 export function isThemeName(val: unknown): val is ThemeName {
   if (typeof val !== 'string') return false
-  return (KNOWN_THEMES as readonly string[]).includes(val)
+  return KNOWN_THEMES.includes(val as ThemeName)
 }
 
 export function isSystemVal(val: unknown): val is BaseColor {
