@@ -1,15 +1,14 @@
 'use client'
 
-import { useTheme } from '@/components/providers/theme-provider'
 import { captureLadybirdDetected, captureProfileImageClicked } from '@/hooks/posthog'
 import { useHash } from '@/hooks/use-hash'
 import Confused from '@/images/headshot/cartoon-confused.webp'
 import Grumpy from '@/images/headshot/cartoon-grumpy.webp'
 import Ladybird from '@/images/headshot/cartoon-ladybird.webp'
 import { CONTENT } from '@/lib/content'
-import { getThemeHeadshot, themes, type ThemeName } from '@/lib/themes'
+import { getThemeHeadshot, themes } from '@/lib/themes'
 import Image, { type StaticImageData } from 'next/image'
-import { useCallback, useEffect, useState, type KeyboardEvent } from 'react'
+import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 
 export function ProfileImage() {
   const hash = useHash()
@@ -72,46 +71,8 @@ export function ProfileImage() {
       setIsGrumpy(true)
     }
   }, [])
-  const theme = useTheme()
-  // Initialize from SSR-provided initial applied theme to avoid image flash on first paint
-  const [cssTheme, setCssTheme] = useState<ThemeName>(() => {
-    if (typeof document !== 'undefined') {
-      const root = document.documentElement
-      const known: ThemeName[] = themes.map(t => t.name)
-      for (const k of known) {
-        if (root.classList.contains(k)) return k
-      }
-    }
-    return theme.initialAppliedThemeName ?? 'light'
-  })
-
-  // Track the current CSS theme class on <html> to pick base image by theme
-  useEffect(() => {
-    if (typeof document === 'undefined') return
-    const root = document.documentElement
-
-    const computeCssTheme = (): ThemeName => {
-      // Prefer explicit class among known css themes
-      const known: ThemeName[] = ['halloween', 'cyberpunk', 'dark', 'light']
-      for (const k of known) {
-        if (root.classList.contains(k)) return k
-      }
-      // Fallback to resolved theme if it's a css theme
-      const r = theme.resolvedTheme
-      return r === 'dark' || r === 'light' ? r : 'light'
-    }
-
-    const update = () => setCssTheme(computeCssTheme())
-    update()
-
-    const observer = new MutationObserver(update)
-    observer.observe(root, { attributes: true, attributeFilter: ['class'] })
-    return () => observer.disconnect()
-  }, [theme.resolvedTheme])
-
   const variant = computeVariant(isGrumpy, isLadybird, useConfused)
-  const baseImageForTheme = getThemeHeadshot(cssTheme)
-  let imageSrc: StaticImageData = baseImageForTheme
+  let imageSrc: StaticImageData = getThemeHeadshot('light')
   if (variant !== 'default') {
     imageSrc = VARIANT_TO_IMAGE[variant]
   }
@@ -130,6 +91,21 @@ export function ProfileImage() {
     }
   }, [mounted, isEnvDrivenVariant])
 
+  const profileImgCss = useMemo(() => {
+    const names = themes.map(t => t.name)
+    const nonBase = names.filter(n => n !== 'light' && n !== 'dark')
+    const rules: string[] = []
+    rules.push('.profile-img{display:none}')
+    for (const n of nonBase) rules.push(`html.${n} .profile-img[data-theme="${n}"]{display:block}`)
+    if (names.includes('dark'))
+      rules.push(`html.dark${nonBase.map(n => `:not(.${n})`).join('')} .profile-img[data-theme="dark"]{display:block}`)
+    if (names.includes('light'))
+      rules.push(
+        `html${['dark', ...nonBase].map(n => `:not(.${n})`).join('')} .profile-img[data-theme="light"]{display:block}`,
+      )
+    return rules.join('')
+  }, [])
+
   return (
     <div
       className="group relative order-1 mx-auto w-full max-w-md lg:order-2 lg:mx-0"
@@ -146,29 +122,33 @@ export function ProfileImage() {
       <div
         className="relative aspect-square w-full rounded-lg bg-cover bg-center bg-no-repeat shadow-2xl"
         aria-busy={false}>
-        {mounted &&
-          (isBaseThemeVariant ? (
-            <Image
-              alt={imageAlt}
-              src={baseImageForTheme}
-              className="rounded-lg transition-transform duration-500 ease-(--ease-fluid) translate-y-0 scale-100 transform-gpu group-hover:-translate-y-1 group-hover:scale-105"
-              loading="eager"
-              priority
-              fill
-              sizes="(min-width: 1024px) 500px, 100vw"
-            />
-          ) : (
-            <Image
-              alt={imageAlt}
-              src={imageSrc}
-              className={`${isEnvDrivenVariant && !isImageLoaded ? 'opacity-0' : 'opacity-100'} rounded-lg transition-transform duration-500 ease-(--ease-fluid) translate-y-0 scale-100 transform-gpu group-hover:-translate-y-1 group-hover:scale-105`}
-              loading="eager"
-              priority
-              fill
-              sizes="(min-width: 1024px) 500px, 100vw"
-              onLoad={() => setIsImageLoaded(true)}
-            />
-          ))}
+        <style dangerouslySetInnerHTML={{ __html: profileImgCss }} />
+        {themes.map(t => (
+          <Image
+            key={t.name}
+            alt={imageAlt}
+            src={getThemeHeadshot(t.name)}
+            data-theme={t.name}
+            className="profile-img rounded-lg transition-transform duration-500 ease-(--ease-fluid) translate-y-0 scale-100 transform-gpu group-hover:-translate-y-1 group-hover:scale-105"
+            loading="eager"
+            priority={t.name === 'light'}
+            fill
+            sizes="(min-width: 1024px) 500px, 100vw"
+          />
+        ))}
+
+        {mounted && !isBaseThemeVariant && (
+          <Image
+            alt={imageAlt}
+            src={imageSrc}
+            className={`${isEnvDrivenVariant && !isImageLoaded ? 'opacity-0' : 'opacity-100'} rounded-lg transition-transform duration-500 ease-(--ease-fluid) translate-y-0 scale-100 transform-gpu group-hover:-translate-y-1 group-hover:scale-105`}
+            loading="eager"
+            priority
+            fill
+            sizes="(min-width: 1024px) 500px, 100vw"
+            onLoad={() => setIsImageLoaded(true)}
+          />
+        )}
       </div>
     </div>
   )
