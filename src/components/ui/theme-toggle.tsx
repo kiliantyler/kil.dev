@@ -347,8 +347,8 @@ export function ThemeToggle({
               open && 'ring-1 ring-accent ring-offset-2 scale-95 rotate-3',
             )}>
             <span className="relative inline-block align-middle">
-              <style dangerouslySetInnerHTML={{ __html: themeIconCss }} />
-              <style dangerouslySetInnerHTML={{ __html: spinCss }} />
+              <style>{themeIconCss}</style>
+              <style>{spinCss}</style>
               {themes.map(t => {
                 const IconComp = t.icon
                 return (

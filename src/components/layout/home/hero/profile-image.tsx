@@ -122,7 +122,7 @@ export function ProfileImage() {
       <div
         className="relative aspect-square w-full rounded-lg bg-cover bg-center bg-no-repeat shadow-2xl"
         aria-busy={mounted && isEnvDrivenVariant && !isImageLoaded}>
-        <style dangerouslySetInnerHTML={{ __html: profileImgCss }} />
+        <style>{profileImgCss}</style>
         {themes.map(t => (
           <Image
             key={t.name}
