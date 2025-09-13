@@ -1,7 +1,8 @@
 import Cyberpunk from '@/images/headshot/cartoon-cyberpunk.webp'
 import Halloween from '@/images/headshot/cartoon-halloween.webp'
 import Headshot from '@/images/headshot/cartoon-headshot.webp'
-import { Ghost, Moon, Sun, Zap } from 'lucide-react'
+import Thanksgiving from '@/images/headshot/cartoon-thanksgiving.webp'
+import { Ghost, Leaf, Moon, Sun, Zap } from 'lucide-react'
 import type { StaticImageData } from 'next/image'
 import type { ComponentType } from 'react'
 
@@ -43,6 +44,13 @@ export const themes = [
     headshotImage: Halloween,
     baseColor: 'dark',
     timeRange: { start: { month: 10, day: 15 }, end: { month: 11, day: 1 } },
+  },
+  {
+    name: 'thanksgiving',
+    icon: Leaf,
+    headshotImage: Thanksgiving,
+    baseColor: 'dark',
+    timeRange: { start: { month: 11, day: 15 }, end: { month: 11, day: 30 } },
   },
 ] as const satisfies ReadonlyArray<ThemeConfig>
 

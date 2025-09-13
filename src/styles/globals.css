@@ -4,6 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 @custom-variant cyberpunk (&:is(.cyberpunk *));
 @custom-variant halloween (&:is(.halloween *));
+@custom-variant thanksgiving (&:is(.thanksgiving *));
 
 @theme {
   --font-sans:
@@ -176,6 +177,49 @@
   color-scheme: dark;
   --card-back-shadow: drop-shadow(0 0 6px oklch(75% 0.28 328 / 0.5)) drop-shadow(0 0 10px oklch(85% 0.15 205 / 0.4))
     drop-shadow(0 0 14px oklch(92% 0.23 117 / 0.25));
+}
+
+/* Thanksgiving theme */
+.thanksgiving {
+  --background: oklch(18% 0.08 50);
+  --foreground: oklch(98% 0 0);
+  --card: oklch(22% 0.07 50);
+  --card-foreground: oklch(98% 0 0);
+  --popover: oklch(22% 0.07 50);
+  --popover-foreground: oklch(98% 0 0);
+  --primary: oklch(78% 0.24 60);
+  --primary-foreground: oklch(12% 0.04 50);
+  --secondary: oklch(85% 0.16 80);
+  --secondary-foreground: oklch(18% 0.04 50);
+  --muted: oklch(26% 0.02 50);
+  --muted-foreground: oklch(78% 0.02 50);
+  --accent: oklch(80% 0.19 145);
+  --accent-foreground: oklch(18% 0.04 50);
+  --destructive: oklch(60% 0.25 30);
+  --destructive-foreground: oklch(8% 0 0);
+  --border: oklch(34% 0.03 50);
+  --input: oklch(34% 0.03 50);
+  --ring: oklch(78% 0.24 60);
+  --grid-color: oklch(70% 0.12 60 / 0.15);
+  --grid-light: oklch(0.75 0.24 60);
+  --chart-1: oklch(78% 0.24 60);
+  --chart-2: oklch(85% 0.16 80);
+  --chart-3: oklch(80% 0.19 145);
+  --chart-4: oklch(72% 0.18 25);
+  --chart-5: oklch(82% 0.1 50);
+  --sidebar: oklch(18% 0.08 50);
+  --sidebar-foreground: oklch(98% 0 0);
+  --sidebar-primary: oklch(78% 0.24 60);
+  --sidebar-primary-foreground: oklch(12% 0.04 50);
+  --sidebar-accent: oklch(26% 0.02 50);
+  --sidebar-accent-foreground: oklch(92% 0.02 50);
+  --sidebar-border: oklch(34% 0.03 50);
+  --sidebar-ring: oklch(78% 0.24 60);
+  --theme-darklike: 1;
+  --card-backdrop: oklch(0 0 0 / 0.6);
+  color-scheme: dark;
+  --card-back-shadow: drop-shadow(0 0 6px oklch(78% 0.24 60 / 0.45)) drop-shadow(0 0 10px oklch(85% 0.16 80 / 0.35))
+    drop-shadow(0 0 14px oklch(80% 0.19 145 / 0.25));
 }
 
 /* Halloween theme */
