@@ -33,8 +33,18 @@ function isDateInRecurringRange(date: Date, start: MonthDay, end: MonthDay): boo
   const startYear = crossesYear ? (isOnOrAfterStartThisYear ? year : year - 1) : year
   const endYear = crossesYear ? startYear + 1 : startYear
 
-  const startDate = new Date(startYear, start.month - 1, start.day)
-  const endDate = new Date(endYear, end.month - 1, end.day)
+  // Handle leap year edge case - if Feb 29 doesn't exist, use Feb 28
+  const getValidDate = (y: number, m: number, d: number): Date => {
+    const date = new Date(y, m - 1, d)
+    // Check if the date rolled over to next month (invalid day)
+    if (date.getMonth() !== m - 1) {
+      // Use last valid day of the month
+      return new Date(y, m, 0)
+    }
+    return date
+  }
+  const startDate = getValidDate(startYear, start.month, start.day)
+  const endDate = getValidDate(endYear, end.month, end.day)
   return date >= startDate && date < endDate
 }
 
