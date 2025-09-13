@@ -22,7 +22,7 @@ export function ModeToggleLink() {
   const { startTransition } = useThemeTransition()
 
   const injectCircleBlurTransitionStyles = useCallback((originXPercent: number, originYPercent: number) => {
-    const styleId = `theme-transition-${Date.now()}`
+    const styleId = `theme-transition-${globalThis.crypto?.randomUUID?.() ?? Date.now()}`
     const style = document.createElement('style')
     style.id = styleId
     const css = `
