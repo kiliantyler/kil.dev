@@ -7,7 +7,7 @@ import Confused from '@/images/headshot/cartoon-confused.webp'
 import Grumpy from '@/images/headshot/cartoon-grumpy.webp'
 import Ladybird from '@/images/headshot/cartoon-ladybird.webp'
 import { CONTENT } from '@/lib/content'
-import { getThemeHeadshot, type ThemeName } from '@/lib/themes'
+import { getThemeHeadshot, themes, type ThemeName } from '@/lib/themes'
 import Image, { type StaticImageData } from 'next/image'
 import { useCallback, useEffect, useState, type KeyboardEvent } from 'react'
 
@@ -74,7 +74,16 @@ export function ProfileImage() {
   }, [])
   const theme = useTheme()
   // Initialize from SSR-provided initial applied theme to avoid image flash on first paint
-  const [cssTheme, setCssTheme] = useState<ThemeName>(theme.initialAppliedThemeName ?? 'light')
+  const [cssTheme, setCssTheme] = useState<ThemeName>(() => {
+    if (typeof document !== 'undefined') {
+      const root = document.documentElement
+      const known: ThemeName[] = themes.map(t => t.name)
+      for (const k of known) {
+        if (root.classList.contains(k)) return k
+      }
+    }
+    return theme.initialAppliedThemeName ?? 'light'
+  })
 
   // Track the current CSS theme class on <html> to pick base image by theme
   useEffect(() => {
