@@ -11,6 +11,8 @@ async function main() {
   const projectRoot = resolve(__dirname, '..')
   const entry = resolve(projectRoot, 'src/lib/theme-script.ts')
   const outFile = resolve(projectRoot, 'src/lib/theme-bundle.ts')
+  const isDev = process.env.NODE_ENV !== 'production' || process.argv.includes('--dev')
+  const sourcemap = isDev ? 'inline' : false
 
   const result = await build({
     entryPoints: [entry],
@@ -22,6 +24,7 @@ async function main() {
     globalName: 'ThemeRuntime',
     target: ['es2018'],
     legalComments: 'none',
+    sourcemap,
   })
 
   const outputFile = result.outputFiles?.[0]
