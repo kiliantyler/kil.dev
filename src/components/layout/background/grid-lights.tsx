@@ -6,7 +6,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 type Point = { x: number; y: number }
 
 const GRID_SIZE_PX = LIGHT_GRID.GRID_SIZE_PX
-// Use CSS translate to center the dot; no need for half-subtraction math
 const GRID_OFFSET_PX = LIGHT_GRID.GRID_OFFSET_PX
 
 function clamp(value: number, min: number, max: number): number {
@@ -170,7 +169,6 @@ export function GridLights() {
   const dotClass = 'absolute rounded-full pointer-events-none'
   const near = LIGHT_GRID.GLOW_NEAR_PX
   const far = LIGHT_GRID.GLOW_FAR_PX
-  const rgb = LIGHT_GRID.COLOR_RGB
 
   return (
     <div ref={containerRef} className="absolute inset-0 overflow-hidden" aria-hidden>
@@ -183,8 +181,9 @@ export function GridLights() {
             width: `${LIGHT_GRID.DOT_SIZE_PX}px`,
             height: `${LIGHT_GRID.DOT_SIZE_PX}px`,
             transform: 'translate(-50%, -50%)',
-            boxShadow: `0 0 ${near}px rgba(${rgb}, 0.7), 0 0 ${far}px rgba(${rgb}, 0.4)`,
-            background: `radial-gradient(circle, rgba(${rgb}, 0.9) 0%, rgba(${rgb}, 0.5) 50%, transparent 100%)`,
+            boxShadow: `0 0 ${near}px color-mix(in oklch, var(--grid-light) 70%, transparent), 0 0 ${far}px color-mix(in oklch, var(--grid-light) 40%, transparent)`,
+            background:
+              'radial-gradient(circle, color-mix(in oklch, var(--grid-light) 90%, transparent) 0%, color-mix(in oklch, var(--grid-light) 50%, transparent) 50%, transparent 100%)',
           }}
           aria-hidden
         />

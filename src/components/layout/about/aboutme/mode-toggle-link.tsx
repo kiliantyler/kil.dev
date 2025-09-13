@@ -1,6 +1,6 @@
 'use client'
 
-import { useTheme } from 'next-themes'
+import { useTheme } from '@/components/providers/theme-provider'
 import { useCallback } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -22,7 +22,7 @@ export function ModeToggleLink() {
   const { startTransition } = useThemeTransition()
 
   const injectCircleBlurTransitionStyles = useCallback((originXPercent: number, originYPercent: number) => {
-    const styleId = `theme-transition-${Date.now()}`
+    const styleId = `theme-transition-${globalThis.crypto?.randomUUID?.() ?? Date.now()}`
     const style = document.createElement('style')
     style.id = styleId
     const css = `
