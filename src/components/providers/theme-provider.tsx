@@ -47,17 +47,51 @@ function readStorageTheme(): Theme | undefined {
   return undefined
 }
 
-function writeCookieTheme(value: Theme) {
+function readCookieThemeMeta(): { theme: Theme | undefined; updatedAt: number | undefined } {
+  try {
+    const reTheme = /(?:^|; )theme=([^;]+)/
+    const reTs = /(?:^|; )themeUpdatedAt=([^;]+)/
+    const mTheme = reTheme.exec(document.cookie)
+    const mTs = reTs.exec(document.cookie)
+    const themeRaw = mTheme?.[1] ? decodeURIComponent(mTheme[1]) : undefined
+    const validThemes: Theme[] = ['system', ...themes.map(t => t.name)]
+    const theme: Theme | undefined = validThemes.includes(themeRaw as Theme) ? (themeRaw as Theme) : undefined
+    const updatedAt = mTs?.[1] ? Number(mTs[1]) : undefined
+    return { theme, updatedAt: Number.isFinite(updatedAt) ? updatedAt : undefined }
+  } catch {}
+  return { theme: undefined, updatedAt: undefined }
+}
+
+function readStorageThemeMeta(): { theme: Theme | undefined; updatedAt: number | undefined } {
+  try {
+    const themeStr = localStorage.getItem('theme') ?? undefined
+    const tsStr = localStorage.getItem('theme_updatedAt') ?? undefined
+    const validThemes: Theme[] = ['system', ...themes.map(t => t.name)]
+    const theme: Theme | undefined =
+      themeStr && validThemes.includes(themeStr as Theme) ? (themeStr as Theme) : undefined
+    const updatedAt = tsStr ? Number(tsStr) : undefined
+    return { theme, updatedAt: Number.isFinite(updatedAt) ? updatedAt : undefined }
+  } catch {}
+  return { theme: undefined, updatedAt: undefined }
+}
+
+function writeCookieTheme(value: Theme, updatedAt?: number) {
   try {
     const isProduction = process.env.NODE_ENV === 'production'
     const isSecure = window.location.protocol === 'https:' || isProduction ? '; secure' : ''
-    document.cookie = `theme=${encodeURIComponent(value)}; path=/; max-age=31536000; samesite=lax${isSecure}`
+    const v = coerceToValidTheme(value)
+    const ts = typeof updatedAt === 'number' && Number.isFinite(updatedAt) ? updatedAt : Date.now()
+    document.cookie = `theme=${encodeURIComponent(v)}; path=/; max-age=31536000; samesite=lax${isSecure}`
+    document.cookie = `themeUpdatedAt=${ts}; path=/; max-age=31536000; samesite=lax${isSecure}`
   } catch {}
 }
 
-function writeStorageTheme(value: Theme) {
+function writeStorageTheme(value: Theme, updatedAt?: number) {
   try {
-    localStorage.setItem('theme', value)
+    const v = coerceToValidTheme(value)
+    const ts = typeof updatedAt === 'number' && Number.isFinite(updatedAt) ? updatedAt : Date.now()
+    localStorage.setItem('theme', v)
+    localStorage.setItem('theme_updatedAt', String(ts))
   } catch {}
 }
 
