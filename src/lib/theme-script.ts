@@ -56,7 +56,7 @@ function inRange(dt: Date, s: CompactDate, e: CompactDate): boolean {
   const m = dt.getMonth() + 1
   const d = dt.getDate()
 
-  const crosses = e.m < s.m || (e.m === s.m && e.d <= s.d)
+  const crosses = e.m < s.m || (e.m === s.m && e.d < s.d)
   const onOrAfterStart = m > s.m || (m === s.m && d >= s.d)
   const sy = crosses ? (onOrAfterStart ? y : y - 1) : y
   const ey = crosses ? sy + 1 : sy
