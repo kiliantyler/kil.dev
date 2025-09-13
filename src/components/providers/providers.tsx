@@ -1,17 +1,19 @@
 'use client'
 
-import { cssThemes } from '@/lib/themes'
+import type { ThemeName } from '@/lib/themes'
 import { PostHogProvider } from './posthog-provider'
-import { ThemeCookieSync } from './theme-cookie-sync'
 import { ThemeProvider } from './theme-provider'
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({
+  children,
+  initialAppliedTheme,
+}: {
+  children: React.ReactNode
+  initialAppliedTheme?: ThemeName
+}) {
   return (
     <PostHogProvider>
-      <ThemeProvider themes={cssThemes} attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-        <ThemeCookieSync />
-        {children}
-      </ThemeProvider>
+      <ThemeProvider initialAppliedTheme={initialAppliedTheme}>{children}</ThemeProvider>
     </PostHogProvider>
   )
 }

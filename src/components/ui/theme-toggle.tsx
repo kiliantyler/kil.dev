@@ -1,14 +1,15 @@
 'use client'
 
+import { useTheme } from '@/components/providers/theme-provider'
 import { Laptop, Smartphone } from 'lucide-react'
-import { useTheme } from 'next-themes'
 import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent } from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { captureThemeChanged } from '@/hooks/posthog'
-import { getThemeIcon, getThemeLabel, themeIcons, themeNames, type Theme } from '@/lib/themes'
+import { getAvailableThemes, getDefaultThemeForNow } from '@/lib/theme-runtime'
+import { getThemeIcon, getThemeLabel, themes, type Theme } from '@/lib/themes'
 import { cn } from '@/lib/utils'
 
 function SystemIcon({ className }: { className?: string }) {
@@ -30,6 +31,8 @@ export function ThemeToggle({
   const { theme, setTheme, resolvedTheme, systemTheme } = useTheme()
   const { startTransition } = useThemeTransition()
 
+  const currentPreference: Theme = theme ?? 'system'
+
   const [open, setOpen] = useState(false)
   const [openedViaKeyboard, setOpenedViaKeyboard] = useState(false)
   const [tooltipHold, setTooltipHold] = useState(false)
@@ -42,6 +45,33 @@ export function ThemeToggle({
   useEffect(() => {
     setHydrated(true)
   }, [])
+
+  // Build CSS that shows exactly one icon based on <html> theme classes
+  const themeIconCss = useMemo(() => {
+    const names = themes.map(t => t.name)
+    const nonBase = names.filter(n => n !== 'light' && n !== 'dark')
+    const rules: string[] = []
+    // Hide all by default
+    rules.push('.theme-icon{display:none}')
+    // Non-base themes win when their class is on <html>
+    for (const n of nonBase) {
+      rules.push(`html.${n} .theme-icon[data-theme="${n}"]{display:inline-block}`)
+    }
+    // Dark shows when .dark present and no non-base theme class active
+    if (names.includes('dark')) {
+      const notNonBase = nonBase.map(n => `:not(.${n})`).join('')
+      rules.push(`html.dark${notNonBase} .theme-icon[data-theme="dark"]{display:inline-block}`)
+    }
+    // Light shows when not dark and no non-base theme class active
+    if (names.includes('light')) {
+      const notOthers = ['dark', ...nonBase].map(n => `:not(.${n})`).join('')
+      rules.push(`html${notOthers} .theme-icon[data-theme="light"]{display:inline-block}`)
+    }
+    return rules.join('')
+  }, [])
+
+  const showSystemOverlay = hydrated && open && currentPreference === 'system'
+  const spinCss = `@keyframes kd-spin-trail{0%{transform:rotate(0deg) scale(1);filter:drop-shadow(0 0 0 rgba(0,0,0,0))}70%{transform:rotate(320deg) scale(1.1);filter:drop-shadow(0 0 0 rgba(0,0,0,0)) drop-shadow(0 0 6px color-mix(in oklch,var(--primary) 70%,transparent)) drop-shadow(0 0 12px color-mix(in oklch,var(--accent,var(--primary)) 50%,transparent))}100%{transform:rotate(360deg) scale(1);filter:drop-shadow(0 0 0 rgba(0,0,0,0))}}.theme-system-overlay-anim{animation:kd-spin-trail 260ms ease-out;will-change:transform,filter}`
 
   // Prevent background scrolling on small screens when menu is open
   useEffect(() => {
@@ -94,11 +124,27 @@ export function ThemeToggle({
   }, [])
 
   const handleThemeChange = useCallback(
-    (theme: Theme, event?: ReactMouseEvent) => {
-      const nextEffectiveTheme = theme === 'system' ? (systemTheme ?? resolvedTheme) : theme
-      if (nextEffectiveTheme === resolvedTheme) {
-        setTheme(theme)
-        captureThemeChanged(theme)
+    (nextPref: Theme, event?: ReactMouseEvent) => {
+      // Compute the visual (CSS) theme for current and next preferences,
+      // treating the seasonal default as equivalent to explicitly selecting it.
+      const seasonalDefault = getDefaultThemeForNow()
+      const getVisualTheme = (pref: Theme): Theme => {
+        if (pref === 'system') {
+          if (seasonalDefault !== 'system') return seasonalDefault as Theme
+          const sys = (systemTheme ?? (resolvedTheme === 'dark' ? 'dark' : 'light')) as Theme
+          return sys
+        }
+        return pref
+      }
+
+      const currentVisual = getVisualTheme(currentPreference)
+      const nextVisual = getVisualTheme(nextPref)
+
+      // If the visual theme isn't changing (e.g., system seasonal -> explicit seasonal),
+      // update without animation.
+      if (currentVisual === nextVisual) {
+        setTheme(nextPref)
+        captureThemeChanged(nextPref)
         setOpen(false)
         return
       }
@@ -112,15 +158,21 @@ export function ThemeToggle({
 
       injectCircleBlurTransitionStyles(originXPercent, originYPercent)
       startTransition(() => {
-        setTheme(theme)
-        captureThemeChanged(theme)
+        setTheme(nextPref)
+        captureThemeChanged(nextPref)
       })
       setOpen(false)
     },
-    [injectCircleBlurTransitionStyles, resolvedTheme, setTheme, startTransition, systemTheme],
+    [
+      currentPreference,
+      injectCircleBlurTransitionStyles,
+      resolvedTheme,
+      setTheme,
+      startTransition,
+      systemTheme,
+    ],
   )
 
-  const currentPreference: Theme = (theme as Theme) ?? 'system'
   // Keep for future logic if needed; currently not used
   // const currentEffective: Theme =
   //   currentPreference === 'system'
@@ -133,7 +185,7 @@ export function ThemeToggle({
   const iconByTheme = useMemo<Partial<Record<Theme, IconComponent>>>(() => ({ system: SystemIcon }), [])
 
   const allOptions: ThemeOption[] = useMemo(() => {
-    const themeList: readonly Theme[] = themeNames as readonly Theme[]
+    const themeList: readonly Theme[] = getAvailableThemes() as readonly Theme[]
     return themeList.map((t): ThemeOption => {
       const label: string = getThemeLabel(t)
       const resolvedIcon: IconComponent = iconByTheme[t] ?? getThemeIcon(t, SystemIcon)
@@ -290,41 +342,45 @@ export function ThemeToggle({
             }}
             onKeyDown={handleTriggerKeyDown}
             className={cn(
-              'relative z-50 md:z-auto hover:ring-accent hover:ring-1 hover:ring-offset-2 ring-offset-background transition-all duration-200',
+              'relative z-50 md:z-auto hover:ring-accent hover:ring-1 hover:ring-offset-2 ring-offset-background',
+              hydrated ? 'transition-all duration-200' : 'transition-none',
               open && 'ring-1 ring-accent ring-offset-2 scale-95 rotate-3',
             )}>
-            {hydrated
-              ? (() => {
-                  if (currentPreference === 'system') {
-                    if (open) {
-                      return <SystemIcon className="h-[1.2rem] w-[1.2rem]" />
-                    }
-                    const effective: Theme = (systemTheme ?? (resolvedTheme === 'dark' ? 'dark' : 'light')) as Theme
-                    const EffectiveIcon: IconComponent = getThemeIcon(effective, SystemIcon)
-                    return <EffectiveIcon className="h-[1.2rem] w-[1.2rem]" />
-                  }
-                  const Icon: IconComponent = getThemeIcon(currentPreference, SystemIcon)
-                  return <Icon className="h-[1.2rem] w-[1.2rem]" />
-                })()
-              : (() => {
-                  const LightIcon: IconComponent =
-                    themeIcons.light ?? ((props: { className?: string }) => <span {...props} />)
-                  const DarkIcon: IconComponent =
-                    themeIcons.dark ?? ((props: { className?: string }) => <span {...props} />)
-                  return (
-                    <>
-                      <LightIcon className="h-[1.2rem] w-[1.2rem] dark:hidden" />
-                      <DarkIcon className="h-[1.2rem] w-[1.2rem] hidden dark:block" />
-                    </>
-                  )
-                })()}
+            <span className="relative inline-block align-middle">
+              <style>{themeIconCss}</style>
+              <style>{spinCss}</style>
+              {themes.map(t => {
+                const IconComp = t.icon
+                return (
+                  <IconComp
+                    key={t.name}
+                    data-theme={t.name}
+                    className={cn(
+                      'theme-icon h-[1.2rem] w-[1.2rem] transition-opacity duration-200 ease-out',
+                      showSystemOverlay ? 'opacity-0' : 'opacity-100',
+                    )}
+                  />
+                )
+              })}
+              <span
+                className={cn(
+                  'absolute inset-0 grid place-items-center pointer-events-none transition-opacity duration-200 ease-out',
+                  showSystemOverlay ? 'opacity-100' : 'opacity-0',
+                )}>
+                <SystemIcon className={cn('h-[1.2rem] w-[1.2rem]', showSystemOverlay && 'theme-system-overlay-anim')} />
+              </span>
+            </span>
             <span className="sr-only">Toggle theme menu</span>
           </Button>
         </TooltipTrigger>
         <TooltipContent side="bottom">
-          {open || tooltipHold
-            ? `${currentPreference.slice(0, 1).toUpperCase()}${currentPreference.slice(1)}`
-            : 'Theme Toggle'}
+          {(() => {
+            if (open || tooltipHold) {
+              if (currentPreference === 'system') return 'System'
+              return `${currentPreference.slice(0, 1).toUpperCase()}${currentPreference.slice(1)}`
+            }
+            return 'Theme Toggle'
+          })()}
         </TooltipContent>
       </Tooltip>
 

@@ -8,7 +8,7 @@ const compat = new FlatCompat({
 
 export default defineConfig(
   {
-    ignores: ['.next', 'next-env.d.ts'],
+    ignores: ['.next', 'next-env.d.ts', 'src/lib/theme-bundle.ts'],
   },
   ...compat.extends('next/core-web-vitals'),
   {
@@ -31,6 +31,16 @@ export default defineConfig(
         'error',
         { checksVoidReturn: { attributes: false } },
       ],
+    },
+  },
+  {
+    files: ['scripts/build-theme-runtime.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      'no-console': 'off',
     },
   },
   {
