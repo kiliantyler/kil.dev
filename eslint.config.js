@@ -1,7 +1,7 @@
 import { FlatCompat } from '@eslint/eslintrc'
+import eslintConfigPrettier from 'eslint-config-prettier'
 import { defineConfig } from 'eslint/config'
 import tseslint from 'typescript-eslint'
-import eslintConfigPrettier from 'eslint-config-prettier'
 
 const compat = new FlatCompat({
   baseDirectory: import.meta.dirname,
