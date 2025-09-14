@@ -34,6 +34,9 @@ const preview: Preview = {
   parameters: {
     controls: { expanded: true },
     layout: 'centered',
+    docs: {
+      container: DocsContainer,
+    },
   },
   tags: ['autodocs'],
 }
