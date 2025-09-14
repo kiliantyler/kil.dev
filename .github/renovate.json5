@@ -1,0 +1,115 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: [
+    "config:recommended"
+  ],
+  dependencyDashboard: true,
+  labels: [
+    "dependencies"
+  ],
+  rebaseWhen: "behind-base-branch",
+  semanticCommits: "enabled",
+  semanticCommitType: "chore",
+  semanticCommitScope: "deps",
+  packageRules: [
+    {
+      matchUpdateTypes: [
+        "patch",
+        "pin",
+        "digest"
+      ],
+      automerge: true,
+    },
+    {
+      matchManagers: [
+        "npm"
+      ],
+      rangeStrategy: "pin",
+    },
+    {
+      matchDepTypes: [
+        "devDependencies"
+      ],
+      matchUpdateTypes: [
+        "minor",
+        "patch",
+        "pin",
+        "digest"
+      ],
+      automerge: true,
+    },
+    {
+      matchDepTypes: [
+        "dependencies"
+      ],
+      minimumReleaseAge: "3 days",
+    },
+    {
+      matchDatasources: [
+        "node-version"
+      ],
+      allowedVersions: "<23",
+    },
+    {
+      matchPackageNames: [
+        "@types/node"
+      ],
+      allowedVersions: "<23",
+    },
+    {
+      matchPackageNames: [
+        "typescript",
+        "eslint-config-next",
+        "eslint-config-prettier",
+        "/^@types//",
+        "/^@typescript-eslint//",
+        "/^eslint/",
+        "/^prettier/",
+        "/^prettier-plugin-/",
+      ],
+      groupName: "dev tooling",
+    },
+    {
+      matchPackageNames: [
+        "next",
+        "react",
+        "react-dom"
+      ],
+      groupName: "next/react",
+    },
+    {
+      groupName: "radix-ui",
+      matchPackageNames: [
+        "/^@radix-ui//"
+      ],
+    },
+    {
+      matchPackageNames: [
+        "tailwindcss",
+        "/^@tailwindcss//"
+      ],
+      groupName: "tailwind",
+    },
+    {
+      matchManagers: [
+        "github-actions"
+      ],
+      matchUpdateTypes: [
+        "minor",
+        "patch",
+        "digest"
+      ],
+      automerge: true,
+      pinDigests: true,
+    },
+  ],
+  lockFileMaintenance: {
+    enabled: true,
+    schedule: [
+      "every weekend"
+    ],
+    automerge: true,
+  },
+  prConcurrentLimit: 0,
+  prHourlyLimit: 0,
+}

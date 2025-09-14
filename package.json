@@ -18,8 +18,7 @@
     "lint:fix": "eslint --fix .",
     "preview": "next build && next start",
     "start": "next start",
-    "typecheck": "tsc --noEmit",
-    "migrate:pet-gallery": "bun scripts/upload-pet-gallery.ts"
+    "typecheck": "bun run build:theme && tsc --noEmit"
   },
   "dependencies": {
     "@radix-ui/react-collapsible": "^1.1.12",
@@ -34,6 +33,7 @@
     "@vercel/blob": "^1.1.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "eslint-config-prettier": "^10.1.8",
     "image-size": "^2.0.2",
     "lucide-react": "^0.542.0",
     "next": "^15.2.3",
