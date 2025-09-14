@@ -3,7 +3,6 @@
 import { Card } from '@/components/ui/card'
 import type { Project } from '@/lib/projects'
 import { resolveSkills } from '@/lib/skillicons'
-import Image from 'next/image'
 import { RepoButton } from './repo-button'
 import { ProjectTechIcons } from './tech-icons'
 import { VisitButton } from './visit-button'
@@ -19,18 +18,9 @@ export function ProjectCardBack({ project }: ProjectCardBackProps) {
 
   return (
     <Card className="absolute inset-0 overflow-hidden p-6 [backface-visibility:hidden] transition-shadow bg-transparent group-hover:shadow-md group-hover:ring-2 group-hover:ring-primary group-hover:ring-offset-2 group-hover:ring-offset-background">
-      {/* Background image blur layer */}
+      {/* Backdrop overlay over shared background (blur comes from background image on flip) */}
       <div aria-hidden className="absolute inset-0">
-        <div className="relative h-full w-full">
-          <Image
-            src={project.imageSrc}
-            alt=""
-            fill
-            priority={false}
-            className="object-cover scale-110 scale-x-[-1] blur-xl"
-          />
-          <div className="absolute inset-0 bg-(--card-backdrop) backdrop-blur-md card-back-shadow" />
-        </div>
+        <div className="absolute inset-0 bg-(--card-backdrop) card-back-shadow" />
       </div>
 
       <div className="relative z-10 flex h-full flex-col">

@@ -1,12 +1,18 @@
 'use client'
 
 import { cn } from '@/lib/utils'
+import Image, { type StaticImageData } from 'next/image'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { FlipIndicator } from './flip-indicator'
 
 interface FlippingCardProps {
   front: React.ReactNode
   back: React.ReactNode
+  backgroundImageSrc: StaticImageData | string
+  backgroundImageAlt?: string
+  backgroundPriority?: boolean
+  backgroundSizes?: string
+  flipDurationMs?: number
   flipLabelFrontDesktop?: string
   flipLabelFrontMobile?: string
   flipLabelBackDesktop?: string
@@ -19,6 +25,11 @@ interface FlippingCardProps {
 export function FlippingCard({
   front,
   back,
+  backgroundImageSrc,
+  backgroundImageAlt,
+  backgroundPriority = false,
+  backgroundSizes,
+  flipDurationMs = 500,
   className,
   ariaLabel,
   onFlipChange,
@@ -43,6 +54,15 @@ export function FlippingCard({
     lastNotifiedRef.current = flipped
     onFlipChange?.(flipped)
   }, [flipped, onFlipChange])
+
+  // Ensure back face always uses theme base shadow by clearing any dynamic override on flip
+  useEffect(() => {
+    const tiltEl = tiltRef.current
+    if (!tiltEl) return
+    if (flipped) {
+      tiltEl.style.removeProperty('--card-back-shadow')
+    }
+  }, [flipped])
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -148,6 +168,7 @@ export function FlippingCard({
       tabIndex={0}
       aria-pressed={flipped}
       aria-label={ariaLabel}
+      data-flipped={flipped ? 'true' : 'false'}
       onClick={handleToggle}
       onKeyDown={handleKeyDown}
       onPointerMove={handlePointerMove}
@@ -159,9 +180,28 @@ export function FlippingCard({
       <div ref={tiltRef} className="relative h-full w-full will-change-transform">
         <div
           className={cn(
-            'relative h-full w-full [transform-style:preserve-3d] transition-transform duration-500 ease-out',
+            'relative z-10 h-full w-full [transform-style:preserve-3d] transition-transform ease-out',
             flipped ? 'rotate-y-180' : '',
-          )}>
+          )}
+          style={{ transitionDuration: `${flipDurationMs}ms` }}>
+          {backgroundImageSrc ? (
+            <div className="absolute inset-0 z-0 overflow-hidden rounded-xl">
+              <Image
+                src={backgroundImageSrc}
+                alt={backgroundImageAlt ?? ''}
+                fill
+                priority={backgroundPriority}
+                fetchPriority="high"
+                sizes={backgroundSizes ?? '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'}
+                placeholder="blur"
+                className={cn(
+                  'object-cover ease-out transition-[filter,transform]',
+                  'group-data-[flipped=true]:blur-2xs md:group-data-[flipped=true]:blur-sm',
+                )}
+                style={{ transitionDuration: `${flipDurationMs}ms` }}
+              />
+            </div>
+          ) : null}
           <div className="absolute inset-0 rotate-y-0 [backface-visibility:hidden]">
             {front}
             <FlipIndicator labelDesktop={flipLabelFrontDesktop} labelMobile={flipLabelFrontMobile} />
