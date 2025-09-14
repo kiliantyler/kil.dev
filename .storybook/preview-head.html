@@ -56,8 +56,8 @@
             return out
           }
         } catch (e) {}
-        // fallback
-        return ['light', 'dark', 'cyberpunk', 'halloween', 'thanksgiving']
+        // fallback: only base themes
+        return base
       }
 
       function applyClasses(themeName) {
