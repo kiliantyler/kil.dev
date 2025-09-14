@@ -37,21 +37,6 @@
         classes.push(selected)
       }
 
-      var known = ['light', 'dark', 'cyberpunk', 'halloween', 'thanksgiving']
-      for (var i = 0; i < known.length; i++) {
-        var cls = known[i]
-        if (classes.indexOf(cls) === -1) {
-          try {
-            root.classList.remove(cls)
-          } catch (e) {}
-        }
-      }
-      for (var j = 0; j < classes.length; j++) {
-        try {
-          root.classList.add(classes[j])
-        } catch (e) {}
-      }
-
       root.dataset.appliedTheme = classes[0] || ''
     } catch (e) {}
   })()
