@@ -13,7 +13,7 @@
         }
       }
 
-      var selected = (function () {
+      function readSelected() {
         try {
           var v = window.localStorage.getItem('storybook_theme')
           if (v) return v
@@ -21,7 +21,8 @@
         var c = readCookie('storybook_theme')
         if (c) return c
         return 'system'
-      })()
+      }
+      var selected = readSelected()
 
       var sysDark = false
       try {
