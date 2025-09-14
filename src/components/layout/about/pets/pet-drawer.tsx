@@ -9,6 +9,7 @@ import {
   BottomDrawerTitle,
 } from '@/components/ui/bottom-drawer'
 import { Button } from '@/components/ui/button'
+import { useEffect, useRef } from 'react'
 
 interface PetDrawerProps {
   open: boolean
@@ -17,6 +18,16 @@ interface PetDrawerProps {
 }
 
 export function PetDrawer({ open, onOpenChange, onOpenGallery }: PetDrawerProps) {
+  const dismissButtonRef = useRef<HTMLButtonElement | null>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const id = requestAnimationFrame(() => {
+      dismissButtonRef.current?.focus()
+    })
+    return () => cancelAnimationFrame(id)
+  }, [open])
+
   return (
     <BottomDrawer open={open} onOpenChange={onOpenChange}>
       <BottomDrawerContent>
@@ -26,7 +37,11 @@ export function PetDrawer({ open, onOpenChange, onOpenGallery }: PetDrawerProps)
         </BottomDrawerHeader>
         <BottomDrawerFooter>
           <div className="flex w-full items-center justify-end gap-3">
-            <Button variant="outline" onClick={() => onOpenChange(false)} aria-label="Dismiss gallery drawer">
+            <Button
+              ref={dismissButtonRef}
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              aria-label="Dismiss gallery drawer">
               Not now
             </Button>
             <Button onClick={onOpenGallery} aria-label="Open pet gallery">
