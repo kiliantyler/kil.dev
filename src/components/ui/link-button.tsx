@@ -17,7 +17,7 @@ export function LinkButton({ href, external = false, children, className, ...pro
   const linkProps = external ? { target: '_blank', rel: 'noopener noreferrer' } : {}
 
   return (
-    <Button asChild className={cn(className)} {...props}>
+    <Button asChild className={cn(className, 'select-none')} {...props}>
       <Link href={href} {...linkProps}>
         {children}
       </Link>
