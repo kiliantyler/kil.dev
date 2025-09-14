@@ -18,8 +18,7 @@
     "lint:fix": "eslint --fix .",
     "preview": "next build && next start",
     "start": "next start",
-    "typecheck": "tsc --noEmit",
-    "migrate:pet-gallery": "bun scripts/upload-pet-gallery.ts"
+    "typecheck": "bun run build:theme && tsc --noEmit"
   },
   "dependencies": {
     "@radix-ui/react-collapsible": "^1.1.12",
