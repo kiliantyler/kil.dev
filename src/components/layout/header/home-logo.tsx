@@ -23,7 +23,7 @@ export function HomeLogo({ condensed = false }: { condensed?: boolean }) {
     <Link
       href="/"
       aria-label={ariaLabel}
-      className="group flex cursor-pointer items-center gap-3 text-foreground"
+      className="group flex cursor-pointer items-center gap-3 text-foreground select-none"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onFocus={handleFocus}

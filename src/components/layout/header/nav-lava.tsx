@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils'
 type NavigationItem = (typeof NAVIGATION)[number]
 
 const NAV_TEXT = {
-  base: 'text-foreground dark:text-muted-foreground',
+  base: 'text-foreground dark:text-muted-foreground select-none',
   hover: 'hover:text-white focus:text-white dark:hover:text-primary-foreground dark:focus:text-primary-foreground',
   active: 'text-white dark:text-primary-foreground',
 } as const
