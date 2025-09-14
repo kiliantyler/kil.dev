@@ -1,5 +1,4 @@
 import type { Preview } from '@storybook/react'
-import { createElement } from 'react'
 import { ThemeProvider } from '../src/components/providers/theme-provider'
 import { themes } from '../src/lib/themes'
 import '../src/styles/globals.css'
@@ -21,10 +20,10 @@ const preview: Preview = {
           document.cookie = `storybook_themeUpdatedAt=${ts}; path=/; max-age=31536000; samesite=lax${isSecure}`
         }
       } catch {}
-      return createElement(
-        ThemeProvider,
-        { storageNamespace: 'storybook', key: `storybook-${selected}` },
-        createElement(Story),
+      return (
+        <ThemeProvider storageNamespace="storybook" key={`storybook-${selected}`}>
+          <Story />
+        </ThemeProvider>
       )
     },
   ],
@@ -32,6 +31,7 @@ const preview: Preview = {
     controls: { expanded: true },
     layout: 'centered',
   },
+  tags: ['autodocs'],
 }
 
 export default preview
