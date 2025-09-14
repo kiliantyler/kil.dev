@@ -31,14 +31,155 @@
 
       var base = sysDark ? 'dark' : 'light'
 
-      var classes = []
-      if (selected === 'system') {
-        classes.push(base)
-      } else {
-        classes.push(selected)
+      var applied = selected === 'system' ? base : selected
+      function getKnownThemes() {
+        var base = ['light', 'dark']
+        try {
+          var fromWin = (typeof window !== 'undefined' && window.__KD_KNOWN_THEMES__) || null
+          if (fromWin && typeof fromWin.length === 'number') {
+            var seen = {}
+            var out = []
+            // always ensure base first
+            for (var bIdx = 0; bIdx < base.length; bIdx++) {
+              var b = base[bIdx]
+              if (!seen[b]) {
+                seen[b] = 1
+                out.push(b)
+              }
+            }
+            for (var i = 0; i < fromWin.length; i++) {
+              var name = String(fromWin[i] || '').trim()
+              if (!name || seen[name]) continue
+              seen[name] = 1
+              out.push(name)
+            }
+            return out
+          }
+        } catch (e) {}
+        // fallback
+        return ['light', 'dark', 'cyberpunk', 'halloween', 'thanksgiving']
       }
 
-      root.dataset.appliedTheme = classes[0] || ''
+      function applyClasses(themeName) {
+        try {
+          // Apply base classes immediately (before React mounts), and set UA color-scheme
+          root.style.colorScheme = themeName === 'dark' ? 'dark' : 'light'
+          var known = getKnownThemes()
+          for (var i = 0; i < known.length; i++) {
+            try {
+              root.classList.remove(known[i])
+            } catch (e) {}
+          }
+          if (known.indexOf(themeName) !== -1) {
+            try {
+              root.classList.add(themeName)
+            } catch (e) {}
+          }
+          root.dataset.appliedTheme = themeName
+          root.dataset.themePref = selected
+        } catch (e) {}
+      }
+
+      applyClasses(applied)
+
+      // Keep in sync with OS changes when "system"
+      var mq = null
+      var onChange = null
+      var mo = null
+      var ensure = null
+      var enforced = false
+
+      function enableSystemEnforcement() {
+        try {
+          mq = window.matchMedia('(prefers-color-scheme: dark)')
+          onChange = function () {
+            var d = !!mq.matches
+            applyClasses(d ? 'dark' : 'light')
+          }
+          if (mq && mq.addEventListener) mq.addEventListener('change', onChange)
+          else if (mq && mq.addListener) mq.addListener(onChange)
+
+          // Guard against later re-renders clobbering classes; re-apply if needed
+          ensure = function () {
+            var wantDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+            var hasDark = root.classList.contains('dark')
+            var hasLight = root.classList.contains('light')
+            if (wantDark && !hasDark) applyClasses('dark')
+            else if (!wantDark && !hasLight) applyClasses('light')
+          }
+          try {
+            mo = new MutationObserver(function (muts) {
+              for (var k = 0; k < muts.length; k++) {
+                var m = muts[k]
+                if (m.type === 'attributes' && m.attributeName === 'class') ensure()
+              }
+            })
+            mo.observe(root, { attributes: true, attributeFilter: ['class'] })
+          } catch (e) {}
+          try {
+            setTimeout(ensure, 0)
+            setTimeout(ensure, 50)
+            setTimeout(ensure, 150)
+          } catch (e) {}
+          enforced = true
+        } catch (e) {}
+      }
+
+      function disableSystemEnforcement() {
+        try {
+          if (mq && onChange && mq.removeEventListener) mq.removeEventListener('change', onChange)
+          if (mq && onChange && mq.removeListener) mq.removeListener(onChange)
+        } catch (e) {}
+        try {
+          if (mo && mo.disconnect) mo.disconnect()
+        } catch (e) {}
+        mq = null
+        onChange = null
+        mo = null
+        ensure = null
+        enforced = false
+      }
+
+      if (selected === 'system') enableSystemEnforcement()
+
+      // React to toolbar changes: storage events from another context AND periodic polling (same-context)
+      function reconcileSelection(nextSel) {
+        if (!nextSel) return
+        if (nextSel === selected) return
+        selected = nextSel
+        var sys = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        applied = nextSel === 'system' ? (sys ? 'dark' : 'light') : nextSel
+        applyClasses(applied)
+        if (nextSel === 'system') {
+          if (!enforced) enableSystemEnforcement()
+        } else {
+          if (enforced) disableSystemEnforcement()
+        }
+      }
+
+      try {
+        window.addEventListener('storage', function (e) {
+          try {
+            if (!e || e.key !== 'storybook_theme') return
+            var next = e.newValue || 'system'
+            reconcileSelection(next)
+          } catch (err) {}
+        })
+      } catch (e) {}
+
+      // Poll localStorage/cookie in the same document to catch toolbar updates
+      try {
+        var last = selected
+        setInterval(function () {
+          try {
+            var now = readSelected()
+            if (now !== last) {
+              last = now
+              reconcileSelection(now)
+            }
+          } catch (e) {}
+        }, 300)
+      } catch (e) {}
     } catch (e) {}
   })()
 </script>
