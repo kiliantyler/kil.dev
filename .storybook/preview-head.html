@@ -1,0 +1,58 @@
+<script>
+  ;(function () {
+    try {
+      var root = document.documentElement
+
+      function readCookie(name) {
+        try {
+          var re = new RegExp('(?:^|; )' + name + '=([^;]+)')
+          var m = re.exec(document.cookie)
+          return m && m[1] ? decodeURIComponent(m[1]) : undefined
+        } catch (e) {
+          return undefined
+        }
+      }
+
+      var selected = (function () {
+        try {
+          var v = window.localStorage.getItem('storybook_theme')
+          if (v) return v
+        } catch (e) {}
+        var c = readCookie('storybook_theme')
+        if (c) return c
+        return 'system'
+      })()
+
+      var sysDark = false
+      try {
+        sysDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+      } catch (e) {}
+
+      var base = sysDark ? 'dark' : 'light'
+
+      var classes = []
+      if (selected === 'system') {
+        classes.push(base)
+      } else {
+        classes.push(selected)
+      }
+
+      var known = ['light', 'dark', 'cyberpunk', 'halloween', 'thanksgiving']
+      for (var i = 0; i < known.length; i++) {
+        var cls = known[i]
+        if (classes.indexOf(cls) === -1) {
+          try {
+            root.classList.remove(cls)
+          } catch (e) {}
+        }
+      }
+      for (var j = 0; j < classes.length; j++) {
+        try {
+          root.classList.add(classes[j])
+        } catch (e) {}
+      }
+
+      root.dataset.appliedTheme = classes[0] || ''
+    } catch (e) {}
+  })()
+</script>
