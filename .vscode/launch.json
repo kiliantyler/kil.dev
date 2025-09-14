@@ -25,5 +25,29 @@
         "**/node_modules/**"
       ]
     },
+    {
+      "name": "Storybook: Debug (Launch dev)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "bun",
+      "cwd": "${workspaceFolder}",
+      "runtimeArgs": [
+        "run",
+        "storybook"
+      ],
+      "env": {
+        "NODE_OPTIONS": "--inspect=9230"
+      },
+      "console": "integratedTerminal",
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "Storybook .* on (?:port )?(\\d+)",
+        "uriFormat": "http://localhost:%s"
+      },
+      "skipFiles": [
+        "<node_internals>/**",
+        "**/node_modules/**"
+      ]
+    }
   ]
 }
