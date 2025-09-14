@@ -1,6 +1,7 @@
 import { FlatCompat } from '@eslint/eslintrc'
 import { defineConfig } from 'eslint/config'
 import tseslint from 'typescript-eslint'
+import eslintConfigPrettier from 'eslint-config-prettier'
 
 const compat = new FlatCompat({
   baseDirectory: import.meta.dirname,
@@ -11,6 +12,7 @@ export default defineConfig(
     ignores: ['.next', 'next-env.d.ts', 'src/lib/theme-bundle.ts'],
   },
   ...compat.extends('next/core-web-vitals'),
+  eslintConfigPrettier,
   {
     files: ['**/*.ts', '**/*.tsx'],
     extends: [
