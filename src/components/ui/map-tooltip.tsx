@@ -3,6 +3,7 @@
 import {
   BottomDrawer,
   BottomDrawerContent,
+  BottomDrawerDescription,
   BottomDrawerHeader,
   BottomDrawerTitle,
   BottomDrawerTrigger,
@@ -49,6 +50,9 @@ export function MapTooltip({
           <BottomDrawerContent className="pb-4">
             <BottomDrawerHeader className="p-0 mt-3">
               <BottomDrawerTitle className="sr-only">Map of {locationLabel}</BottomDrawerTitle>
+              <BottomDrawerDescription className="sr-only">
+                Embedded map centered on {locationLabel}. Use two fingers to pan and zoom.
+              </BottomDrawerDescription>
             </BottomDrawerHeader>
             <div className="p-0">
               <iframe
