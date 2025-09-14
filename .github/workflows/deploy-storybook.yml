@@ -7,10 +7,16 @@ on:
     paths:
       - '.storybook/**'
       - '**/*.stories.tsx'
+      - 'src/lib/themes.ts'
+      - 'package.json'
+      - 'bun.lockb'
   pull_request:
     paths:
       - '.storybook/**'
       - '**/*.stories.tsx'
+      - 'src/lib/themes.ts'
+      - 'package.json'
+      - 'bun.lockb'
   workflow_dispatch:
 
 jobs:
