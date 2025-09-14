@@ -1,0 +1,62 @@
+name: Deploy Storybook to Cloudflare Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.storybook/**'
+      - '**/*.stories.tsx'
+  pull_request:
+    paths:
+      - '.storybook/**'
+      - '**/*.stories.tsx'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Build and deploy Storybook
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    concurrency:
+      group: pages-${{ github.event_name }}-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build theme runtime
+        env:
+          NODE_ENV: production
+        run: bun scripts/build-theme-runtime.ts
+
+      - name: Build Storybook
+        env:
+          CI: 'true'
+          NEXT_TELEMETRY_DISABLED: '1'
+          STORYBOOK_DISABLE_TELEMETRY: '1'
+        run: bun run build-storybook
+
+      - name: Publish to Cloudflare Pages
+        id: deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy storybook-static --project-name=${{ secrets.CLOUDFLARE_PROJECT_NAME }}
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}

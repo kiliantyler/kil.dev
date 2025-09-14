@@ -2,7 +2,7 @@ import type { StorybookConfig } from '@storybook/nextjs-vite'
 
 const config: StorybookConfig = {
   stories: [
-    '../src/**/*.mdx',
+    '../docs/**/*.mdx',
     '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)',
   ],
   addons: [
@@ -17,6 +17,7 @@ const config: StorybookConfig = {
     options: {},
   },
   staticDirs: [
+    '../docs',
     '../public',
   ],
 }
