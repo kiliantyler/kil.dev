@@ -194,7 +194,10 @@ export function FlippingCard({
                 fetchPriority="high"
                 sizes={backgroundSizes ?? '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'}
                 placeholder="blur"
-                className={cn('object-cover transition-transform ease-out')}
+                className={cn(
+                  'object-cover ease-out transition-[filter,transform]',
+                  'group-data-[flipped=true]:blur-2xs md:group-data-[flipped=true]:blur-sm',
+                )}
                 style={{ transitionDuration: `${flipDurationMs}ms` }}
               />
             </div>
