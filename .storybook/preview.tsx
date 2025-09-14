@@ -43,17 +43,40 @@ const preview: Preview = {
         React.useLayoutEffect(() => {
           if (typeof window === 'undefined') return
           const root = document.documentElement
-          const known = ['light', 'dark', 'cyberpunk', 'halloween', 'thanksgiving']
+          const getKnown = (): string[] => {
+            // prefer window-provided list, else fallback to base
+            const w: unknown = typeof window !== 'undefined' ? (window as unknown) : undefined
+            const fromWin = (w as Record<string, unknown> | undefined)?.__KD_KNOWN_THEMES__
+            if (Array.isArray(fromWin)) {
+              const names: string[] = []
+              const seen: Record<string, true> = {}
+              for (const base of ['light', 'dark']) {
+                if (!seen[base]) {
+                  seen[base] = true
+                  names.push(base)
+                }
+              }
+              for (const item of fromWin as unknown[]) {
+                const name = typeof item === 'string' ? item : ''
+                if (!name || seen[name]) continue
+                seen[name] = true
+                names.push(name)
+              }
+              return names
+            }
+            return ['light', 'dark']
+          }
 
           const apply = (choice: 'light' | 'dark' | Theme) => {
             try {
               const scheme = choice === 'dark' ? 'dark' : 'light'
               root.style.colorScheme = scheme
               // Remove all known theme classes first
-              for (const cls of known) {
+              const knownList = getKnown()
+              for (const cls of knownList) {
                 if (root.classList.contains(cls)) root.classList.remove(cls)
               }
-              if (known.includes(choice as string)) root.classList.add(choice as string)
+              if (knownList.includes(choice as string)) root.classList.add(choice as string)
               root.dataset.appliedTheme = choice as string
               root.dataset.themePref = selected
             } catch {}
