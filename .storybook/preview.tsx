@@ -1,4 +1,5 @@
 import type { Preview } from '@storybook/react'
+import * as React from 'react'
 import { ThemeProvider } from '../src/components/providers/theme-provider'
 import type { Theme } from '../src/lib/themes'
 import { themes } from '../src/lib/themes'
@@ -21,10 +22,74 @@ const preview: Preview = {
             (typeof window !== 'undefined' && window.location.protocol === 'https:') || isProduction ? '; secure' : ''
           document.cookie = `storybook_theme=${encodeURIComponent(selected)}; path=/; max-age=31536000; samesite=lax${isSecure}`
           document.cookie = `storybook_themeUpdatedAt=${ts}; path=/; max-age=31536000; samesite=lax${isSecure}`
+
+          try {
+            const isDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+            const root = document.documentElement
+            root.style.colorScheme = isDark ? 'dark' : 'light'
+            root.dataset.appliedTheme = isDark ? 'dark' : 'light'
+            root.dataset.themePref = 'system'
+            if (isDark) {
+              root.classList.add('dark')
+              root.classList.remove('light')
+            } else {
+              root.classList.add('light')
+              root.classList.remove('dark')
+            }
+          } catch {}
         }
       } catch {}
+      function CanvasThemeEnforcer({ selected }: { selected: Theme }) {
+        React.useLayoutEffect(() => {
+          if (typeof window === 'undefined') return
+          const root = document.documentElement
+          const known = ['light', 'dark', 'cyberpunk', 'halloween', 'thanksgiving']
+
+          const apply = (choice: 'light' | 'dark' | Theme) => {
+            try {
+              const scheme = choice === 'dark' ? 'dark' : 'light'
+              root.style.colorScheme = scheme
+              // Remove all known theme classes first
+              for (const cls of known) {
+                if (root.classList.contains(cls)) root.classList.remove(cls)
+              }
+              if (known.includes(choice as string)) root.classList.add(choice as string)
+              root.dataset.appliedTheme = choice as string
+              root.dataset.themePref = selected
+            } catch {}
+          }
+
+          if (selected === 'system') {
+            const mq = window.matchMedia('(prefers-color-scheme: dark)')
+            const run = () => apply(mq.matches ? 'dark' : 'light')
+            run()
+            try {
+              mq.addEventListener('change', run)
+              return () => mq.removeEventListener('change', run)
+            } catch {
+              mq.addListener?.(run)
+              return () => mq.removeListener?.(run)
+            }
+          } else {
+            apply(selected)
+          }
+        }, [selected])
+        return null
+      }
+
+      // Expose the known themes to the head script so it doesn't need a hardcoded list
+      try {
+        if (typeof window !== 'undefined') {
+          const names = Array.from(new Set(['light', 'dark', ...themes.map(t => t.name)]))
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          window.__KD_KNOWN_THEMES__ = names
+        }
+      } catch {}
+
       return (
         <ThemeProvider storageNamespace="storybook">
+          {context.viewMode === 'story' ? <CanvasThemeEnforcer selected={selected} /> : null}
           <ThemeSync selected={selected} />
           <Story />
         </ThemeProvider>
