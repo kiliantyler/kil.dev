@@ -1,6 +1,13 @@
 'use client'
 
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import {
+  BottomDrawer,
+  BottomDrawerContent,
+  BottomDrawerDescription,
+  BottomDrawerHeader,
+  BottomDrawerTitle,
+  BottomDrawerTrigger,
+} from '@/components/ui/bottom-drawer'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { CONTENT } from '@/lib/content'
 import { useMemo } from 'react'
@@ -31,19 +38,22 @@ export function MapTooltip({
   return (
     <div className="w-full">
       <div className="md:hidden">
-        <Sheet>
-          <SheetTrigger asChild>
+        <BottomDrawer>
+          <BottomDrawerTrigger asChild>
             <button
               type="button"
               className="text-primary text-lg font-semibold cursor-pointer inline-flex items-center w-fit self-center text-center"
               aria-label={`Open map of ${locationLabel}`}>
               {locationLabel}
             </button>
-          </SheetTrigger>
-          <SheetContent side="bottom" className="p-4">
-            <SheetHeader className="p-0">
-              <SheetTitle className="sr-only">Map of {locationLabel}</SheetTitle>
-            </SheetHeader>
+          </BottomDrawerTrigger>
+          <BottomDrawerContent className="pb-4">
+            <BottomDrawerHeader className="p-0 mt-3">
+              <BottomDrawerTitle className="sr-only">Map of {locationLabel}</BottomDrawerTitle>
+              <BottomDrawerDescription className="sr-only">
+                Embedded map centered on {locationLabel}. Use two fingers to pan and zoom.
+              </BottomDrawerDescription>
+            </BottomDrawerHeader>
             <div className="p-0">
               <iframe
                 src={embedMapSrc}
@@ -51,8 +61,8 @@ export function MapTooltip({
                 className="relative z-10 h-[240px] w-full rounded-md border border-border shadow-md"
               />
             </div>
-          </SheetContent>
-        </Sheet>
+          </BottomDrawerContent>
+        </BottomDrawer>
       </div>
       <div className="hidden md:block">
         <TooltipProvider delayDuration={150}>
