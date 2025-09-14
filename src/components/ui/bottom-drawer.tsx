@@ -16,23 +16,25 @@ import { cn } from '@/lib/utils'
 
 type BottomDrawerProps = React.ComponentProps<typeof Drawer>
 
-function BottomDrawer({ ...props }: BottomDrawerProps) {
-  return <Drawer direction="bottom" {...props} />
+function BottomDrawer({ direction: _ignoredDirection, fixed, ...rest }: BottomDrawerProps) {
+  return <Drawer {...rest} direction="bottom" fixed={fixed} />
 }
 
 type BottomDrawerContentProps = React.ComponentProps<typeof DrawerContent> & {
   showHandle?: boolean
 }
 
-function BottomDrawerContent({ className, showHandle = true, ...props }: BottomDrawerContentProps) {
-  return (
+const BottomDrawerContent = React.forwardRef<HTMLDivElement, BottomDrawerContentProps>(
+  ({ className, showHandle = true, ...props }, ref) => (
     <DrawerContent
+      ref={ref}
       showHandle={showHandle}
       className={cn('sm:max-w-2xl mx-auto rounded-t-xl !border-t-0', className)}
       {...props}
     />
-  )
-}
+  ),
+)
+BottomDrawerContent.displayName = 'BottomDrawerContent'
 
 export {
   BottomDrawer,
