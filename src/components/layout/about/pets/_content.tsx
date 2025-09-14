@@ -1,9 +1,8 @@
 'use client'
 
 import { PetCard } from '@/components/layout/about/pets/pet-card/_content'
-import { Button } from '@/components/ui/button'
+import { PetDrawer } from '@/components/layout/about/pets/pet-drawer'
 import { SectionLabel } from '@/components/ui/section-label'
-import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { PETS } from '@/lib/pets'
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useRef, useState } from 'react'
@@ -55,29 +54,14 @@ export function PetsContent() {
         ))}
       </div>
 
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="bottom" className="sm:max-w-2xl mx-auto rounded-t-xl border-t">
-          <SheetHeader>
-            <SheetTitle>You seem to be a pet lover!</SheetTitle>
-            <SheetDescription>Here&apos;s a secret pet gallery for you to enjoy.</SheetDescription>
-          </SheetHeader>
-          <SheetFooter>
-            <div className="flex w-full items-center justify-end gap-3">
-              <Button variant="outline" onClick={() => setOpen(false)} aria-label="Dismiss gallery drawer">
-                Not now
-              </Button>
-              <Button
-                onClick={() => {
-                  setOpen(false)
-                  router.push('/pet-gallery')
-                }}
-                aria-label="Open pet gallery">
-                View pet gallery
-              </Button>
-            </div>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+      <PetDrawer
+        open={open}
+        onOpenChange={setOpen}
+        onOpenGallery={() => {
+          setOpen(false)
+          router.push('/pet-gallery')
+        }}
+      />
     </div>
   )
 }
