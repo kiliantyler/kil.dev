@@ -1,13 +1,16 @@
 import type { Preview } from '@storybook/react'
 import { ThemeProvider } from '../src/components/providers/theme-provider'
+import type { Theme } from '../src/lib/themes'
 import { themes } from '../src/lib/themes'
 import '../src/styles/globals.css'
+import DocsContainer from './docs-container'
+import ThemeSync from './theme-sync'
 
 const preview: Preview = {
   decorators: [
     (Story, context) => {
       const g = (context.globals as { kdTheme?: unknown }).kdTheme
-      const selected = typeof g === 'string' ? g : 'system'
+      const selected: Theme = typeof g === 'string' ? (g as Theme) : 'system'
       try {
         if (typeof window !== 'undefined') {
           const ts = String(Date.now())
@@ -21,7 +24,8 @@ const preview: Preview = {
         }
       } catch {}
       return (
-        <ThemeProvider storageNamespace="storybook" key={`storybook-${selected}`}>
+        <ThemeProvider storageNamespace="storybook">
+          <ThemeSync selected={selected} />
           <Story />
         </ThemeProvider>
       )
