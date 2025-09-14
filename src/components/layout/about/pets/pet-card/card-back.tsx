@@ -4,7 +4,6 @@ import { Card } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import type { Pet } from '@/lib/pets'
 import { calculateAgeYears, formatDateFull } from '@/lib/utils'
-import Image from 'next/image'
 
 function formatBirthday(dateString: string) {
   return formatDateFull(dateString)
@@ -19,12 +18,8 @@ export function PetCardBack({ pet }: PetCardBackProps) {
 
   return (
     <Card className="absolute inset-0 overflow-hidden p-6 [backface-visibility:hidden] transition-shadow bg-transparent group-hover:shadow-md group-hover:ring-2 group-hover:ring-primary group-hover:ring-offset-2 group-hover:ring-offset-background">
-      {/* Background image blur layer */}
       <div aria-hidden className="absolute inset-0">
-        <div className="relative h-full w-full">
-          <Image src={pet.image} alt="" fill priority={false} className="object-cover scale-110 scale-x-[-1] blur-xl" />
-          <div className="absolute inset-0 bg-(--card-backdrop) backdrop-blur-md card-back-shadow" />
-        </div>
+        <div className="absolute inset-0 bg-(--card-backdrop) backdrop-blur-2xl card-back-shadow" />
       </div>
 
       <ScrollArea className="relative z-10 h-full">
