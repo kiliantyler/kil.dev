@@ -22,7 +22,8 @@
     },
     {
       matchManagers: [
-        "npm"
+        "npm",
+        "bun"
       ],
       rangeStrategy: "pin",
     },
