@@ -14,11 +14,15 @@ import {
 } from '@/components/ui/drawer'
 import { cn } from '@/lib/utils'
 
-type BottomDrawerProps = React.ComponentProps<typeof Drawer>
+type BottomDrawerProps = React.ComponentPropsWithoutRef<typeof Drawer>
+type DrawerElement = React.ElementRef<typeof Drawer>
 
-function BottomDrawer({ direction: _ignoredDirection, fixed, ...rest }: BottomDrawerProps) {
-  return <Drawer {...rest} direction="bottom" fixed={fixed} />
-}
+const BottomDrawer = React.forwardRef<DrawerElement, BottomDrawerProps>(
+  ({ direction: _ignoredDirection, ...rest }, ref) => (
+    <Drawer ref={ref} direction="bottom" {...rest} />
+  ),
+)
+BottomDrawer.displayName = 'BottomDrawer'
 
 type BottomDrawerContentProps = React.ComponentProps<typeof DrawerContent> & {
   showHandle?: boolean
