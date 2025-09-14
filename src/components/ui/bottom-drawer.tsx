@@ -24,11 +24,14 @@ const BottomDrawer = React.forwardRef<DrawerElement, BottomDrawerProps>(
 )
 BottomDrawer.displayName = 'BottomDrawer'
 
-type BottomDrawerContentProps = React.ComponentProps<typeof DrawerContent> & {
+type BottomDrawerContentProps = React.ComponentPropsWithoutRef<typeof DrawerContent> & {
   showHandle?: boolean
 }
 
-const BottomDrawerContent = React.forwardRef<HTMLDivElement, BottomDrawerContentProps>(
+const BottomDrawerContent = React.forwardRef<
+  React.ElementRef<typeof DrawerContent>,
+  BottomDrawerContentProps
+>(
   ({ className, showHandle = true, ...props }, ref) => (
     <DrawerContent
       ref={ref}
