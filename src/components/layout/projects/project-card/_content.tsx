@@ -23,7 +23,10 @@ export function ProjectCard({ project }: ProjectCardProps) {
     <FlippingCard
       ariaLabel={`Toggle details for ${project.title}`}
       onFlipChange={handleFlipChange}
-      front={<ProjectCardFront imageSrc={project.imageSrc} imageAlt={project.imageAlt} title={project.title} />}
+      backgroundImageSrc={project.imageSrc}
+      backgroundImageAlt={project.imageAlt}
+      backgroundSizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+      front={<ProjectCardFront title={project.title} />}
       back={<ProjectCardBack project={project} />}
       flipLabelFrontDesktop={'Learn more'}
       flipLabelFrontMobile={'Tap to learn more'}

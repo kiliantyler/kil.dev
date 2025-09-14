@@ -8,7 +8,7 @@ import { FlipIndicator } from './flip-indicator'
 interface FlippingCardProps {
   front: React.ReactNode
   back: React.ReactNode
-  backgroundImageSrc?: StaticImageData | string
+  backgroundImageSrc: StaticImageData | string
   backgroundImageAlt?: string
   backgroundPriority?: boolean
   backgroundSizes?: string
