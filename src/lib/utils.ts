@@ -50,7 +50,7 @@ export function isSafari(): boolean {
   if (typeof window === 'undefined') return false
 
   const userAgent = window.navigator.userAgent
-  const isSafariUA = /Safari/.test(userAgent) && !/Chrome/.test(userAgent) && !/Chromium/.test(userAgent)
+  const isSafariUA = userAgent.includes('Safari') && !userAgent.includes('Chrome') && !userAgent.includes('Chromium')
 
   // Additional check for Safari-specific features
   const hasSafariFeatures = 'webkitAppearance' in document.documentElement.style && !('chrome' in window)
