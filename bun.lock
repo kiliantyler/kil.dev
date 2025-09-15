@@ -11,7 +11,7 @@
         "@radix-ui/react-separator": "1.1.7",
         "@radix-ui/react-slot": "1.2.3",
         "@radix-ui/react-tooltip": "1.2.8",
-        "@storybook/nextjs-vite": "^9.1.5",
+        "@storybook/nextjs-vite": "9.1.5",
         "@t3-oss/env-nextjs": "0.13.8",
         "@vercel/blob": "1.1.1",
         "class-variance-authority": "0.7.1",
