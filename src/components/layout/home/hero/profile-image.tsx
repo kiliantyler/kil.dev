@@ -1,10 +1,12 @@
 'use client'
 
+import { useAchievements } from '@/components/providers/achievements-provider'
 import { captureLadybirdDetected, captureProfileImageClicked } from '@/hooks/posthog'
 import { useHash } from '@/hooks/use-hash'
 import Confused from '@/images/headshot/cartoon-confused.webp'
 import Grumpy from '@/images/headshot/cartoon-grumpy.webp'
 import Ladybird from '@/images/headshot/cartoon-ladybird.webp'
+import { type AchievementId } from '@/lib/achievements'
 import { CONTENT } from '@/lib/content'
 import { buildPerThemeVariantCss } from '@/lib/theme-css'
 import { getThemeHeadshot, themes } from '@/lib/themes'
@@ -12,6 +14,7 @@ import Image, { type StaticImageData } from 'next/image'
 import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 
 export function ProfileImage() {
+  const { unlock, has } = useAchievements()
   const hash = useHash()
   const [mounted, setMounted] = useState(false)
   const [isImageLoaded, setIsImageLoaded] = useState(true)
@@ -60,18 +63,28 @@ export function ProfileImage() {
     if (isGrumpy) return
     setIsGrumpy(true)
     captureProfileImageClicked('click', 'grumpy', useConfused)
-  }, [isGrumpy, useConfused])
+    if (!has('GRUMPY_GLIMPSE' as AchievementId)) {
+      unlock('GRUMPY_GLIMPSE' as AchievementId)
+    }
+  }, [isGrumpy, useConfused, has, unlock])
 
   const handlePointerLeave = useCallback(() => {
     setIsGrumpy(false)
   }, [])
 
-  const handleKeyDown = useCallback((event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'Enter' || event.key === ' ') {
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLDivElement>) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return
       event.preventDefault()
+      if (isGrumpy) return
       setIsGrumpy(true)
-    }
-  }, [])
+      captureProfileImageClicked('keyboard', 'grumpy', useConfused)
+      if (!has('GRUMPY_GLIMPSE' as AchievementId)) {
+        unlock('GRUMPY_GLIMPSE' as AchievementId)
+      }
+    },
+    [isGrumpy, useConfused, has, unlock],
+  )
   const variant = computeVariant(isGrumpy, isLadybird, useConfused)
   let imageSrc: StaticImageData = getThemeHeadshot('light')
   if (variant !== 'default') {
