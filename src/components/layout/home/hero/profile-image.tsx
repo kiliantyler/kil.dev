@@ -72,12 +72,19 @@ export function ProfileImage() {
     setIsGrumpy(false)
   }, [])
 
-  const handleKeyDown = useCallback((event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'Enter' || event.key === ' ') {
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLDivElement>) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return
       event.preventDefault()
+      if (isGrumpy) return
       setIsGrumpy(true)
-    }
-  }, [])
+      captureProfileImageClicked('keyboard', 'grumpy', useConfused)
+      if (!has('GRUMPY_GLIMPSE' as AchievementId)) {
+        unlock('GRUMPY_GLIMPSE' as AchievementId)
+      }
+    },
+    [isGrumpy, useConfused, has, unlock],
+  )
   const variant = computeVariant(isGrumpy, isLadybird, useConfused)
   let imageSrc: StaticImageData = getThemeHeadshot('light')
   if (variant !== 'default') {
