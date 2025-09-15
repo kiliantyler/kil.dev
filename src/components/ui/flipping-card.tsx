@@ -8,7 +8,7 @@ import { FlipIndicator } from './flip-indicator'
 interface FlippingCardProps {
   front: React.ReactNode
   back: React.ReactNode
-  backgroundImageSrc: StaticImageData | string
+  backgroundImageSrc?: StaticImageData | string
   backgroundImageAlt?: string
   backgroundPriority?: boolean
   backgroundSizes?: string
@@ -193,7 +193,7 @@ export function FlippingCard({
                 priority={backgroundPriority}
                 fetchPriority="high"
                 sizes={backgroundSizes ?? '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'}
-                placeholder="blur"
+                placeholder={typeof backgroundImageSrc === 'string' ? 'empty' : 'blur'}
                 className={cn(
                   'object-cover ease-out transition-[filter,transform]',
                   'group-data-[flipped=true]:blur-2xs md:group-data-[flipped=true]:blur-sm',

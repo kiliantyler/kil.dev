@@ -1,8 +1,11 @@
 'use client'
 
+import { AchievementCardBack } from '@/components/layout/achievements/achievement-card-back'
+import { AchievementCardFront } from '@/components/layout/achievements/achievement-card-front'
 import { useAchievements } from '@/components/providers/achievements-provider'
 import { FlippingCard } from '@/components/ui/flipping-card'
 import { SectionLabel } from '@/components/ui/section-label'
+import unknownAchievementImage from '@/images/achievements/unknown.webp'
 import { ACHIEVEMENTS, type AchievementId } from '@/lib/achievements'
 
 export default function AchievementsPage() {
@@ -21,34 +24,24 @@ export default function AchievementsPage() {
           {entries.map(([id, def]) => {
             const unlockedAt = unlocked[id]
             const isUnlocked = Boolean(unlockedAt)
-            const frontIcon = isUnlocked ? (def.icon ?? '🏆') : '❓'
             const title = isUnlocked ? def.title : 'Hidden achievement'
-            const description = isUnlocked ? def.description : 'Unlock to reveal details.'
+            const description = isUnlocked ? def.cardDescription : 'Unlock to reveal details.'
+            const footer = isUnlocked
+              ? `Unlocked: ${new Date(unlockedAt).toLocaleString()}`
+              : 'Keep exploring the site!'
+            const imageSrc = isUnlocked ? def.imageSrc : unknownAchievementImage
+            const imageAlt = isUnlocked ? def.imageAlt : 'Unknown achievement'
+            const ariaLabel = isUnlocked ? `Achievement: ${def.title}` : `Hidden achievement`
 
             return (
               <li key={id} className="list-none">
                 <FlippingCard
-                  front={
-                    <div className="flex h-full w-full flex-col items-center justify-center gap-3 rounded-xl bg-card text-card-foreground border border-border">
-                      <div className="text-6xl" aria-hidden>
-                        {frontIcon}
-                      </div>
-                      <div className="px-4 text-center text-base font-semibold">{title}</div>
-                    </div>
-                  }
-                  back={
-                    <div className="flex h-full w-full flex-col justify-between rounded-xl bg-card text-card-foreground border border-border">
-                      <div className="flex-1 p-6">
-                        <h3 className="mb-2 text-lg font-semibold">{isUnlocked ? def.title : 'Hidden achievement'}</h3>
-                        <p className="text-sm text-muted-foreground">{description}</p>
-                      </div>
-                      <div className="border-t border-border p-4 text-xs text-muted-foreground/90">
-                        {isUnlocked ? `Unlocked: ${new Date(unlockedAt).toLocaleString()}` : 'Keep exploring the site!'}
-                      </div>
-                    </div>
-                  }
-                  backgroundImageSrc=""
-                  ariaLabel={`Achievement: ${def.title}`}
+                  front={<AchievementCardFront />}
+                  back={<AchievementCardBack title={title} description={description} footer={footer} />}
+                  backgroundImageSrc={imageSrc}
+                  backgroundImageAlt={imageAlt}
+                  backgroundSizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  ariaLabel={ariaLabel}
                   className="rounded-xl"
                   flipLabelFrontDesktop="View details"
                   flipLabelFrontMobile="Flip"

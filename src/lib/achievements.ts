@@ -7,10 +7,10 @@ export interface AchievementDefinition {
   id: AchievementId
   title: string
   description: string
-  icon?: string
-  imageSrc?: StaticImageData
-  imageAlt?: string
-  cardDescription?: string
+  icon: string
+  imageSrc: StaticImageData
+  imageAlt: string
+  cardDescription: string
 }
 
 export const ACHIEVEMENTS: Record<AchievementId, AchievementDefinition> = {
