@@ -304,7 +304,7 @@ export function MobileNav() {
           aria-haspopup="menu"
           aria-expanded={open}
           aria-controls="mobile-nav-arc"
-          className="relative z-[90]"
+          className="relative z-[106]"
           onClick={() => {
             setOpen(prev => {
               const next = !prev
@@ -373,7 +373,7 @@ export function MobileNav() {
           onKeyDown={handleMenuKeyDown}
           className={cn(
             'pointer-events-none fixed md:hidden',
-            open || closing ? 'z-[80] opacity-100' : 'z-[80] opacity-0',
+            open || closing ? 'z-[110] opacity-100' : 'z-[110] opacity-0',
           )}
           style={{
             left: `${anchor.x}px`,
@@ -425,7 +425,7 @@ export function MobileNav() {
         onKeyDown={handleOverlayKeyDown}
         className={cn(
           'fixed inset-0 md:hidden transition-opacity duration-200',
-          open ? 'z-[70] opacity-100 pointer-events-auto' : 'z-[70] opacity-0 pointer-events-none',
+          open ? 'z-[105] opacity-100 pointer-events-auto' : 'z-[105] opacity-0 pointer-events-none',
           'bg-black/40 backdrop-blur-sm',
         )}
       />
