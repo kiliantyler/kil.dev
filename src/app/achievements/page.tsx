@@ -4,6 +4,7 @@ import { FlippingCard } from '@/components/ui/flipping-card'
 import { SectionLabel } from '@/components/ui/section-label'
 import unknownAchievementImage from '@/images/achievements/unknown.webp'
 import { ACHIEVEMENTS, ACHIEVEMENTS_COOKIE_NAME, parseUnlockedCookie, type AchievementId } from '@/lib/achievements'
+import { format, isValid as isValidDate, parseISO } from 'date-fns'
 import { cookies } from 'next/headers'
 
 export default async function AchievementsPage() {
@@ -27,8 +28,23 @@ export default async function AchievementsPage() {
             const isUnlocked = Boolean(unlockedAt)
             const title = isUnlocked ? def.title : 'Hidden achievement'
             const description = isUnlocked ? def.cardDescription : 'Unlock to reveal details.'
-            const footer =
-              isUnlocked && unlockedAt ? `Unlocked: ${new Date(unlockedAt).toISOString()}` : 'Keep exploring the site!'
+            let footer = 'Keep exploring the site!'
+            if (isUnlocked) {
+              if (unlockedAt) {
+                // Safely parse and format. Prefer ISO parsing; fall back to Date constructor.
+                const isoDate = parseISO(unlockedAt)
+                if (isValidDate(isoDate)) {
+                  footer = `Unlocked: ${format(isoDate, 'PP p')}`
+                } else {
+                  const fallbackDate = new Date(unlockedAt)
+                  footer = Number.isNaN(fallbackDate.getTime())
+                    ? 'Unlocked'
+                    : `Unlocked: ${format(fallbackDate, 'PP p')}`
+                }
+              } else {
+                footer = 'Unlocked'
+              }
+            }
             const imageSrc = isUnlocked ? def.imageSrc : unknownAchievementImage
             const imageAlt = isUnlocked ? def.imageAlt : 'Unknown achievement'
             const ariaLabel = isUnlocked ? `Achievement: ${def.title}` : 'Hidden achievement'
