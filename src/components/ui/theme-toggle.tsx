@@ -328,9 +328,9 @@ export function ThemeToggle({
             }}
             onKeyDown={handleTriggerKeyDown}
             className={cn(
-              'relative z-50 md:z-auto hover:ring-accent hover:ring-1 hover:ring-offset-2 ring-offset-background',
-              hydrated ? 'transition-all duration-200' : 'transition-none',
-              open && 'ring-1 ring-accent ring-offset-2 scale-95 rotate-3',
+              'relative hover:ring-accent hover:ring-1 hover:ring-offset-2 ring-offset-background',
+              hydrated ? 'transition-[transform,opacity] duration-200 will-change-transform' : 'transition-none',
+              open ? 'z-[120] ring-1 ring-accent ring-offset-2 scale-95 rotate-3' : 'z-[70]',
             )}>
             <span className="relative inline-block align-middle">
               <style>{themeIconCss}</style>
@@ -388,7 +388,7 @@ export function ThemeToggle({
           }
         }}
         className={cn(
-          'fixed inset-0 md:hidden z-40 transition-opacity duration-200',
+          'fixed inset-0 md:hidden z-[115] transition-opacity duration-200',
           open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
           // Subtle flashy backdrop: tint + blur + vignette-ish gradient
           'bg-black/40 backdrop-blur-sm',
@@ -405,7 +405,7 @@ export function ThemeToggle({
         tabIndex={-1}
         onKeyDown={handleMenuKeyDown}
         className={cn(
-          'absolute left-1/2 top-full -translate-x-1/2 mt-2 z-50',
+          'absolute left-1/2 top-full -translate-x-1/2 mt-2 z-[120]',
           'flex flex-col items-stretch gap-2',
           'md:left-auto md:top-1/2 md:right-full md:-translate-y-1/2 md:translate-x-0 md:mt-0 md:mr-2 md:flex-row md:items-center',
           open ? 'pointer-events-auto' : 'pointer-events-none',

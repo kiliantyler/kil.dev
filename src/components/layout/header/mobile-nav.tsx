@@ -31,8 +31,6 @@ export function MobileNav() {
     tone: 'primary' | 'accent'
   }
   const [particles, setParticles] = useState<Particle[]>([])
-  const [showRipple, setShowRipple] = useState(false)
-  const [rippleMode, setRippleMode] = useState<'out' | 'in'>('out')
   const [particleAnim, setParticleAnim] = useState<'burst' | 'implode'>('burst')
   // Animation constants
   const STAGGER_MS = 35
@@ -68,9 +66,7 @@ export function MobileNav() {
   }, [])
 
   const triggerOpenFx = useCallback(() => {
-    setRippleMode('out')
     setParticleAnim('burst')
-    setShowRipple(true)
     const particleCount = 12
     const nextParticles: Particle[] = []
     for (let i = 0; i < particleCount; i++) {
@@ -85,14 +81,11 @@ export function MobileNav() {
       nextParticles.push({ id: i, tx, ty, durationMs, delayMs, sizePx, tone })
     }
     setParticles(nextParticles)
-    window.setTimeout(() => setShowRipple(false), 500)
     window.setTimeout(() => setParticles([]), 900)
   }, [])
 
   const triggerCloseFx = useCallback(() => {
-    setRippleMode('in')
     setParticleAnim('implode')
-    setShowRipple(true)
     const particleCount = 10
     const nextParticles: Particle[] = []
     for (let i = 0; i < particleCount; i++) {
@@ -107,7 +100,6 @@ export function MobileNav() {
       nextParticles.push({ id: i, tx, ty, durationMs, delayMs, sizePx, tone })
     }
     setParticles(nextParticles)
-    window.setTimeout(() => setShowRipple(false), 450)
     window.setTimeout(() => setParticles([]), 800)
   }, [])
 
@@ -312,7 +304,7 @@ export function MobileNav() {
           aria-haspopup="menu"
           aria-expanded={open}
           aria-controls="mobile-nav-arc"
-          className="relative z-[90]"
+          className="relative z-[106]"
           onClick={() => {
             setOpen(prev => {
               const next = !prev
@@ -341,23 +333,12 @@ export function MobileNav() {
         <style>{`
           @keyframes kd-burst { from { transform: translate(-50%, -50%) translate(0,0) scale(0.8); opacity: 1 } to { transform: translate(-50%, -50%) translate(var(--tx), var(--ty)) scale(1); opacity: 0 } }
           @keyframes kd-implosion { from { transform: translate(-50%, -50%) translate(var(--tx), var(--ty)) scale(1); opacity: 0.9 } to { transform: translate(-50%, -50%) translate(0,0) scale(0.6); opacity: 0 } }
-          @keyframes kd-ripple { from { transform: translate(-50%, -50%) scale(0.35); opacity: 0.7 } to { transform: translate(-50%, -50%) scale(2.25); opacity: 0 } }
-          @keyframes kd-ripple-in { from { transform: translate(-50%, -50%) scale(1.8); opacity: 0.35 } to { transform: translate(-50%, -50%) scale(0.35); opacity: 0 } }
         `}</style>
 
         <span
           aria-hidden
-          className={cn(
-            'pointer-events-none absolute left-1/2 top-1/2 z-[80] h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-accent/60',
-            showRipple
-              ? rippleMode === 'out'
-                ? 'animate-[kd-ripple_500ms_ease-out_forwards]'
-                : 'animate-[kd-ripple-in_450ms_ease-in_forwards]'
-              : 'hidden',
-          )}
-        />
-
-        <span aria-hidden className="pointer-events-none absolute inset-0 z-[80]">
+          className="pointer-events-none fixed z-[109]"
+          style={{ left: `${anchor.x}px`, top: `${anchor.y}px` }}>
           {particles.map(p => {
             const particleStyle: React.CSSProperties & { ['--tx']?: string; ['--ty']?: string } = {
               width: `${p.sizePx}px`,
@@ -392,7 +373,7 @@ export function MobileNav() {
           onKeyDown={handleMenuKeyDown}
           className={cn(
             'pointer-events-none fixed md:hidden',
-            open || closing ? 'z-[80] opacity-100' : 'z-[80] opacity-0',
+            open || closing ? 'z-[110] opacity-100' : 'z-[110] opacity-0',
           )}
           style={{
             left: `${anchor.x}px`,
@@ -444,7 +425,7 @@ export function MobileNav() {
         onKeyDown={handleOverlayKeyDown}
         className={cn(
           'fixed inset-0 md:hidden transition-opacity duration-200',
-          open ? 'z-[70] opacity-100 pointer-events-auto' : 'z-[70] opacity-0 pointer-events-none',
+          open ? 'z-[105] opacity-100 pointer-events-auto' : 'z-[105] opacity-0 pointer-events-none',
           'bg-black/40 backdrop-blur-sm',
         )}
       />
