@@ -43,6 +43,7 @@ export function MobileNav() {
   const [radiusPx, setRadiusPx] = useState(96)
   const [arcYOffsetPx, setArcYOffsetPx] = useState(0)
   const [baseXOffsetPx, setBaseXOffsetPx] = useState(0)
+  const overlayRef = useRef<HTMLDivElement | null>(null)
 
   const injectCircleBlurTransitionStyles = useCallback((originXPercent: number, originYPercent: number) => {
     const styleId = `nav-transition-${Date.now()}`
@@ -158,6 +159,15 @@ export function MobileNav() {
       window.clearTimeout(id)
     }
   }, [open, openedViaKeyboard, triggerCloseFx])
+
+  // Ensure focus is never left on the overlay when closing
+  useEffect(() => {
+    if (open) return
+    if (document.activeElement === overlayRef.current) {
+      overlayRef.current?.blur()
+    }
+    triggerRef.current?.focus()
+  }, [open])
 
   const handleTriggerKeyDown = useCallback((e: React.KeyboardEvent<HTMLButtonElement>) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -404,14 +414,16 @@ export function MobileNav() {
 
       {/* Backdrop to emphasize the menu and allow closing */}
       <div
-        aria-hidden={!open}
         role="button"
         tabIndex={open ? 0 : -1}
         aria-label="Close navigation menu"
+        ref={overlayRef}
         onClick={() => {
           triggerCloseFx()
           setOpen(false)
           setOpenedViaKeyboard(false)
+          // Return focus to trigger
+          triggerRef.current?.focus()
         }}
         onKeyDown={e => {
           if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
@@ -419,6 +431,7 @@ export function MobileNav() {
             triggerCloseFx()
             setOpen(false)
             setOpenedViaKeyboard(false)
+            triggerRef.current?.focus()
           }
         }}
         className={cn(
