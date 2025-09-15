@@ -301,7 +301,7 @@ export function MobileNav() {
         <span
           aria-hidden
           className={cn(
-            'pointer-events-none absolute left-1/2 top-1/2 z-50 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-accent/60',
+            'pointer-events-none absolute left-1/2 top-1/2 z-[80] h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-accent/60',
             showRipple
               ? rippleMode === 'out'
                 ? 'animate-[kd-ripple_500ms_ease-out_forwards]'
@@ -310,7 +310,7 @@ export function MobileNav() {
           )}
         />
 
-        <span aria-hidden className="pointer-events-none absolute inset-0 z-50">
+        <span aria-hidden className="pointer-events-none absolute inset-0 z-[80]">
           {particles.map(p => {
             const particleStyle: React.CSSProperties & { ['--tx']?: string; ['--ty']?: string } = {
               width: `${p.sizePx}px`,
@@ -343,7 +343,7 @@ export function MobileNav() {
           aria-orientation="vertical"
           onKeyDown={handleMenuKeyDown}
           className={cn(
-            'pointer-events-none absolute left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 md:hidden',
+            'pointer-events-none absolute left-1/2 top-1/2 z-[80] -translate-x-1/2 -translate-y-1/2 md:hidden',
           )}>
           {NAVIGATION.map((item, idx) => {
             const isActive = !item.href.startsWith('#') && item.href === pathname
@@ -422,7 +422,7 @@ export function MobileNav() {
           }
         }}
         className={cn(
-          'fixed inset-0 md:hidden z-40 transition-opacity duration-200',
+          'fixed inset-0 md:hidden z-[70] transition-opacity duration-200',
           open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
           'bg-black/40 backdrop-blur-sm',
         )}
