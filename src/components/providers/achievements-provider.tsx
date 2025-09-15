@@ -75,7 +75,7 @@ export function AchievementsProvider({
     [unlocked],
   )
 
-  const showToast = useCallback((id: AchievementId, timestampIso: string) => {
+  const showToast = useCallback((id: AchievementId) => {
     const def = ACHIEVEMENTS[id]
     toast.success(def.title, {
       description: def.description,
@@ -94,20 +94,12 @@ export function AchievementsProvider({
       if (has(id)) return
 
       pendingUnlocksRef.current.add(id)
-      let didUnlock = false
-      let tsForToast = ''
-      setUnlocked(prev => {
-        if (prev[id]) return prev
-        didUnlock = true
-        tsForToast = new Date().toISOString()
-        return { ...prev, [id]: tsForToast }
-      })
+      const timestampIso = new Date().toISOString()
+      setUnlocked(prev => ({ ...prev, [id]: timestampIso }))
       // Schedule cleanup of the pending flag regardless
       queueMicrotask(() => pendingUnlocksRef.current.delete(id))
 
-      if (didUnlock && tsForToast) {
-        showToast(id, tsForToast)
-      }
+      showToast(id)
     },
     [has, showToast],
   )
