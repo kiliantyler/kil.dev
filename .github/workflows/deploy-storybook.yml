@@ -56,6 +56,7 @@ jobs:
           CI: 'true'
           NEXT_TELEMETRY_DISABLED: '1'
           STORYBOOK_DISABLE_TELEMETRY: '1'
+          SKIP_ENV_VALIDATION: 'true'
         run: bun run build-storybook
 
       - name: Publish to Cloudflare Pages
