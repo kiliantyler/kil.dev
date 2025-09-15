@@ -37,3 +37,39 @@ export function createEmptyUnlocked(): UnlockedMap {
 export function isValidAchievementId(id: string): id is AchievementId {
   return Object.prototype.hasOwnProperty.call(ACHIEVEMENTS, id)
 }
+
+// Cookie bridge for SSR hydration consistency
+export const ACHIEVEMENTS_COOKIE_NAME = 'kil.dev_achievements_v1'
+
+export function parseUnlockedCookie(raw: string | undefined): UnlockedMap {
+  if (!raw) return createEmptyUnlocked()
+  let text = raw
+  try {
+    // Handle percent-encoded cookie values
+    text = decodeURIComponent(raw)
+  } catch {}
+  try {
+    const parsed = JSON.parse(text) as unknown
+    if (!parsed || typeof parsed !== 'object') return createEmptyUnlocked()
+    const base = createEmptyUnlocked()
+    const result: UnlockedMap = { ...base }
+    for (const key of Object.keys(base)) {
+      const k = key as AchievementId
+      const v = (parsed as Record<string, unknown>)[k]
+      result[k] = typeof v === 'string' ? v : ''
+    }
+    return result
+  } catch {
+    return createEmptyUnlocked()
+  }
+}
+
+export function serializeUnlockedCookie(map: UnlockedMap): string {
+  // Only persist known keys to keep cookie compact and predictable
+  const base = createEmptyUnlocked()
+  const payload: Record<AchievementId, string> = { ...base }
+  for (const key of Object.keys(base) as AchievementId[]) {
+    payload[key] = map[key] || ''
+  }
+  return JSON.stringify(payload)
+}
