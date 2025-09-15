@@ -1,0 +1,145 @@
+import { Meta } from '@storybook/addon-docs/blocks'
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '../src/components/ui/card'
+import { Button } from '../src/components/ui/button'
+import { Separator } from '../src/components/ui/separator'
+import { BookOpen, ExternalLink, Github, Globe, Layers, Palette, Wrench } from 'lucide-react'
+
+<Meta title="Docs/Intro" />
+
+<div className="space-y-8 mx-auto max-w-4xl gap-4">
+  <Card className="">
+    <CardHeader>
+      <CardTitle className="flex items-center gap-2 text-2xl md:text-3xl">
+        <Globe className="inline-block size-5 text-primary" aria-hidden /> kil.dev
+      </CardTitle>
+      <CardDescription>
+        Personal site and component system built with React, Next.js, Tailwind CSS v4, and shadcn/ui. This documentation
+        is served by Storybook (Vite) and is independent of the Next.js site runtime.
+      </CardDescription>
+      <CardAction className="flex gap-2">
+        <Button asChild aria-label="Visit live site">
+          <a href="https://kil.dev" target="_blank" rel="noreferrer noopener">
+            <ExternalLink className="inline-block size-4" aria-hidden /> Visit site
+          </a>
+        </Button>
+        <Button asChild variant="outline" aria-label="View source on GitHub">
+          <a href="https://github.com/kiliantyler/kil.dev" target="_blank" rel="noreferrer noopener">
+            <Github className="inline-block size-4" aria-hidden /> View source
+          </a>
+        </Button>
+      </CardAction>
+    </CardHeader>
+    <CardContent>
+      <div className="mt-1 flex flex-wrap gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+        <span className="rounded-full border px-2 py-0.5">Next.js 15</span>
+        <span className="rounded-full border px-2 py-0.5">React 19</span>
+        <span className="rounded-full border px-2 py-0.5">Tailwind v4</span>
+        <span className="rounded-full border px-2 py-0.5">shadcn/ui</span>
+        <span className="rounded-full border px-2 py-0.5">Storybook 9 (Vite)</span>
+      </div>
+    </CardContent>
+  </Card>
+
+  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <Layers className="inline-block size-4 text-primary" aria-hidden /> Tech stack
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ul className="list-disc pl-5 text-sm leading-6 text-zinc-700 dark:text-zinc-300">
+          <li><strong>Framework</strong>: Next.js 15 (App Router, RSC) & React 19</li>
+          <li><strong>Styling</strong>: Tailwind CSS v4 in `src/styles/globals.css`</li>
+          <li><strong>UI</strong>: shadcn/ui on Radix primitives</li>
+          <li><strong>Language</strong>: TypeScript</li>
+          <li><strong>Docs</strong>: Storybook 9 (Vite builder)</li>
+          <li><strong>Analytics</strong>: PostHog</li>
+        </ul>
+      </CardContent>
+    </Card>
+
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <BookOpen className="inline-block size-4 text-primary" aria-hidden /> Project structure
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ul className="list-disc pl-5 text-sm leading-6 text-zinc-700 dark:text-zinc-300">
+          <li><strong>Routes</strong>: `src/app/*` (about, experience, projects, pet-gallery)</li>
+          <li><strong>Components</strong>: `src/components/*` (ui, layout, providers)</li>
+          <li><strong>Lib</strong>: `src/lib/*` (themes, content helpers, utils)</li>
+          <li><strong>Images</strong>: `src/images/*`</li>
+        </ul>
+      </CardContent>
+    </Card>
+
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <Palette className="inline-block size-4 text-primary" aria-hidden /> Theming
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ul className="list-disc pl-5 text-sm leading-6 text-zinc-700 dark:text-zinc-300">
+          <li>Theme definitions in `src/lib/themes`, applied via `ThemeProvider`.</li>
+          <li>Tailwind v4 design tokens and utilities via CSS `@import 'tailwindcss'` and `@theme`.</li>
+        </ul>
+      </CardContent>
+    </Card>
+
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <BookOpen className="inline-block size-4 text-primary" aria-hidden /> Using Storybook
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ul className="list-disc pl-5 text-sm leading-6 text-zinc-700 dark:text-zinc-300">
+          <li>Browse components in the sidebar for variants, props, and examples.</li>
+          <li>Docs pages live in `docs/*.mdx` and are wired in `.storybook/main.ts`.</li>
+          <li>Runs in Vite, separate from the Next.js app (no App Router/SSR here).</li>
+        </ul>
+      </CardContent>
+    </Card>
+
+    <Card className="md:col-span-2">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <Wrench className="inline-block size-4 text-primary" aria-hidden /> Development
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <pre className="overflow-x-auto rounded-sm border bg-zinc-50 p-4 text-xs dark:bg-zinc-900"><code>{`# Start the Next.js app
+
+bun run dev
+
+# Start Storybook
+
+bun run storybook
+
+# Typecheck and lint
+
+bun run check`}</code></pre>
+
+</CardContent>
+</Card>
+
+    <Card className="md:col-span-2">
+      <CardHeader>
+        <CardTitle className="text-lg">Contributing & standards</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ul className="list-disc pl-5 text-sm leading-6 text-zinc-700 dark:text-zinc-300">
+          <li>Prefer React Server Components; minimize `use client`.</li>
+          <li>Use shadcn/ui primitives; compose site components in `src/components/layout`.</li>
+          <li>Responsive layouts with Tailwind; avoid custom CSS files.</li>
+          <li>TypeScript-first, clear naming, DRY, early returns.</li>
+          <li>Next.js app: use `<Link>`. Storybook docs: use `<a>`.</li>
+        </ul>
+      </CardContent>
+    </Card>
+
+  </div>
+</div>
