@@ -11,7 +11,7 @@ import { captureThemeChanged } from '@/hooks/posthog'
 import { buildPerThemeVariantCss } from '@/lib/theme-css'
 import { getAvailableThemes, getDefaultThemeForNow } from '@/lib/theme-runtime'
 import { getThemeIcon, getThemeLabel, themes, type Theme } from '@/lib/themes'
-import { cn } from '@/lib/utils'
+import { cn, isSafari } from '@/lib/utils'
 
 function SystemIcon({ className }: { className?: string }) {
   return (
@@ -448,7 +448,8 @@ export function ThemeToggle({
 
 export const useThemeTransition = () => {
   const startTransition = useCallback((updateFn: () => void) => {
-    if ('startViewTransition' in document) {
+    // Disable view transitions in Safari due to 3D animation performance issues
+    if ('startViewTransition' in document && !isSafari()) {
       document.startViewTransition(updateFn)
     } else {
       updateFn()

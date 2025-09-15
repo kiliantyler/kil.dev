@@ -8,6 +8,7 @@ import { useThemeTransition } from '@/components/ui/theme-toggle'
 import { captureDarkModeEasterEgg } from '@/hooks/posthog'
 import { buildPerThemeVariantCss } from '@/lib/theme-css'
 import { themes } from '@/lib/themes'
+import { isSafari } from '@/lib/utils'
 
 export function ModeToggleNote() {
   const noteCss = useMemo(() => {
@@ -35,6 +36,11 @@ export function ModeToggleLink() {
   const { startTransition } = useThemeTransition()
 
   const injectCircleBlurTransitionStyles = useCallback((originXPercent: number, originYPercent: number) => {
+    // Skip circle-blur animation in Safari due to 3D performance issues
+    if (isSafari()) {
+      return
+    }
+
     const styleId = `theme-transition-${globalThis.crypto?.randomUUID?.() ?? Date.now()}`
     const style = document.createElement('style')
     style.id = styleId
