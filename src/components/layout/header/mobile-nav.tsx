@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { useThemeTransition } from '@/components/ui/theme-toggle'
 import { NAVIGATION } from '@/lib/navmenu'
 import { cn } from '@/lib/utils'
+import type { Route } from 'next'
 
 function getIconForPath(href: string): ComponentType<{ className?: string }> {
   if (href === '/') return Home
@@ -41,6 +42,11 @@ export function MobileNav() {
   const [showRipple, setShowRipple] = useState(false)
   const [rippleMode, setRippleMode] = useState<'out' | 'in'>('out')
   const [particleAnim, setParticleAnim] = useState<'burst' | 'implode'>('burst')
+  // Animation constants
+  const STAGGER_MS = 35
+  const OPEN_DURATION_MS = 300
+  const CLOSE_DURATION_MS = 200
+  const isExpanded = open && !closing
 
   const overlayRef = useRef<HTMLDivElement | null>(null)
 
@@ -113,6 +119,29 @@ export function MobileNav() {
     window.setTimeout(() => setParticles([]), 800)
   }, [])
 
+  // Unified close (optionally navigate after animation)
+  const closeWithAnimation = useCallback(
+    (navigateHref?: string, perItemIdx?: number) => {
+      setClosing(true)
+      setOpen(false)
+      setOpenedViaKeyboard(false)
+      triggerCloseFx()
+      const total = CLOSE_DURATION_MS + (NAVIGATION.length - 1) * STAGGER_MS
+      const navigateDelay =
+        typeof perItemIdx === 'number' ? CLOSE_DURATION_MS + (NAVIGATION.length - 1 - perItemIdx) * STAGGER_MS : total
+      window.setTimeout(() => {
+        if (navigateHref) {
+          startTransition(() => {
+            router.push(navigateHref as Route)
+          })
+        }
+        setClosing(false)
+        triggerRef.current?.focus()
+      }, navigateDelay)
+    },
+    [router, startTransition, triggerCloseFx],
+  )
+
   // Prevent background scroll on small screens when menu is open
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -133,28 +162,13 @@ export function MobileNav() {
     const onClick = (e: MouseEvent) => {
       const target = e.target as Node | null
       if (containerRef.current && target && !containerRef.current.contains(target)) {
-        // global outside click should animate close too and rotate icon immediately
-        setClosing(true)
-        setOpen(false)
-        setOpenedViaKeyboard(false)
-        triggerCloseFx()
-        window.setTimeout(() => setClosing(false), 220 + (NAVIGATION.length - 1) * 50)
+        closeWithAnimation()
       }
     }
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation()
-        setClosing(true)
-        triggerCloseFx()
-        setOpen(false)
-        setOpenedViaKeyboard(false)
-        window.setTimeout(
-          () => {
-            setClosing(false)
-            triggerRef.current?.focus()
-          },
-          220 + (NAVIGATION.length - 1) * 50,
-        )
+        closeWithAnimation()
       }
     }
     window.addEventListener('mousedown', onClick)
@@ -167,7 +181,7 @@ export function MobileNav() {
       window.removeEventListener('keydown', onKey)
       window.clearTimeout(id)
     }
-  }, [open, openedViaKeyboard, triggerCloseFx])
+  }, [open, openedViaKeyboard, triggerCloseFx, closeWithAnimation])
 
   // Ensure focus is never left on the overlay when closing
   useEffect(() => {
@@ -291,9 +305,7 @@ export function MobileNav() {
                 setClosing(false)
                 triggerOpenFx()
               } else {
-                setClosing(true)
-                triggerCloseFx()
-                setTimeout(() => setClosing(false), 300 + (NAVIGATION.length - 1) * 50)
+                closeWithAnimation()
               }
               return next
             })
@@ -301,8 +313,10 @@ export function MobileNav() {
           onKeyDown={handleTriggerKeyDown}>
           <MenuIcon
             className={cn(
-              'size-5 transition-transform duration-300 ease-out',
-              open && !closing ? 'rotate-90 scale-90' : 'rotate-0 scale-100',
+              'size-5 transition-transform ease-out',
+              isExpanded
+                ? `duration-[${OPEN_DURATION_MS}ms] rotate-90 scale-90`
+                : `duration-[${OPEN_DURATION_MS}ms] rotate-0 scale-100`,
             )}
             aria-hidden="true"
           />
@@ -360,7 +374,10 @@ export function MobileNav() {
           aria-orientation="vertical"
           suppressHydrationWarning
           onKeyDown={handleMenuKeyDown}
-          className={cn('pointer-events-none fixed z-[80] md:hidden', open || closing ? 'opacity-100' : 'opacity-0')}
+          className={cn(
+            'pointer-events-none fixed md:hidden',
+            open || closing ? 'z-[80] opacity-100' : 'z-[80] opacity-0',
+          )}
           style={{
             left: `${anchor.x}px`,
             top: `${anchor.y}px`,
@@ -409,19 +426,7 @@ export function MobileNav() {
                       injectCircleBlurTransitionStyles(originXPercent, originYPercent)
                     }
 
-                    setClosing(true)
-                    triggerCloseFx()
-                    setTimeout(
-                      () => {
-                        startTransition(() => {
-                          setOpen(false)
-                          setOpenedViaKeyboard(false)
-                          setClosing(false)
-                          router.push(item.href)
-                        })
-                      },
-                      200 + (NAVIGATION.length - 1 - idx) * 35,
-                    )
+                    closeWithAnimation(item.href, idx)
                   }}>
                   <span className="grid h-8 w-8 place-items-center rounded-full bg-accent/20 text-foreground">
                     <Icon className="size-4" aria-hidden="true" />
@@ -471,8 +476,8 @@ export function MobileNav() {
           }
         }}
         className={cn(
-          'fixed inset-0 md:hidden z-[70] transition-opacity duration-200',
-          open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
+          'fixed inset-0 md:hidden transition-opacity duration-200',
+          open ? 'z-[70] opacity-100 pointer-events-auto' : 'z-[70] opacity-0 pointer-events-none',
           'bg-black/40 backdrop-blur-sm',
         )}
       />
