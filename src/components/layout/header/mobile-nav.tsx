@@ -232,7 +232,7 @@ export function MobileNav() {
   const [ladderXOffset, setLadderXOffset] = useState(28)
   const [ladderYOffset, setLadderYOffset] = useState(28)
   const [ladderStepX] = useState(14)
-  const [ladderStepY] = useState(38)
+  const [ladderStepY] = useState(10)
   const [anchor, setAnchor] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
 
   // Pre-compute ladder positions shooting down-right from the trigger
@@ -261,8 +261,8 @@ export function MobileNav() {
   // Reset offsets on each open to avoid cumulative drift across openings
   useEffect(() => {
     if (!open) return
-    setLadderXOffset(28)
-    setLadderYOffset(28)
+    setLadderXOffset(-12)
+    setLadderYOffset(22)
   }, [open])
 
   // Nudge first item fully into view on open (single pass)
@@ -401,7 +401,7 @@ export function MobileNav() {
                   aria-current={isActive ? 'page' : undefined}
                   className={cn(
                     open || closing ? 'pointer-events-auto' : 'pointer-events-none',
-                    'group grid grid-cols-[2rem_auto] items-center gap-2 rounded-full px-2 py-2 overflow-hidden whitespace-nowrap backface-hidden',
+                    'group grid grid-cols-[2rem_auto] items-center gap-1 rounded-full px-2 py-2 overflow-hidden whitespace-nowrap backface-hidden',
                     'shadow-xs bg-background/95 ring-1 ring-border',
                     'transition-[transform,opacity,background-color,color] ease-in-out will-change-transform',
                     closing ? 'duration-200' : 'duration-300',
