@@ -406,8 +406,8 @@ export function ThemeToggle({
         onKeyDown={handleMenuKeyDown}
         className={cn(
           'absolute left-1/2 top-full -translate-x-1/2 mt-2 z-50',
-          'flex flex-col items-center gap-2',
-          'md:left-auto md:top-1/2 md:right-full md:-translate-y-1/2 md:translate-x-0 md:mt-0 md:mr-2 md:flex-row',
+          'flex flex-col items-stretch gap-2',
+          'md:left-auto md:top-1/2 md:right-full md:-translate-y-1/2 md:translate-x-0 md:mt-0 md:mr-2 md:flex-row md:items-center',
           open ? 'pointer-events-auto' : 'pointer-events-none',
         )}>
         {hydrated &&
@@ -423,15 +423,19 @@ export function ThemeToggle({
                   aria-label={opt.label}
                   title={opt.label}
                   variant="ghost"
-                  size="icon"
+                  size="sm"
                   className={cn(
-                    'transition-all duration-200 ease-out hover:bg-accent/70',
+                    'transition-all duration-200 ease-out hover:bg-accent/70 justify-start gap-2',
+                    'md:size-9 md:px-0 md:justify-center',
                     open
                       ? 'opacity-100 translate-y-0 md:translate-x-0 scale-100'
                       : 'opacity-0 -translate-y-2 md:translate-x-2 md:translate-y-0 scale-95',
                   )}
                   style={{ transitionDelay: `${idx * 60}ms` }}>
-                  <opt.Icon className="size-4" />
+                  <span className="grid size-8 place-items-center shrink-0">
+                    <opt.Icon className="size-4" />
+                  </span>
+                  <span className="md:hidden text-xs font-medium text-foreground/90">{opt.label}</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>{opt.label}</TooltipContent>
