@@ -44,7 +44,9 @@ export const Basic: Story = {
         closing={false}
         position={{ x: 0, y: 0 }}
         transitionDelayMs={0}
-        onClick={() => {}}
+        onClick={() => {
+          console.log('clicked')
+        }}
       />
     </Container>
   ),
@@ -62,25 +64,9 @@ export const Active: Story = {
         closing={false}
         position={{ x: 40, y: 28 }}
         transitionDelayMs={50}
-        onClick={() => {}}
-      />
-    </Container>
-  ),
-}
-
-export const ClosingState: Story = {
-  render: () => (
-    <Container>
-      <MobileNavButton
-        href={'/' as Route}
-        label="Home"
-        Icon={Home}
-        isActive={false}
-        open={false}
-        closing
-        position={{ x: 80, y: 56 }}
-        transitionDelayMs={100}
-        onClick={() => {}}
+        onClick={() => {
+          console.log('clicked')
+        }}
       />
     </Container>
   ),
