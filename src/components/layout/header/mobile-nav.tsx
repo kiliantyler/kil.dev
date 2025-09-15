@@ -1,23 +1,15 @@
 'use client'
 
-import { Briefcase, Folder, Home, MenuIcon, User } from 'lucide-react'
+import { MenuIcon } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import React, { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { useThemeTransition } from '@/components/ui/theme-toggle'
 import { NAVIGATION } from '@/lib/navmenu'
 import { cn } from '@/lib/utils'
 import type { Route } from 'next'
-
-function getIconForPath(href: string): ComponentType<{ className?: string }> {
-  if (href === '/') return Home
-  if (href.startsWith('/about')) return User
-  if (href.startsWith('/experience')) return Briefcase
-  if (href.startsWith('/projects')) return Folder
-  return Home
-}
 
 export function MobileNav() {
   const pathname = usePathname()
@@ -385,7 +377,7 @@ export function MobileNav() {
           }}>
           {NAVIGATION.map((item, idx) => {
             const isActive = !item.href.startsWith('#') && item.href === pathname
-            const Icon = getIconForPath(item.href)
+            const Icon = item.icon
             const { x, y } = positions[idx] ?? { x: 0, y: 0 }
             const openTransform = `translate(${Math.round(x)}px, ${Math.round(y)}px) rotate(0deg) scale(1)`
             // Snap back quickly with a slight overshoot toward the button, then fade fast
