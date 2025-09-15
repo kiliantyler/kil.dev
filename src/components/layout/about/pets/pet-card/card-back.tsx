@@ -19,7 +19,7 @@ export function PetCardBack({ pet }: PetCardBackProps) {
   return (
     <Card className="absolute inset-0 overflow-hidden p-6 [backface-visibility:hidden] transition-shadow bg-transparent group-hover:shadow-md group-hover:ring-2 group-hover:ring-primary group-hover:ring-offset-2 group-hover:ring-offset-background">
       <div aria-hidden className="absolute inset-0">
-        <div className="absolute inset-0 bg-(--card-backdrop) card-back-shadow" />
+        <div className="absolute inset-0 bg-(--card-backdrop) card-back-shadow rounded-[13px]" />
       </div>
 
       <ScrollArea className="relative z-10 h-full">
