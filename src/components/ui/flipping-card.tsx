@@ -202,12 +202,12 @@ export function FlippingCard({
               />
             </div>
           ) : null}
-          <div className="absolute inset-0 rotate-y-0 [backface-visibility:hidden]">
+          <div className="absolute inset-0 rotate-y-0 [backface-visibility:hidden] overflow-hidden rounded-xl">
             {front}
             <FlipIndicator labelDesktop={flipLabelFrontDesktop} labelMobile={flipLabelFrontMobile} />
           </div>
 
-          <div className="absolute inset-0 rotate-y-180 [backface-visibility:hidden]">
+          <div className="absolute inset-0 rotate-y-180 [backface-visibility:hidden] overflow-hidden rounded-xl">
             {back}
             <FlipIndicator labelDesktop={flipLabelBackDesktop} labelMobile={flipLabelBackMobile} />
           </div>
