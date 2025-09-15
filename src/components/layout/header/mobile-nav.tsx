@@ -229,6 +229,21 @@ export function MobileNav() {
     }
   }, [])
 
+  // Overlay interactions → share the same close logic
+  const handleOverlayClick = useCallback(() => {
+    closeWithAnimation()
+  }, [closeWithAnimation])
+
+  const handleOverlayKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        closeWithAnimation()
+      }
+    },
+    [closeWithAnimation],
+  )
+
   // Ladder layout tuning
   const [ladderXOffset, setLadderXOffset] = useState(28)
   const [ladderYOffset, setLadderYOffset] = useState(28)
@@ -425,36 +440,8 @@ export function MobileNav() {
         tabIndex={open ? 0 : -1}
         aria-label="Close navigation menu"
         ref={overlayRef}
-        onClick={() => {
-          // Fade overlay out immediately while items collapse
-          setClosing(true)
-          setOpen(false)
-          setOpenedViaKeyboard(false)
-          triggerCloseFx()
-          setTimeout(
-            () => {
-              setClosing(false)
-              triggerRef.current?.focus()
-            },
-            220 + (NAVIGATION.length - 1) * 35,
-          )
-        }}
-        onKeyDown={e => {
-          if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault()
-            setClosing(true)
-            setOpen(false)
-            setOpenedViaKeyboard(false)
-            triggerCloseFx()
-            setTimeout(
-              () => {
-                setClosing(false)
-                triggerRef.current?.focus()
-              },
-              220 + (NAVIGATION.length - 1) * 35,
-            )
-          }
-        }}
+        onClick={handleOverlayClick}
+        onKeyDown={handleOverlayKeyDown}
         className={cn(
           'fixed inset-0 md:hidden transition-opacity duration-200',
           open ? 'z-[70] opacity-100 pointer-events-auto' : 'z-[70] opacity-0 pointer-events-none',
