@@ -11,13 +11,14 @@ const config: StorybookConfig = {
     '@storybook/addon-docs',
     '@storybook/addon-onboarding',
     '@storybook/addon-vitest',
+    '@storybook/addon-themes',
   ],
   framework: {
     name: '@storybook/nextjs-vite',
     options: {},
   },
   staticDirs: [
-    '../docs',
+    '../docs', // still serve docs assets, but preview head no longer manages theme
     '../public',
   ],
 }
