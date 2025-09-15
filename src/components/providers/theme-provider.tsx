@@ -16,6 +16,17 @@ type ThemeContextValue = {
 
 const ThemeContext = React.createContext<ThemeContextValue | undefined>(undefined)
 
+let KEY_PREFIX = ''
+function setKeyPrefix(prefix: string | undefined) {
+  KEY_PREFIX = prefix && prefix.length > 0 ? `${prefix}_` : ''
+}
+function cookieKey(base: string): string {
+  return `${KEY_PREFIX}${base}`
+}
+function storageKey(base: string): string {
+  return `${KEY_PREFIX}${base}`
+}
+
 function coerceToValidTheme(value: Theme | undefined): Theme {
   const pref = value ?? 'system'
   const allowed = getAvailableThemes()
@@ -27,7 +38,7 @@ const VALID_THEMES: ReadonlyArray<Theme> = ['system', ...themes.map(t => t.name)
 
 function readCookieTheme(): Theme | undefined {
   try {
-    const re = /(?:^|; )theme=([^;]+)/
+    const re = new RegExp(`(?:^|; )${cookieKey('theme')}=([^;]+)`)
     const match = re.exec(document.cookie)
     if (match?.[1]) {
       const raw = match[1]
@@ -40,7 +51,7 @@ function readCookieTheme(): Theme | undefined {
 
 function readStorageTheme(): Theme | undefined {
   try {
-    const v = localStorage.getItem('theme')
+    const v = localStorage.getItem(storageKey('theme'))
     if (!v) return undefined
     return VALID_THEMES.includes(v as Theme) ? (v as Theme) : undefined
   } catch {}
@@ -49,8 +60,8 @@ function readStorageTheme(): Theme | undefined {
 
 function readCookieThemeMeta(): { theme: Theme | undefined; updatedAt: number | undefined } {
   try {
-    const reTheme = /(?:^|; )theme=([^;]+)/
-    const reTs = /(?:^|; )themeUpdatedAt=([^;]+)/
+    const reTheme = new RegExp(`(?:^|; )${cookieKey('theme')}=([^;]+)`)
+    const reTs = new RegExp(`(?:^|; )${cookieKey('themeUpdatedAt')}=([^;]+)`)
     const mTheme = reTheme.exec(document.cookie)
     const mTs = reTs.exec(document.cookie)
     const themeRaw = mTheme?.[1] ? decodeURIComponent(mTheme[1]) : undefined
@@ -63,8 +74,8 @@ function readCookieThemeMeta(): { theme: Theme | undefined; updatedAt: number | 
 
 function readStorageThemeMeta(): { theme: Theme | undefined; updatedAt: number | undefined } {
   try {
-    const themeStr = localStorage.getItem('theme') ?? undefined
-    const tsStr = localStorage.getItem('theme_updatedAt') ?? undefined
+    const themeStr = localStorage.getItem(storageKey('theme')) ?? undefined
+    const tsStr = localStorage.getItem(storageKey('theme_updatedAt')) ?? undefined
     const theme: Theme | undefined =
       themeStr && VALID_THEMES.includes(themeStr as Theme) ? (themeStr as Theme) : undefined
     const updatedAt = tsStr ? Number(tsStr) : undefined
@@ -79,8 +90,8 @@ function writeCookieTheme(value: Theme, updatedAt?: number) {
     const isSecure = window.location.protocol === 'https:' || isProduction ? '; secure' : ''
     const v = coerceToValidTheme(value)
     const ts = typeof updatedAt === 'number' && Number.isFinite(updatedAt) ? updatedAt : Date.now()
-    document.cookie = `theme=${encodeURIComponent(v)}; path=/; max-age=31536000; samesite=lax${isSecure}`
-    document.cookie = `themeUpdatedAt=${ts}; path=/; max-age=31536000; samesite=lax${isSecure}`
+    document.cookie = `${cookieKey('theme')}=${encodeURIComponent(v)}; path=/; max-age=31536000; samesite=lax${isSecure}`
+    document.cookie = `${cookieKey('themeUpdatedAt')}=${ts}; path=/; max-age=31536000; samesite=lax${isSecure}`
   } catch {}
 }
 
@@ -88,8 +99,8 @@ function writeStorageTheme(value: Theme, updatedAt?: number) {
   try {
     const v = coerceToValidTheme(value)
     const ts = typeof updatedAt === 'number' && Number.isFinite(updatedAt) ? updatedAt : Date.now()
-    localStorage.setItem('theme', v)
-    localStorage.setItem('theme_updatedAt', String(ts))
+    localStorage.setItem(storageKey('theme'), v)
+    localStorage.setItem(storageKey('theme_updatedAt'), String(ts))
   } catch {}
 }
 
@@ -98,7 +109,7 @@ function writeCookieSystemTheme(value: SystemTheme | undefined) {
   try {
     const isProduction = process.env.NODE_ENV === 'production'
     const isSecure = window.location.protocol === 'https:' || isProduction ? '; secure' : ''
-    document.cookie = `systemTheme=${encodeURIComponent(value)}; path=/; max-age=31536000; samesite=lax${isSecure}`
+    document.cookie = `${cookieKey('systemTheme')}=${encodeURIComponent(value)}; path=/; max-age=31536000; samesite=lax${isSecure}`
   } catch {}
 }
 
@@ -146,10 +157,14 @@ function applyClasses(preference: Theme, system: SystemTheme | undefined) {
 export function ThemeProvider({
   children,
   initialAppliedTheme,
+  storageNamespace,
 }: {
-  children: React.ReactNode
+  children?: React.ReactNode
   initialAppliedTheme?: ThemeName
+  storageNamespace?: string
 }) {
+  // Ensure a unique namespace is used for persistence (e.g., Storybook)
+  setKeyPrefix(storageNamespace)
   const [theme, setThemeState] = React.useState<Theme | undefined>(() => {
     if (typeof document === 'undefined') return undefined
     try {

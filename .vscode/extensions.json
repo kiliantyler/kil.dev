@@ -1,0 +1,13 @@
+{
+  "recommendations": [
+    "unifiedjs.vscode-mdx",
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "blueglassblock.better-json5",
+    "oven.bun-vscode",
+    "editorconfig.editorconfig",
+    "typescriptteam.native-preview",
+    "frenco.vscode-vercel",
+    "bradlc.vscode-tailwindcss",
+  ]
+}

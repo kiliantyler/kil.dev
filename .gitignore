@@ -48,3 +48,6 @@ yarn-error.log*
 .idea
 
 *.TODO
+
+*storybook.log
+storybook-static
