@@ -1,6 +1,6 @@
 'use client'
 
-import { Briefcase, X as CloseIcon, Folder, Home, MenuIcon, User } from 'lucide-react'
+import { Briefcase, Folder, Home, MenuIcon, User } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import React, { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from 'react'
@@ -23,6 +23,7 @@ export function MobileNav() {
   const router = useRouter()
   const { startTransition } = useThemeTransition()
   const [open, setOpen] = useState(false)
+  const [closing, setClosing] = useState(false)
   const [openedViaKeyboard, setOpenedViaKeyboard] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
@@ -40,9 +41,7 @@ export function MobileNav() {
   const [showRipple, setShowRipple] = useState(false)
   const [rippleMode, setRippleMode] = useState<'out' | 'in'>('out')
   const [particleAnim, setParticleAnim] = useState<'burst' | 'implode'>('burst')
-  const [radiusPx, setRadiusPx] = useState(96)
-  const [arcYOffsetPx, setArcYOffsetPx] = useState(0)
-  const [baseXOffsetPx, setBaseXOffsetPx] = useState(0)
+
   const overlayRef = useRef<HTMLDivElement | null>(null)
 
   const injectCircleBlurTransitionStyles = useCallback((originXPercent: number, originYPercent: number) => {
@@ -134,18 +133,28 @@ export function MobileNav() {
     const onClick = (e: MouseEvent) => {
       const target = e.target as Node | null
       if (containerRef.current && target && !containerRef.current.contains(target)) {
-        triggerCloseFx()
+        // global outside click should animate close too and rotate icon immediately
+        setClosing(true)
         setOpen(false)
         setOpenedViaKeyboard(false)
+        triggerCloseFx()
+        window.setTimeout(() => setClosing(false), 220 + (NAVIGATION.length - 1) * 50)
       }
     }
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation()
+        setClosing(true)
         triggerCloseFx()
         setOpen(false)
         setOpenedViaKeyboard(false)
-        triggerRef.current?.focus()
+        window.setTimeout(
+          () => {
+            setClosing(false)
+            triggerRef.current?.focus()
+          },
+          220 + (NAVIGATION.length - 1) * 50,
+        )
       }
     }
     window.addEventListener('mousedown', onClick)
@@ -205,72 +214,61 @@ export function MobileNav() {
     }
   }, [])
 
-  // Pre-compute arc positions for a fun fan-out animation from the trigger
-  const ANGLE_START_DEG = 30
-  const ANGLE_END_DEG = 85
-  type PolarPoint = { x: number; y: number }
-  const positions = useMemo<PolarPoint[]>(() => {
-    const count = NAVIGATION.length
-    const angleStart = ANGLE_START_DEG // degrees
-    const angleEnd = ANGLE_END_DEG // degrees
-    const radius = radiusPx // px
-    const step = count > 1 ? (angleEnd - angleStart) / (count - 1) : 0
-    return new Array(count).fill(0).map((_, i) => {
-      const angle = ((angleStart + step * i) * Math.PI) / 180
-      const x = Math.cos(angle) * radius
-      const y = Math.sin(angle) * radius
-      return { x, y }
-    })
-  }, [radiusPx])
+  // Ladder layout tuning
+  const [ladderXOffset, setLadderXOffset] = useState(28)
+  const [ladderYOffset, setLadderYOffset] = useState(28)
+  const [ladderStepX] = useState(14)
+  const [ladderStepY] = useState(38)
+  const [anchor, setAnchor] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
 
-  // Measure available space and adapt radius so items don't collide with edges
+  // Pre-compute ladder positions shooting down-right from the trigger
+  type LadderPoint = { x: number; y: number }
+  const positions = useMemo<LadderPoint[]>(() => {
+    return NAVIGATION.map((_, idx) => ({ x: ladderXOffset + idx * ladderStepX, y: ladderYOffset + idx * ladderStepY }))
+  }, [ladderXOffset, ladderYOffset, ladderStepX, ladderStepY])
+
+  // Anchor the ladder to the actual button center (viewport coordinates)
   useEffect(() => {
-    if (!open) return
-    const measure = () => {
+    if (typeof window === 'undefined') return
+    const update = () => {
       const rect = triggerRef.current?.getBoundingClientRect()
       if (!rect) return
-      const cx = rect.left + rect.width / 2
-      const cy = rect.top + rect.height / 2
-      const vw = window.innerWidth || 0
-      const vh = window.innerHeight || 0
-      const spaceRight = Math.max(0, vw - cx)
-      const spaceDown = Math.max(0, vh - cy)
-      const estimatedLinkWidth = 160 // px
-      const estimatedLinkHeight = 48 // px
-      const safeX = Math.max(64, spaceRight - estimatedLinkWidth - 12)
-      const safeY = Math.max(64, spaceDown - estimatedLinkHeight - 12)
-      const nextRadius = Math.max(64, Math.min(120, Math.min(safeX, safeY)))
-      setRadiusPx(nextRadius)
-
-      // Ensure the top-most button doesn't clip off the top of the viewport
-      const minYCandidate = Math.sin((ANGLE_START_DEG * Math.PI) / 180) * nextRadius
-      const safeTopMargin = 36 // px, margin from viewport top
-      const requiredCenterY = estimatedLinkHeight / 2 + safeTopMargin
-      const currentTopmostCenterY = cy + minYCandidate
-      const neededExtra = Math.max(0, requiredCenterY - currentTopmostCenterY)
-      setArcYOffsetPx(neededExtra)
-
-      // Ensure left edges of items stay within viewport with a small margin
-      const anglesCount = NAVIGATION.length
-      const step = anglesCount > 1 ? (ANGLE_END_DEG - ANGLE_START_DEG) / (anglesCount - 1) : 0
-      let minX = Infinity
-      for (let i = 0; i < anglesCount; i++) {
-        const angle = ((ANGLE_START_DEG + step * i) * Math.PI) / 180
-        const x = Math.cos(angle) * nextRadius
-        if (x < minX) minX = x
-      }
-      const leftMargin = 12
-      // left edge ~= cx + (minX + baseShift) - (estimatedLinkWidth/2)
-      const requiredShift = leftMargin + estimatedLinkWidth / 2 - (cx + minX)
-      setBaseXOffsetPx(Math.max(0, Math.ceil(requiredShift)))
+      setAnchor({ x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.top + rect.height / 2) })
     }
-    measure()
-    window.addEventListener('resize', measure)
-    const id = window.setTimeout(measure, 0)
+    update()
+    window.addEventListener('resize', update, { passive: true })
+    window.addEventListener('scroll', update, { passive: true, capture: true })
     return () => {
-      window.removeEventListener('resize', measure)
-      window.clearTimeout(id)
+      window.removeEventListener('resize', update)
+      window.removeEventListener('scroll', update, true)
     }
+  }, [])
+
+  // Reset offsets on each open to avoid cumulative drift across openings
+  useEffect(() => {
+    if (!open) return
+    setLadderXOffset(28)
+    setLadderYOffset(28)
+  }, [open])
+
+  // Nudge first item fully into view on open (single pass)
+  useEffect(() => {
+    if (!open) return
+    const adjust = () => {
+      const firstEl = itemRefs.current[0]
+      if (!firstEl) return
+      const rect = firstEl.getBoundingClientRect()
+      const topMargin = 40
+      const leftMargin = 16
+      if (rect.top < topMargin) {
+        setLadderYOffset(prev => prev + Math.ceil(topMargin - rect.top))
+      }
+      if (rect.left < leftMargin) {
+        setLadderXOffset(prev => prev + Math.ceil(leftMargin - rect.left))
+      }
+    }
+    const id = window.requestAnimationFrame(adjust)
+    return () => window.cancelAnimationFrame(id)
   }, [open])
 
   return (
@@ -284,21 +282,30 @@ export function MobileNav() {
           aria-haspopup="menu"
           aria-expanded={open}
           aria-controls="mobile-nav-arc"
+          className="relative z-[90]"
           onClick={() => {
             setOpen(prev => {
               const next = !prev
               setOpenedViaKeyboard(false)
-              if (next) triggerOpenFx()
-              else triggerCloseFx()
+              if (next) {
+                setClosing(false)
+                triggerOpenFx()
+              } else {
+                setClosing(true)
+                triggerCloseFx()
+                setTimeout(() => setClosing(false), 300 + (NAVIGATION.length - 1) * 50)
+              }
               return next
             })
           }}
           onKeyDown={handleTriggerKeyDown}>
-          {open ? (
-            <CloseIcon className="size-5" aria-hidden="true" />
-          ) : (
-            <MenuIcon className="size-5" aria-hidden="true" />
-          )}
+          <MenuIcon
+            className={cn(
+              'size-5 transition-transform duration-300 ease-out',
+              open && !closing ? 'rotate-90 scale-90' : 'rotate-0 scale-100',
+            )}
+            aria-hidden="true"
+          />
         </Button>
 
         <style>{`
@@ -345,22 +352,27 @@ export function MobileNav() {
             )
           })}
         </span>
-        {/* Arc menu fanning out from the trigger (anchored at button center) */}
+        {/* Ladder menu shooting down-right from the trigger (anchored at button center) */}
         <ul
           id="mobile-nav-arc"
           role="menu"
           aria-label="Mobile navigation"
           aria-orientation="vertical"
+          suppressHydrationWarning
           onKeyDown={handleMenuKeyDown}
-          className={cn(
-            'pointer-events-none absolute left-1/2 top-1/2 z-[80] -translate-x-1/2 -translate-y-1/2 md:hidden',
-          )}>
+          className={cn('pointer-events-none fixed z-[80] md:hidden', open || closing ? 'opacity-100' : 'opacity-0')}
+          style={{
+            left: `${anchor.x}px`,
+            top: `${anchor.y}px`,
+            transition: 'opacity 120ms ease-out',
+          }}>
           {NAVIGATION.map((item, idx) => {
             const isActive = !item.href.startsWith('#') && item.href === pathname
             const Icon = getIconForPath(item.href)
             const { x, y } = positions[idx] ?? { x: 0, y: 0 }
-            const openTransform = `translate(${Math.round(x + baseXOffsetPx)}px, ${Math.round(y + arcYOffsetPx)}px) rotate(0deg) scale(1)`
-            const closedTransform = 'translate(0px, 0px) rotate(-6deg) scale(0.92)'
+            const openTransform = `translate(${Math.round(x)}px, ${Math.round(y)}px) rotate(0deg) scale(1)`
+            // Snap back quickly with a slight overshoot toward the button, then fade fast
+            const closedTransform = 'translate(-6px, -6px) rotate(-6deg) scale(0.9)'
             return (
               <li key={item.href} role="none" className="relative">
                 <Link
@@ -371,17 +383,20 @@ export function MobileNav() {
                   href={item.href}
                   aria-current={isActive ? 'page' : undefined}
                   className={cn(
-                    open ? 'pointer-events-auto' : 'pointer-events-none',
-                    'group grid grid-cols-[2rem_auto] items-center gap-2 rounded-full px-2 py-2',
+                    open || closing ? 'pointer-events-auto' : 'pointer-events-none',
+                    'group grid grid-cols-[2rem_auto] items-center gap-2 rounded-full px-2 py-2 overflow-hidden whitespace-nowrap backface-hidden',
                     'shadow-xs bg-background/95 ring-1 ring-border',
-                    'transition-[transform,opacity,background-color,color] duration-300 ease-out will-change-transform',
+                    'transition-[transform,opacity,background-color,color] ease-in-out will-change-transform',
+                    closing ? 'duration-200' : 'duration-300',
                     'hover:bg-accent/70 hover:text-accent-foreground focus:bg-accent/70 focus:text-accent-foreground',
                     isActive ? 'bg-accent/80 text-accent-foreground' : 'text-muted-foreground',
                   )}
                   style={{
-                    transform: open ? openTransform : closedTransform,
-                    opacity: open ? 1 : 0,
-                    transitionDelay: `${idx * 60}ms`,
+                    transform: closing ? closedTransform : open ? openTransform : closedTransform,
+                    opacity: closing ? 0 : open ? 1 : 0,
+                    transitionDelay: `${(closing ? NAVIGATION.length - 1 - idx : idx) * 35}ms`,
+                    willChange: 'transform, opacity',
+                    transformOrigin: 'left top',
                   }}
                   onClick={e => {
                     e.preventDefault()
@@ -394,12 +409,19 @@ export function MobileNav() {
                       injectCircleBlurTransitionStyles(originXPercent, originYPercent)
                     }
 
-                    startTransition(() => {
-                      triggerCloseFx()
-                      setOpen(false)
-                      setOpenedViaKeyboard(false)
-                      router.push(item.href)
-                    })
+                    setClosing(true)
+                    triggerCloseFx()
+                    setTimeout(
+                      () => {
+                        startTransition(() => {
+                          setOpen(false)
+                          setOpenedViaKeyboard(false)
+                          setClosing(false)
+                          router.push(item.href)
+                        })
+                      },
+                      200 + (NAVIGATION.length - 1 - idx) * 35,
+                    )
                   }}>
                   <span className="grid h-8 w-8 place-items-center rounded-full bg-accent/20 text-foreground">
                     <Icon className="size-4" aria-hidden="true" />
@@ -419,19 +441,33 @@ export function MobileNav() {
         aria-label="Close navigation menu"
         ref={overlayRef}
         onClick={() => {
-          triggerCloseFx()
+          // Fade overlay out immediately while items collapse
+          setClosing(true)
           setOpen(false)
           setOpenedViaKeyboard(false)
-          // Return focus to trigger
-          triggerRef.current?.focus()
+          triggerCloseFx()
+          setTimeout(
+            () => {
+              setClosing(false)
+              triggerRef.current?.focus()
+            },
+            220 + (NAVIGATION.length - 1) * 35,
+          )
         }}
         onKeyDown={e => {
           if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
             e.preventDefault()
-            triggerCloseFx()
+            setClosing(true)
             setOpen(false)
             setOpenedViaKeyboard(false)
-            triggerRef.current?.focus()
+            triggerCloseFx()
+            setTimeout(
+              () => {
+                setClosing(false)
+                triggerRef.current?.focus()
+              },
+              220 + (NAVIGATION.length - 1) * 35,
+            )
           }
         }}
         className={cn(
