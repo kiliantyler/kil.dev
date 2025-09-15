@@ -1,5 +1,6 @@
 'use client'
 
+import type { UnlockedMap } from '@/lib/achievements'
 import type { ThemeName } from '@/lib/themes'
 import { AchievementsProvider } from './achievements-provider'
 import { PostHogProvider } from './posthog-provider'
@@ -8,14 +9,16 @@ import { ThemeProvider } from './theme-provider'
 export function Providers({
   children,
   initialAppliedTheme,
+  initialUnlocked,
 }: {
   children: React.ReactNode
   initialAppliedTheme?: ThemeName
+  initialUnlocked?: UnlockedMap
 }) {
   return (
     <PostHogProvider>
       <ThemeProvider initialAppliedTheme={initialAppliedTheme}>
-        <AchievementsProvider>{children}</AchievementsProvider>
+        <AchievementsProvider initialUnlocked={initialUnlocked}>{children}</AchievementsProvider>
       </ThemeProvider>
     </PostHogProvider>
   )
