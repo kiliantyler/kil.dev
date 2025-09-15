@@ -337,7 +337,7 @@ export function MobileNav() {
 
         <span
           aria-hidden
-          className="pointer-events-none fixed z-[80]"
+          className="pointer-events-none fixed z-[109]"
           style={{ left: `${anchor.x}px`, top: `${anchor.y}px` }}>
           {particles.map(p => {
             const particleStyle: React.CSSProperties & { ['--tx']?: string; ['--ty']?: string } = {
