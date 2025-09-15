@@ -1,15 +1,16 @@
-'use client'
-
 import { AchievementCardBack } from '@/components/layout/achievements/achievement-card-back'
 import { AchievementCardFront } from '@/components/layout/achievements/achievement-card-front'
-import { useAchievements } from '@/components/providers/achievements-provider'
 import { FlippingCard } from '@/components/ui/flipping-card'
 import { SectionLabel } from '@/components/ui/section-label'
 import unknownAchievementImage from '@/images/achievements/unknown.webp'
-import { ACHIEVEMENTS, type AchievementId } from '@/lib/achievements'
+import { ACHIEVEMENTS, ACHIEVEMENTS_COOKIE_NAME, parseUnlockedCookie, type AchievementId } from '@/lib/achievements'
+import { cookies } from 'next/headers'
 
-export default function AchievementsPage() {
-  const { unlocked } = useAchievements()
+export default async function AchievementsPage() {
+  // Read per-user achievement state only for this page to keep other routes static
+  const cookieStore = await cookies()
+  const cookieValue = cookieStore.get(ACHIEVEMENTS_COOKIE_NAME)?.value
+  const unlocked = parseUnlockedCookie(cookieValue)
   const entries = Object.entries(ACHIEVEMENTS) as Array<[AchievementId, (typeof ACHIEVEMENTS)[AchievementId]]>
 
   return (
@@ -26,12 +27,11 @@ export default function AchievementsPage() {
             const isUnlocked = Boolean(unlockedAt)
             const title = isUnlocked ? def.title : 'Hidden achievement'
             const description = isUnlocked ? def.cardDescription : 'Unlock to reveal details.'
-            const footer = isUnlocked
-              ? `Unlocked: ${new Date(unlockedAt).toLocaleString()}`
-              : 'Keep exploring the site!'
+            const footer =
+              isUnlocked && unlockedAt ? `Unlocked: ${new Date(unlockedAt).toISOString()}` : 'Keep exploring the site!'
             const imageSrc = isUnlocked ? def.imageSrc : unknownAchievementImage
             const imageAlt = isUnlocked ? def.imageAlt : 'Unknown achievement'
-            const ariaLabel = isUnlocked ? `Achievement: ${def.title}` : `Hidden achievement`
+            const ariaLabel = isUnlocked ? `Achievement: ${def.title}` : 'Hidden achievement'
 
             return (
               <li key={id} className="list-none">
