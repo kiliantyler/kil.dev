@@ -134,6 +134,27 @@ export function MobileNav() {
     [router, startTransition, triggerCloseFx],
   )
 
+  // Document listeners (outside click + Escape) → shared callbacks
+  const handleDocumentMouseDown = useCallback(
+    (e: MouseEvent) => {
+      const target = e.target as Node | null
+      if (containerRef.current && target && !containerRef.current.contains(target)) {
+        closeWithAnimation()
+      }
+    },
+    [closeWithAnimation],
+  )
+
+  const handleDocumentKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation()
+        closeWithAnimation()
+      }
+    },
+    [closeWithAnimation],
+  )
+
   // Prevent background scroll on small screens when menu is open
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -151,29 +172,17 @@ export function MobileNav() {
   // Click outside + ESC to close
   useEffect(() => {
     if (!open) return
-    const onClick = (e: MouseEvent) => {
-      const target = e.target as Node | null
-      if (containerRef.current && target && !containerRef.current.contains(target)) {
-        closeWithAnimation()
-      }
-    }
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation()
-        closeWithAnimation()
-      }
-    }
-    window.addEventListener('mousedown', onClick)
-    window.addEventListener('keydown', onKey)
+    window.addEventListener('mousedown', handleDocumentMouseDown)
+    window.addEventListener('keydown', handleDocumentKeyDown)
     const id = window.setTimeout(() => {
       if (openedViaKeyboard) itemRefs.current[0]?.focus()
     }, 0)
     return () => {
-      window.removeEventListener('mousedown', onClick)
-      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('mousedown', handleDocumentMouseDown)
+      window.removeEventListener('keydown', handleDocumentKeyDown)
       window.clearTimeout(id)
     }
-  }, [open, openedViaKeyboard, triggerCloseFx, closeWithAnimation])
+  }, [open, openedViaKeyboard, handleDocumentMouseDown, handleDocumentKeyDown])
 
   // Ensure focus is never left on the overlay when closing
   useEffect(() => {
