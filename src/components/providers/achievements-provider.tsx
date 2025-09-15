@@ -1,6 +1,13 @@
 'use client'
 
-import { ACHIEVEMENTS, createEmptyUnlocked, type AchievementId, type UnlockedMap } from '@/lib/achievements'
+import {
+  ACHIEVEMENTS,
+  ACHIEVEMENTS_COOKIE_NAME,
+  createEmptyUnlocked,
+  serializeUnlockedCookie,
+  type AchievementId,
+  type UnlockedMap,
+} from '@/lib/achievements'
 import { getThemeBaseColor, type ThemeName } from '@/lib/themes'
 import { cn } from '@/lib/utils'
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
@@ -37,8 +44,14 @@ function writeToStorage(map: UnlockedMap) {
   } catch {}
 }
 
-export function AchievementsProvider({ children }: { children: React.ReactNode }) {
-  const [unlocked, setUnlocked] = useState<UnlockedMap>(() => readFromStorage())
+export function AchievementsProvider({
+  children,
+  initialUnlocked,
+}: {
+  children: React.ReactNode
+  initialUnlocked?: UnlockedMap
+}) {
+  const [unlocked, setUnlocked] = useState<UnlockedMap>(() => initialUnlocked ?? readFromStorage())
   const mountedRef = useRef(false)
 
   useEffect(() => {
@@ -47,6 +60,12 @@ export function AchievementsProvider({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     writeToStorage(unlocked)
+    try {
+      // Mirror to cookie for SSR hydration consistency
+      const value = serializeUnlockedCookie(unlocked)
+      const expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString()
+      document.cookie = `${ACHIEVEMENTS_COOKIE_NAME}=${encodeURIComponent(value)}; path=/; expires=${expires}; samesite=lax`
+    } catch {}
   }, [unlocked])
 
   const has = useCallback(
