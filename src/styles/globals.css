@@ -327,9 +327,19 @@ html::-webkit-scrollbar-thumb:hover {
     filter: none !important;
   }
 
-  /* Disable 3D transforms in Safari */
-  *[style*='transform'] {
-    transform: none !important;
+  /* Disable problematic 3D transforms in Safari while preserving 2D transforms */
+  *[style*='translate3d'],
+  *[style*='translateZ'],
+  *[style*='rotateX'],
+  *[style*='rotateY'],
+  *[style*='rotateZ'],
+  *[style*='perspective'],
+  *[style*='matrix3d'],
+  *[style*='scale3d'],
+  *[style*='transform-style: preserve-3d'] {
+    transform: translateX(var(--tw-translate-x, 0)) translateY(var(--tw-translate-y, 0)) rotate(var(--tw-rotate, 0deg))
+      scaleX(var(--tw-scale-x, 1)) scaleY(var(--tw-scale-y, 1)) !important;
+    transform-style: flat !important;
   }
 
   /* Disable view transition animations in Safari */
