@@ -1,10 +1,10 @@
 'use client'
 
 import { MenuIcon } from 'lucide-react'
-import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+import { MobileNavButton } from '@/components/layout/header/mobile-nav-button'
 import { Button } from '@/components/ui/button'
 import { useThemeTransition } from '@/components/ui/theme-toggle'
 import { NAVIGATION } from '@/lib/navmenu'
@@ -379,53 +379,32 @@ export function MobileNav() {
             const isActive = !item.href.startsWith('#') && item.href === pathname
             const Icon = item.icon
             const { x, y } = positions[idx] ?? { x: 0, y: 0 }
-            const openTransform = `translate(${Math.round(x)}px, ${Math.round(y)}px) rotate(0deg) scale(1)`
-            // Snap back quickly with a slight overshoot toward the button, then fade fast
-            const closedTransform = 'translate(-6px, -6px) rotate(-6deg) scale(0.9)'
             return (
-              <li key={item.href} role="none" className="relative">
-                <Link
-                  ref={el => {
-                    itemRefs.current[idx] = el
-                  }}
-                  role="menuitem"
-                  href={item.href}
-                  aria-current={isActive ? 'page' : undefined}
-                  className={cn(
-                    open || closing ? 'pointer-events-auto' : 'pointer-events-none',
-                    'group grid grid-cols-[2rem_auto] items-center gap-1 rounded-full px-2 py-2 overflow-hidden whitespace-nowrap backface-hidden',
-                    'shadow-xs bg-background/95 ring-1 ring-border',
-                    'transition-[transform,opacity,background-color,color] ease-in-out will-change-transform',
-                    closing ? 'duration-200' : 'duration-300',
-                    'hover:bg-accent/70 hover:text-accent-foreground focus:bg-accent/70 focus:text-accent-foreground',
-                    isActive ? 'bg-accent/80 text-accent-foreground' : 'text-muted-foreground',
-                  )}
-                  style={{
-                    transform: closing ? closedTransform : open ? openTransform : closedTransform,
-                    opacity: closing ? 0 : open ? 1 : 0,
-                    transitionDelay: `${(closing ? NAVIGATION.length - 1 - idx : idx) * 35}ms`,
-                    willChange: 'transform, opacity',
-                    transformOrigin: 'left top',
-                  }}
-                  onClick={e => {
-                    e.preventDefault()
-                    const btnRect = triggerRef.current?.getBoundingClientRect()
-                    if (btnRect) {
-                      const vw = window.innerWidth || 1
-                      const vh = window.innerHeight || 1
-                      const originXPercent = Math.max(0, Math.min(100, ((btnRect.left + btnRect.width / 2) / vw) * 100))
-                      const originYPercent = Math.max(0, Math.min(100, ((btnRect.top + btnRect.height / 2) / vh) * 100))
-                      injectCircleBlurTransitionStyles(originXPercent, originYPercent)
-                    }
-
-                    closeWithAnimation(item.href, idx)
-                  }}>
-                  <span className="grid h-8 w-8 place-items-center rounded-full bg-accent/20 text-foreground">
-                    <Icon className="size-4" aria-hidden="true" />
-                  </span>
-                  <span className="text-sm font-medium tracking-wide pr-2">{item.label}</span>
-                </Link>
-              </li>
+              <MobileNavButton
+                key={item.href}
+                ref={el => {
+                  itemRefs.current[idx] = el
+                }}
+                href={item.href}
+                label={item.label}
+                Icon={Icon}
+                isActive={isActive}
+                open={open}
+                closing={closing}
+                position={{ x, y }}
+                transitionDelayMs={(closing ? NAVIGATION.length - 1 - idx : idx) * STAGGER_MS}
+                onClick={() => {
+                  const btnRect = triggerRef.current?.getBoundingClientRect()
+                  if (btnRect) {
+                    const vw = window.innerWidth || 1
+                    const vh = window.innerHeight || 1
+                    const originXPercent = Math.max(0, Math.min(100, ((btnRect.left + btnRect.width / 2) / vw) * 100))
+                    const originYPercent = Math.max(0, Math.min(100, ((btnRect.top + btnRect.height / 2) / vh) * 100))
+                    injectCircleBlurTransitionStyles(originXPercent, originYPercent)
+                  }
+                  closeWithAnimation(item.href, idx)
+                }}
+              />
             )
           })}
         </ul>
