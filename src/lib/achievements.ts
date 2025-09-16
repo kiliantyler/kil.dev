@@ -70,7 +70,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
 }
 
 export type AchievementId = keyof typeof ACHIEVEMENTS
-export type UnlockedMap = Record<AchievementId, string>
+export type UnlockedMap = Partial<Record<AchievementId, string>>
 
 export function createEmptyUnlocked(): UnlockedMap {
   return {}
@@ -92,26 +92,40 @@ export function parseUnlockedCookie(raw: string | undefined): UnlockedMap {
   } catch {}
   try {
     const parsed = JSON.parse(text) as unknown
-    if (!parsed || typeof parsed !== 'object') return createEmptyUnlocked()
-    const base = createEmptyUnlocked()
-    const result: UnlockedMap = { ...base }
-    for (const key of Object.keys(base)) {
-      const k = key
-      const v = (parsed as Record<string, unknown>)[k]
-      result[k] = typeof v === 'string' ? v : ''
-    }
-    return result
+    return sanitizeUnlockedRecord(parsed)
   } catch {
     return createEmptyUnlocked()
   }
 }
 
 export function serializeUnlockedCookie(map: UnlockedMap): string {
-  // Only persist known keys to keep cookie compact and predictable
-  const base = createEmptyUnlocked()
-  const payload: Record<AchievementId, string> = { ...base }
-  for (const key of Object.keys(base)) {
-    payload[key] = map[key] ?? ''
+  // Persist only unlocked achievements with non-empty timestamps
+  const payload: Record<string, string> = {}
+  for (const [key, value] of Object.entries(map)) {
+    if (isValidAchievementId(key) && typeof value === 'string' && value.trim().length > 0) {
+      payload[key] = value
+    }
   }
   return JSON.stringify(payload)
+}
+
+function sanitizeUnlockedRecord(obj: unknown): UnlockedMap {
+  if (!obj || typeof obj !== 'object') return createEmptyUnlocked()
+  const result: UnlockedMap = {}
+  for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+    if (isValidAchievementId(key) && typeof value === 'string' && value.trim().length > 0) {
+      result[key] = value
+    }
+  }
+  return result
+}
+
+export function parseUnlockedStorage(raw: string | null | undefined): UnlockedMap {
+  if (!raw) return createEmptyUnlocked()
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    return sanitizeUnlockedRecord(parsed)
+  } catch {
+    return createEmptyUnlocked()
+  }
 }
