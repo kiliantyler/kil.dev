@@ -3,7 +3,7 @@ import { AchievementCardFront } from '@/components/layout/achievements/achieveme
 import { FlippingCard } from '@/components/ui/flipping-card'
 import { SectionLabel } from '@/components/ui/section-label'
 import unknownAchievementImage from '@/images/achievements/unknown.webp'
-import { ACHIEVEMENTS, ACHIEVEMENTS_COOKIE_NAME, parseUnlockedCookie, type AchievementId } from '@/lib/achievements'
+import { ACHIEVEMENTS, ACHIEVEMENTS_COOKIE_NAME, parseUnlockedCookie } from '@/lib/achievements'
 import { format, isValid as isValidDate, parseISO } from 'date-fns'
 import { cookies } from 'next/headers'
 
@@ -12,7 +12,7 @@ export default async function AchievementsPage() {
   const cookieStore = await cookies()
   const cookieValue = cookieStore.get(ACHIEVEMENTS_COOKIE_NAME)?.value
   const unlocked = parseUnlockedCookie(cookieValue)
-  const entries = Object.entries(ACHIEVEMENTS) as Array<[AchievementId, (typeof ACHIEVEMENTS)[AchievementId]]>
+  const entries = Object.entries(ACHIEVEMENTS)
 
   return (
     <div className="px-10 py-16 md:px-20 lg:px-40">
@@ -27,7 +27,7 @@ export default async function AchievementsPage() {
             const unlockedAt = unlocked[id]
             const isUnlocked = Boolean(unlockedAt)
             const title = isUnlocked ? def.title : 'Hidden achievement'
-            const description = isUnlocked ? def.cardDescription : 'Unlock to reveal details.'
+            const description = isUnlocked ? def.cardDescription : def.unlockHint
             let footer = 'Keep exploring the site!'
             if (isUnlocked) {
               if (unlockedAt) {
