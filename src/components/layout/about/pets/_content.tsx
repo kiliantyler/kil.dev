@@ -2,12 +2,15 @@
 
 import { PetCard } from '@/components/layout/about/pets/pet-card/_content'
 import { PetDrawer } from '@/components/layout/about/pets/pet-drawer'
+import { useAchievements } from '@/components/providers/achievements-provider'
 import { SectionLabel } from '@/components/ui/section-label'
+import type { AchievementId } from '@/lib/achievements'
 import { PETS } from '@/lib/pets'
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useRef, useState } from 'react'
 
 export function PetsContent() {
+  const { unlock, has } = useAchievements()
   const [, setFlippedPetIds] = useState<Set<string>>(new Set())
   const celebratedRef = useRef(false)
   const [open, setOpen] = useState(false)
@@ -35,6 +38,9 @@ export function PetsContent() {
 
           if (allSeen && !celebratedRef.current) {
             celebratedRef.current = true
+            if (!has('PET_PARADE')) {
+              unlock('PET_PARADE' as AchievementId)
+            }
             setOpen(true)
           }
         }
@@ -42,7 +48,7 @@ export function PetsContent() {
         return next
       })
     },
-    [requiredPetIds],
+    [requiredPetIds, has, unlock],
   )
 
   return (
