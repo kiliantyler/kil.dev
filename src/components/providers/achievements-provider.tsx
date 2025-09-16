@@ -25,6 +25,16 @@ const AchievementsContext = createContext<AchievementsContextValue | null>(null)
 
 const STORAGE_KEY = 'kil.dev/achievements/v1'
 
+function areUnlockedEqual(a: UnlockedMap, b: UnlockedMap): boolean {
+  const aKeys = Object.keys(a)
+  const bKeys = Object.keys(b)
+  if (aKeys.length !== bKeys.length) return false
+  for (const k of aKeys) {
+    if (a[k] !== b[k]) return false
+  }
+  return true
+}
+
 function readFromStorage(): UnlockedMap {
   if (typeof window === 'undefined') return createEmptyUnlocked()
   try {
@@ -54,6 +64,22 @@ export function AchievementsProvider({
 
   useEffect(() => {
     mountedRef.current = true
+  }, [])
+
+  // Cross-tab sync: respond to localStorage updates from other tabs
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== STORAGE_KEY) return
+      const next = parseUnlockedStorage(e.newValue)
+      setUnlocked(prev => (areUnlockedEqual(prev, next) ? prev : next))
+    }
+    try {
+      window.addEventListener('storage', onStorage)
+      return () => window.removeEventListener('storage', onStorage)
+    } catch {
+      return
+    }
   }, [])
 
   useEffect(() => {
