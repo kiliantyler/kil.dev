@@ -77,6 +77,7 @@ export function AchievementsProvider({
 
   const showToast = useCallback((id: AchievementId) => {
     const def = ACHIEVEMENTS[id]
+    if (!def) return
     toast.success(def.title, {
       description: def.description,
       position: 'bottom-right',
