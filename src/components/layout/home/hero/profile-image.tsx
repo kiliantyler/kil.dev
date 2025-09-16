@@ -63,13 +63,18 @@ export function ProfileImage() {
     } catch {}
   }, [])
 
-  // Ensure the achievement is unlocked once Ladybird is detected
   useEffect(() => {
-    if (!isLadybird) return
-    if (!has('LADYBIRD_LANDING' as AchievementId)) {
-      unlock('LADYBIRD_LANDING' as AchievementId)
+    if (isLadybird) {
+      if (!has('LADYBIRD_LANDING' as AchievementId)) {
+        unlock('LADYBIRD_LANDING' as AchievementId)
+      }
     }
-  }, [isLadybird, has, unlock])
+    if (useConfused) {
+      if (!has('CONFUSED_CLICK' as AchievementId)) {
+        unlock('CONFUSED_CLICK' as AchievementId)
+      }
+    }
+  }, [isLadybird, useConfused, has, unlock])
 
   useEffect(() => {
     setMounted(true)
