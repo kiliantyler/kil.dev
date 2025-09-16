@@ -52,7 +52,7 @@ function cookieContainsKey(rawCookie: string, key: string): boolean {
       return true
     }
   } catch {}
-  return text.indexOf(key) > -1
+  return text.includes(key)
 }
 
 export function initPresence(config: PresenceScriptConfig): void {
