@@ -251,6 +251,46 @@ export function NavLava() {
           )}
           <span className="relative z-10">Achievements</span>
         </Link>
+
+        {/* Pet Gallery link (hidden by default, shown via data attribute set pre-hydration) */}
+        <Link
+          key="/pet-gallery"
+          href={'/pet-gallery'}
+          ref={node => {
+            if (node) {
+              linkRefs.current['/pet-gallery'] = node
+            }
+          }}
+          className={cn(
+            'relative z-10 rounded-md px-3 py-2 text-sm font-medium outline-none transition-colors js-pet-gallery-nav',
+            NAV_TEXT.base,
+            NAV_TEXT.hover,
+            pathname === '/pet-gallery' && (!hoveredKey || hoveredKey === '/pet-gallery') ? NAV_TEXT.active : undefined,
+          )}
+          aria-current={pathname === '/pet-gallery' ? 'page' : undefined}
+          role="menuitem"
+          onMouseEnter={() => {
+            setHoveredKey('/pet-gallery')
+            moveIndicatorTo('/pet-gallery', true)
+          }}
+          onFocus={() => {
+            setHoveredKey('/pet-gallery')
+            moveIndicatorTo('/pet-gallery', true)
+          }}>
+          {pathname === '/pet-gallery' && !indicator.visible && (!hoveredKey || hoveredKey === '/pet-gallery') && (
+            <>
+              <span
+                aria-hidden="true"
+                className="absolute top-0 bottom-0 left-1 right-1 z-0 rounded-md bg-primary/40 blur-[1.5px] shadow-sm"
+              />
+              <span
+                aria-hidden="true"
+                className="absolute top-0 bottom-0 left-1 right-1 z-0 rounded-md bg-primary backdrop-blur-sm shadow-sm"
+              />
+            </>
+          )}
+          <span className="relative z-10">Pet Gallery</span>
+        </Link>
       </div>
     </nav>
   )

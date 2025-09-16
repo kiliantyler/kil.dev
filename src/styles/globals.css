@@ -372,6 +372,51 @@ html[data-has-achievements='true'][data-achievements-just-unlocked='true'] .js-a
   }
 }
 
+/* Pre-hydration Pet Gallery menu reveal
+   The document root may get data-has-pet-gallery="true" via a tiny script before React hydrates.
+   This ensures the Pet Gallery nav item is visible without client-side mount gating. */
+.js-pet-gallery-nav {
+  display: none;
+}
+
+html[data-has-pet-gallery='true'] .js-pet-gallery-nav {
+  display: inline-flex;
+}
+
+/* Sparkle burst when PET_PARADE just unlocked (single session) */
+html[data-has-pet-gallery='true'][data-pet-gallery-just-unlocked='true'] .js-pet-gallery-nav {
+  position: relative;
+  isolation: isolate;
+  animation: kd-fade-slide-in 220ms ease-out both;
+  will-change: opacity, transform;
+}
+
+html[data-has-pet-gallery='true'][data-pet-gallery-just-unlocked='true'] .js-pet-gallery-nav::after {
+  content: '';
+  position: absolute;
+  inset: -6px -8px;
+  pointer-events: none;
+  background:
+    radial-gradient(6px 6px at 10% 40%, color-mix(in oklch, var(--primary) 85%, transparent) 0%, transparent 70%),
+    radial-gradient(5px 5px at 85% 35%, color-mix(in oklch, var(--accent) 90%, transparent) 0%, transparent 70%),
+    radial-gradient(4px 4px at 35% 80%, color-mix(in oklch, var(--primary) 70%, transparent) 0%, transparent 70%),
+    radial-gradient(3px 3px at 65% 15%, color-mix(in oklch, var(--accent) 80%, transparent) 0%, transparent 70%),
+    radial-gradient(3px 3px at 50% 60%, color-mix(in oklch, var(--primary) 75%, transparent) 0%, transparent 70%);
+  filter: drop-shadow(0 0 8px color-mix(in oklch, var(--primary) 35%, transparent));
+  animation: kd-sparkle-pop 800ms ease-out both;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-has-pet-gallery='true'] .js-pet-gallery-nav {
+    animation: none;
+  }
+  html[data-has-pet-gallery='true'][data-pet-gallery-just-unlocked='true'] .js-pet-gallery-nav::after {
+    animation: none;
+    content: none;
+  }
+}
+
 @keyframes kd-fade-slide-in {
   from {
     opacity: 0;
