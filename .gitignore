@@ -1,8 +1,8 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # generated
-/src/lib/theme-bundle.ts
-/src/lib/presence-bundle.ts
+/src/utils/theme-bundle.ts
+/src/utils/presence-bundle.ts
 
 # dependencies
 /node_modules

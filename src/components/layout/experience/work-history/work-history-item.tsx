@@ -1,6 +1,6 @@
-import { formatMonthYear } from '@/lib/utils'
 import type { WorkExperience } from '@/types/work-experience'
 import { resolveSkills } from '@/utils/skillicons'
+import { formatMonthYear } from '@/utils/utils'
 import { CollapsibleHighlights } from './collapsible-highlights'
 import { CompanyMarker } from './company-marker'
 

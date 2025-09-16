@@ -2,8 +2,8 @@
 
 import { Card } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { calculateAgeYears, formatDateFull } from '@/lib/utils'
 import type { Pet } from '@/types/pets'
+import { calculateAgeYears, formatDateFull } from '@/utils/utils'
 
 function formatBirthday(dateString: string) {
   return formatDateFull(dateString)

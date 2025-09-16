@@ -1,5 +1,5 @@
 import { type AchievementId, ACHIEVEMENTS, ACHIEVEMENTS_COOKIE_NAME } from '@/lib/achievements'
-import { PRESENCE_RUNTIME_BUNDLE } from '@/lib/presence-bundle'
+import { PRESENCE_RUNTIME_BUNDLE } from '@/utils/presence-bundle'
 
 export type UnlockedMap = Partial<Record<AchievementId, string>>
 

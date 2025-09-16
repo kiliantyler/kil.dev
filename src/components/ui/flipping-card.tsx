@@ -1,6 +1,6 @@
 'use client'
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils/utils'
 import Image, { type StaticImageData } from 'next/image'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { FlipIndicator } from './flip-indicator'

@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import React from 'react'
 
 import { NAVIGATION } from '@/lib/navmenu'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils/utils'
 
 type NavigationItem = (typeof NAVIGATION)[number]
 

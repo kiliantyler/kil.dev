@@ -2,7 +2,6 @@
 
 import { ACHIEVEMENTS, ACHIEVEMENTS_COOKIE_NAME, type AchievementId } from '@/lib/achievements'
 import type { ThemeName } from '@/lib/themes'
-import { cn } from '@/lib/utils'
 import {
   createEmptyUnlocked,
   parseUnlockedStorage,
@@ -10,6 +9,7 @@ import {
   type UnlockedMap,
 } from '@/utils/achievements'
 import { getThemeBaseColor } from '@/utils/themes'
+import { cn } from '@/utils/utils'
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { Toaster, toast } from 'sonner'
 import { useTheme } from './theme-provider'

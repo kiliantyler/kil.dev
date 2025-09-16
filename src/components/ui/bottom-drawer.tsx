@@ -12,7 +12,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from '@/components/ui/drawer'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils/utils'
 
 type BottomDrawerProps = React.ComponentPropsWithoutRef<typeof Drawer>
 function BottomDrawer({ direction: _ignoredDirection, ...rest }: BottomDrawerProps) {
