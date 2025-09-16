@@ -8,11 +8,18 @@ import unknownAchievementImage from '@/images/achievements/unknown.webp'
 import { ACHIEVEMENTS, type AchievementId } from '@/lib/achievements'
 import { isLadybirdUA } from '@/utils/ladybird'
 import { format, isValid as isValidDate, parseISO } from 'date-fns'
+import { useEffect, useState } from 'react'
 
 export function AchievementCard({ id, initialUnlockedAt }: { id: AchievementId; initialUnlockedAt?: string }) {
   const { unlocked } = useAchievements()
+  const [isMounted, setIsMounted] = useState(false)
 
-  const unlockedAt = unlocked[id] ?? initialUnlockedAt
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  // After mount, prefer client state. During SSR/first paint, fall back to server-sent value
+  const unlockedAt = isMounted ? unlocked[id] : initialUnlockedAt
   const isUnlocked = Boolean(unlockedAt)
   const def = ACHIEVEMENTS[id]
   if (!def) return null
