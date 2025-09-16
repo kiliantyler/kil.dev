@@ -22,13 +22,7 @@ function SystemIcon({ className }: { className?: string }) {
   )
 }
 
-export function ThemeToggle({
-  onFlyoutWidthChange,
-  onOpenChange,
-}: {
-  onFlyoutWidthChange?: (width: number) => void
-  onOpenChange?: (open: boolean) => void
-} = {}) {
+export function ThemeToggle() {
   const { theme, setTheme, resolvedTheme, systemTheme } = useTheme()
   const { startTransition } = useThemeTransition()
 
@@ -59,11 +53,9 @@ export function ThemeToggle({
   const showSystemOverlay = hydrated && open && currentPreference === 'system'
   const spinCss = `@keyframes kd-spin-trail{0%{transform:rotate(0deg) scale(1);filter:drop-shadow(0 0 0 rgba(0,0,0,0))}70%{transform:rotate(320deg) scale(1.1);filter:drop-shadow(0 0 0 rgba(0,0,0,0)) drop-shadow(0 0 6px color-mix(in oklch,var(--primary) 70%,transparent)) drop-shadow(0 0 12px color-mix(in oklch,var(--accent,var(--primary)) 50%,transparent))}100%{transform:rotate(360deg) scale(1);filter:drop-shadow(0 0 0 rgba(0,0,0,0))}}.theme-system-overlay-anim{animation:kd-spin-trail 260ms ease-out;will-change:transform,filter}`
 
-  // Prevent background scrolling on small screens when menu is open
+  // Prevent background scrolling when menu is open (all breakpoints)
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const isSm = !window.matchMedia('(min-width: 768px)').matches
-    if (!isSm) return
     if (open) {
       const prev = document.documentElement.style.overflow
       document.documentElement.style.overflow = 'hidden'
@@ -216,39 +208,7 @@ export function ThemeToggle({
     }
   }, [open, openedViaKeyboard])
 
-  // Notify parent of open state changes immediately
-  useEffect(() => {
-    onOpenChange?.(open)
-  }, [open, onOpenChange])
-
-  // Report flyout width to parent (for md+ horizontal layout)
-  useEffect(() => {
-    if (!onFlyoutWidthChange) return
-
-    const report = () => {
-      if (!open) {
-        onFlyoutWidthChange(0)
-        return
-      }
-      const isMd = typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches
-      if (!isMd) {
-        onFlyoutWidthChange(0)
-        return
-      }
-      const width = optionsRef.current?.getBoundingClientRect().width ?? 0
-      onFlyoutWidthChange(width)
-    }
-
-    report()
-    if (!open) return
-    const onResize = () => report()
-    window.addEventListener('resize', onResize)
-    const id = window.setTimeout(report, 0)
-    return () => {
-      window.removeEventListener('resize', onResize)
-      window.clearTimeout(id)
-    }
-  }, [open, onFlyoutWidthChange, optionsToShow.length])
+  // Removed parent callbacks and md+ width reporting to avoid shifting header
 
   useEffect(() => {
     if (open) {
@@ -370,7 +330,7 @@ export function ThemeToggle({
         </TooltipContent>
       </Tooltip>
 
-      {/* Mobile backdrop overlay */}
+      {/* Backdrop overlay (all breakpoints) */}
       <div
         aria-hidden={!open}
         role="button"
@@ -388,7 +348,7 @@ export function ThemeToggle({
           }
         }}
         className={cn(
-          'fixed inset-0 md:hidden z-[115] transition-opacity duration-200',
+          'fixed inset-0 z-[115] transition-opacity duration-200',
           open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
           // Subtle flashy backdrop: tint + blur + vignette-ish gradient
           'bg-black/40 backdrop-blur-sm',
@@ -407,7 +367,6 @@ export function ThemeToggle({
         className={cn(
           'absolute left-1/2 top-full -translate-x-1/2 mt-2 z-[120]',
           'flex flex-col items-stretch gap-2',
-          'md:left-auto md:top-1/2 md:right-full md:-translate-y-1/2 md:translate-x-0 md:mt-0 md:mr-2 md:flex-row md:items-center',
           open ? 'pointer-events-auto' : 'pointer-events-none',
         )}>
         {hydrated &&
@@ -426,16 +385,13 @@ export function ThemeToggle({
                   size="sm"
                   className={cn(
                     'transition-all duration-200 ease-out hover:bg-accent/70 justify-start gap-2',
-                    'md:size-9 md:px-0 md:justify-center',
-                    open
-                      ? 'opacity-100 translate-y-0 md:translate-x-0 scale-100'
-                      : 'opacity-0 -translate-y-2 md:translate-x-2 md:translate-y-0 scale-95',
+                    open ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-2 scale-95',
                   )}
                   style={{ transitionDelay: `${idx * 60}ms` }}>
                   <span className="grid size-8 place-items-center shrink-0">
                     <opt.Icon className="size-4" />
                   </span>
-                  <span className="md:hidden text-xs font-medium text-foreground/90">{opt.label}</span>
+                  <span className="text-xs font-medium text-foreground/90">{opt.label}</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>{opt.label}</TooltipContent>

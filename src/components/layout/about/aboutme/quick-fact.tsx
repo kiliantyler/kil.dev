@@ -17,7 +17,9 @@ export function QuickFact({ fact }: QuickFactProps) {
           </>
         ) : typeof fact.value === 'string' && fact.href ? (
           <>
-            <Link href={fact.href}>{fact.value}</Link>{' '}
+            <Link href={fact.href} target="_blank" rel="noopener noreferrer">
+              {fact.value}
+            </Link>{' '}
             {fact.note ? <span className="text-muted-foreground text-xs font-normal">{fact.note}</span> : null}
           </>
         ) : (

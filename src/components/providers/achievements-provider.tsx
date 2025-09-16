@@ -4,6 +4,7 @@ import {
   ACHIEVEMENTS,
   ACHIEVEMENTS_COOKIE_NAME,
   createEmptyUnlocked,
+  parseUnlockedStorage,
   serializeUnlockedCookie,
   type AchievementId,
   type UnlockedMap,
@@ -18,20 +19,28 @@ type AchievementsContextValue = {
   unlocked: UnlockedMap
   has: (id: AchievementId) => boolean
   unlock: (id: AchievementId) => void
+  reset: () => void
 }
 
 const AchievementsContext = createContext<AchievementsContextValue | null>(null)
 
 const STORAGE_KEY = 'kil.dev/achievements/v1'
 
+function areUnlockedEqual(a: UnlockedMap, b: UnlockedMap): boolean {
+  const aKeys = Object.keys(a)
+  const bKeys = Object.keys(b)
+  if (aKeys.length !== bKeys.length) return false
+  for (const k of aKeys) {
+    if (a[k] !== b[k]) return false
+  }
+  return true
+}
+
 function readFromStorage(): UnlockedMap {
   if (typeof window === 'undefined') return createEmptyUnlocked()
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) return createEmptyUnlocked()
-    const parsed = JSON.parse(raw) as unknown
-    if (!parsed || typeof parsed !== 'object') return createEmptyUnlocked()
-    return { ...createEmptyUnlocked(), ...(parsed as UnlockedMap) }
+    return parseUnlockedStorage(raw)
   } catch {
     return createEmptyUnlocked()
   }
@@ -58,6 +67,22 @@ export function AchievementsProvider({
     mountedRef.current = true
   }, [])
 
+  // Cross-tab sync: respond to localStorage updates from other tabs
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== STORAGE_KEY) return
+      const next = parseUnlockedStorage(e.newValue)
+      setUnlocked(prev => (areUnlockedEqual(prev, next) ? prev : next))
+    }
+    try {
+      window.addEventListener('storage', onStorage)
+      return () => window.removeEventListener('storage', onStorage)
+    } catch {
+      return
+    }
+  }, [])
+
   useEffect(() => {
     writeToStorage(unlocked)
     try {
@@ -77,6 +102,7 @@ export function AchievementsProvider({
 
   const showToast = useCallback((id: AchievementId) => {
     const def = ACHIEVEMENTS[id]
+    if (!def) return
     toast.success(def.title, {
       description: def.description,
       position: 'bottom-right',
@@ -104,9 +130,102 @@ export function AchievementsProvider({
     [has, showToast],
   )
 
-  const value = useMemo<AchievementsContextValue>(() => ({ unlocked, has, unlock }), [unlocked, has, unlock])
+  const reset = useCallback(() => {
+    if (!mountedRef.current) return
+    setUnlocked(createEmptyUnlocked())
+    toast.success('Achievements Reset', {
+      description: 'All achievements have been reset.',
+      position: 'bottom-right',
+      duration: 3000,
+    })
+  }, [])
 
-  // Keep Sonner in sync with current site theme (light/dark)
+  const value = useMemo<AchievementsContextValue>(
+    () => ({ unlocked, has, unlock, reset }),
+    [unlocked, has, unlock, reset],
+  )
+
+  // Reflect presence of RECURSIVE_REWARD to the DOM for CSS-gated UI (e.g., achievements nav item)
+  const hasRecursiveReward = Boolean(unlocked.RECURSIVE_REWARD)
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    const root = document.documentElement
+    if (hasRecursiveReward) {
+      root.setAttribute('data-has-achievements', 'true')
+      return
+    }
+    root.removeAttribute('data-has-achievements')
+  }, [hasRecursiveReward])
+
+  // One-time sparkle on first reveal in this session
+  const prevHasRecursiveRef = useRef<boolean | null>(null)
+  useEffect(() => {
+    const prev = prevHasRecursiveRef.current
+    prevHasRecursiveRef.current = hasRecursiveReward
+    if (prev === null) return // ignore first run to avoid false positive on reload
+    if (!prev && hasRecursiveReward) {
+      try {
+        const w = window as unknown as { sessionStorage?: Storage }
+        const already = w.sessionStorage?.getItem('kd_achievements_nav_sparkled')
+        if (!already) {
+          w.sessionStorage?.setItem('kd_achievements_nav_sparkled', '1')
+          document.documentElement.setAttribute('data-achievements-just-unlocked', 'true')
+          window.setTimeout(() => {
+            document.documentElement.removeAttribute('data-achievements-just-unlocked')
+          }, 1000)
+        }
+      } catch {}
+    }
+  }, [hasRecursiveReward])
+
+  // Reflect presence of PET_PARADE to the DOM for CSS-gated UI (e.g., pet gallery nav item)
+  const hasPetParade = Boolean(unlocked.PET_PARADE)
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    const root = document.documentElement
+    if (hasPetParade) {
+      root.setAttribute('data-has-pet-gallery', 'true')
+      return
+    }
+    root.removeAttribute('data-has-pet-gallery')
+  }, [hasPetParade])
+
+  // One-time sparkle on first reveal in this session for pet gallery
+  const prevHasPetParadeRef = useRef<boolean | null>(null)
+  useEffect(() => {
+    const prev = prevHasPetParadeRef.current
+    prevHasPetParadeRef.current = hasPetParade
+    if (prev === null) return
+    if (!prev && hasPetParade) {
+      try {
+        const w = window as unknown as { sessionStorage?: Storage }
+        const already = w.sessionStorage?.getItem('kd_pet_gallery_nav_sparkled')
+        if (!already) {
+          w.sessionStorage?.setItem('kd_pet_gallery_nav_sparkled', '1')
+          document.documentElement.setAttribute('data-pet-gallery-just-unlocked', 'true')
+          window.setTimeout(() => {
+            document.documentElement.removeAttribute('data-pet-gallery-just-unlocked')
+          }, 1000)
+        }
+      } catch {}
+    }
+  }, [hasPetParade])
+
+  useEffect(() => {
+    if (!mountedRef.current) return
+    if (has('RECURSIVE_REWARD')) return
+
+    let earnedCount = 0
+    for (const [key, value] of Object.entries(unlocked)) {
+      if (key === 'RECURSIVE_REWARD') continue
+      if (typeof value === 'string' && value.trim().length > 0) earnedCount += 1
+    }
+
+    if (earnedCount >= 3) {
+      queueMicrotask(() => unlock('RECURSIVE_REWARD'))
+    }
+  }, [unlocked, has, unlock])
+
   const { resolvedTheme } = useTheme()
   const sonnerTheme: 'light' | 'dark' = useMemo(() => {
     const rt = resolvedTheme

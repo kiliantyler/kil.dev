@@ -1,15 +1,15 @@
 'use client'
 
-import { MenuIcon } from 'lucide-react'
-import { usePathname, useRouter } from 'next/navigation'
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-
 import { MobileNavButton } from '@/components/layout/header/mobile-nav-button'
+import { useAchievements } from '@/components/providers/achievements-provider'
 import { Button } from '@/components/ui/button'
 import { useThemeTransition } from '@/components/ui/theme-toggle'
 import { NAVIGATION } from '@/lib/navmenu'
 import { cn } from '@/lib/utils'
+import { MenuIcon, PawPrint, Trophy } from 'lucide-react'
 import type { Route } from 'next'
+import { usePathname, useRouter } from 'next/navigation'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 export function MobileNav() {
   const pathname = usePathname()
@@ -18,6 +18,8 @@ export function MobileNav() {
   const [open, setOpen] = useState(false)
   const [closing, setClosing] = useState(false)
   const [openedViaKeyboard, setOpenedViaKeyboard] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
+  useEffect(() => setIsMounted(true), [])
   const containerRef = useRef<HTMLDivElement | null>(null)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
   const itemRefs = useRef<Array<HTMLAnchorElement | null>>([])
@@ -39,6 +41,28 @@ export function MobileNav() {
   const isExpanded = open && !closing
 
   const overlayRef = useRef<HTMLDivElement | null>(null)
+
+  const { has } = useAchievements()
+  const showAchievements = has('RECURSIVE_REWARD')
+  const showPetGallery = has('PET_PARADE')
+  const items = useMemo(() => {
+    const allowAchievements = isMounted && showAchievements
+    const allowPetGallery = isMounted && showPetGallery
+    let navigationItems = NAVIGATION
+    if (allowAchievements) {
+      navigationItems = [
+        ...navigationItems,
+        { label: 'Achievements', href: '/achievements' as Route, icon: Trophy },
+      ]
+    }
+    if (allowPetGallery) {
+      navigationItems = [
+        ...navigationItems,
+        { label: 'Pet Gallery', href: '/pet-gallery' as Route, icon: PawPrint },
+      ]
+    }
+    return navigationItems
+  }, [isMounted, showAchievements, showPetGallery])
 
   const injectCircleBlurTransitionStyles = useCallback((originXPercent: number, originYPercent: number) => {
     const styleId = `nav-transition-${Date.now()}`
@@ -110,9 +134,9 @@ export function MobileNav() {
       setOpen(false)
       setOpenedViaKeyboard(false)
       triggerCloseFx()
-      const total = CLOSE_DURATION_MS + (NAVIGATION.length - 1) * STAGGER_MS
+      const total = CLOSE_DURATION_MS + (items.length - 1) * STAGGER_MS
       const navigateDelay =
-        typeof perItemIdx === 'number' ? CLOSE_DURATION_MS + (NAVIGATION.length - 1 - perItemIdx) * STAGGER_MS : total
+        typeof perItemIdx === 'number' ? CLOSE_DURATION_MS + (items.length - 1 - perItemIdx) * STAGGER_MS : total
       window.setTimeout(() => {
         if (navigateHref) {
           startTransition(() => {
@@ -123,7 +147,7 @@ export function MobileNav() {
         triggerRef.current?.focus()
       }, navigateDelay)
     },
-    [router, startTransition, triggerCloseFx],
+    [router, startTransition, triggerCloseFx, items.length],
   )
 
   // Document listeners (outside click + Escape) → shared callbacks
@@ -150,7 +174,7 @@ export function MobileNav() {
   // Prevent background scroll on small screens when menu is open
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const isSm = !window.matchMedia('(min-width: 768px)').matches
+    const isSm = !window.matchMedia('(min-width: 920px)').matches
     if (!isSm) return
     if (open) {
       const prev = document.documentElement.style.overflow
@@ -199,27 +223,30 @@ export function MobileNav() {
     }
   }, [])
 
-  const handleMenuKeyDown = useCallback((e: React.KeyboardEvent<HTMLUListElement>) => {
-    const currentIndex = itemRefs.current.findIndex(el => el === document.activeElement)
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-      e.preventDefault()
-      const next = currentIndex < 0 ? 0 : Math.min(NAVIGATION.length - 1, currentIndex + 1)
-      itemRefs.current[next]?.focus()
-      return
-    }
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-      e.preventDefault()
-      const prev = currentIndex < 0 ? 0 : Math.max(0, currentIndex - 1)
-      itemRefs.current[prev]?.focus()
-      return
-    }
-    if (e.key === 'Escape') {
-      e.preventDefault()
-      setOpen(false)
-      setOpenedViaKeyboard(false)
-      triggerRef.current?.focus()
-    }
-  }, [])
+  const handleMenuKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLUListElement>) => {
+      const currentIndex = itemRefs.current.findIndex(el => el === document.activeElement)
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault()
+        const next = currentIndex < 0 ? 0 : Math.min(items.length - 1, currentIndex + 1)
+        itemRefs.current[next]?.focus()
+        return
+      }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault()
+        const prev = currentIndex < 0 ? 0 : Math.max(0, currentIndex - 1)
+        itemRefs.current[prev]?.focus()
+        return
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setOpen(false)
+        setOpenedViaKeyboard(false)
+        triggerRef.current?.focus()
+      }
+    },
+    [items.length],
+  )
 
   // Overlay interactions → share the same close logic
   const handleOverlayClick = useCallback(() => {
@@ -246,8 +273,8 @@ export function MobileNav() {
   // Pre-compute ladder positions shooting down-right from the trigger
   type LadderPoint = { x: number; y: number }
   const positions = useMemo<LadderPoint[]>(() => {
-    return NAVIGATION.map((_, idx) => ({ x: ladderXOffset + idx * ladderStepX, y: ladderYOffset + idx * ladderStepY }))
-  }, [ladderXOffset, ladderYOffset, ladderStepX, ladderStepY])
+    return items.map((_, idx) => ({ x: ladderXOffset + idx * ladderStepX, y: ladderYOffset + idx * ladderStepY }))
+  }, [items, ladderXOffset, ladderYOffset, ladderStepX, ladderStepY])
 
   // Anchor the ladder to the actual button center (viewport coordinates)
   useEffect(() => {
@@ -295,7 +322,7 @@ export function MobileNav() {
 
   return (
     <div ref={containerRef} className="relative">
-      <div className="relative inline-block md:hidden">
+      <div className="relative inline-block nav:hidden">
         <Button
           ref={triggerRef}
           variant="ghost"
@@ -372,7 +399,7 @@ export function MobileNav() {
           suppressHydrationWarning
           onKeyDown={handleMenuKeyDown}
           className={cn(
-            'pointer-events-none fixed md:hidden',
+            'pointer-events-none fixed nav:hidden',
             open || closing ? 'z-[110] opacity-100' : 'z-[110] opacity-0',
           )}
           style={{
@@ -380,7 +407,7 @@ export function MobileNav() {
             top: `${anchor.y}px`,
             transition: 'opacity 120ms ease-out',
           }}>
-          {NAVIGATION.map((item, idx) => {
+          {items.map((item, idx) => {
             const isActive = !item.href.startsWith('#') && item.href === pathname
             const Icon = item.icon
             const { x, y } = positions[idx] ?? { x: 0, y: 0 }
@@ -397,7 +424,7 @@ export function MobileNav() {
                 open={open}
                 closing={closing}
                 position={{ x, y }}
-                transitionDelayMs={(closing ? NAVIGATION.length - 1 - idx : idx) * STAGGER_MS}
+                transitionDelayMs={(closing ? items.length - 1 - idx : idx) * STAGGER_MS}
                 onClick={() => {
                   const btnRect = triggerRef.current?.getBoundingClientRect()
                   if (btnRect) {
@@ -424,7 +451,7 @@ export function MobileNav() {
         onClick={handleOverlayClick}
         onKeyDown={handleOverlayKeyDown}
         className={cn(
-          'fixed inset-0 md:hidden transition-opacity duration-200',
+          'fixed inset-0 nav:hidden transition-opacity duration-200',
           open ? 'z-[105] opacity-100 pointer-events-auto' : 'z-[105] opacity-0 pointer-events-none',
           'bg-black/40 backdrop-blur-sm',
         )}

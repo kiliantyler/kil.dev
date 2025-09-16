@@ -10,6 +10,7 @@ import { type AchievementId } from '@/lib/achievements'
 import { CONTENT } from '@/lib/content'
 import { buildPerThemeVariantCss } from '@/lib/theme-css'
 import { getThemeHeadshot, themes } from '@/lib/themes'
+import { isLadybirdUA } from '@/utils/ladybird'
 import Image, { type StaticImageData } from 'next/image'
 import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 
@@ -39,21 +40,32 @@ export function ProfileImage() {
   }
 
   useEffect(() => {
-    if (typeof navigator === 'undefined') return
-    const ua = navigator.userAgent || ''
-    if (ua.toLowerCase().includes('ladybird')) {
-      setIsLadybird(true)
-      try {
-        if (typeof window !== 'undefined') {
-          const alreadyCaptured = window.sessionStorage.getItem('ladybird_detected_event') === '1'
-          if (!alreadyCaptured) {
-            captureLadybirdDetected(ua)
-            window.sessionStorage.setItem('ladybird_detected_event', '1')
-          }
+    if (!isLadybirdUA()) return
+
+    setIsLadybird(true)
+    try {
+      if (typeof window !== 'undefined') {
+        const alreadyCaptured = window.sessionStorage.getItem('ladybird_detected_event') === '1'
+        if (!alreadyCaptured) {
+          captureLadybirdDetected(navigator.userAgent || '')
+          window.sessionStorage.setItem('ladybird_detected_event', '1')
         }
-      } catch {}
-    }
+      }
+    } catch {}
   }, [])
+
+  useEffect(() => {
+    if (isLadybird) {
+      if (!has('LADYBIRD_LANDING' as AchievementId)) {
+        unlock('LADYBIRD_LANDING' as AchievementId)
+      }
+    }
+    if (useConfused) {
+      if (!has('CONFUSED_CLICK' as AchievementId)) {
+        unlock('CONFUSED_CLICK' as AchievementId)
+      }
+    }
+  }, [isLadybird, useConfused, has, unlock])
 
   useEffect(() => {
     setMounted(true)

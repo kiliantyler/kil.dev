@@ -9,7 +9,7 @@ const compat = new FlatCompat({
 
 export default defineConfig(
   {
-    ignores: ['.next', 'next-env.d.ts', 'src/lib/theme-bundle.ts'],
+    ignores: ['.next', 'next-env.d.ts', 'src/lib/theme-bundle.ts', 'src/lib/presence-bundle.ts'],
   },
   ...compat.extends('next/core-web-vitals'),
   eslintConfigPrettier,
@@ -36,7 +36,7 @@ export default defineConfig(
     },
   },
   {
-    files: ['scripts/build-theme-runtime.ts'],
+    files: ['scripts/build-theme-runtime.ts', 'scripts/build-presence-runtime.ts'],
     rules: {
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',

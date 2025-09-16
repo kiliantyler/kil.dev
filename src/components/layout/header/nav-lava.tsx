@@ -1,5 +1,6 @@
 'use client'
 
+import type { Route } from 'next'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import React from 'react'
@@ -26,6 +27,7 @@ export function NavLava() {
   const containerRef = React.useRef<HTMLDivElement | null>(null)
   const linkRefs = React.useRef<Record<string, HTMLAnchorElement | null>>({})
   const didInitRef = React.useRef(false)
+  const items = React.useMemo(() => NAVIGATION, [])
 
   const [indicator, setIndicator] = React.useState<{ left: number; width: number; visible: boolean; animate: boolean }>(
     {
@@ -37,7 +39,7 @@ export function NavLava() {
   )
   const [hoveredKey, setHoveredKey] = React.useState<string | null>(null)
 
-  const activeIndex = React.useMemo(() => getActiveIndex(NAVIGATION, pathname ?? ''), [pathname])
+  const activeIndex = React.useMemo(() => getActiveIndex(items, pathname ?? ''), [items, pathname])
 
   const moveIndicatorTo = React.useCallback((key: string, animate: boolean) => {
     const container = containerRef.current
@@ -59,8 +61,8 @@ export function NavLava() {
   // On mount: snap without animation, then enable animations; on route change: animate
   React.useLayoutEffect(() => {
     if (activeIndex >= 0) {
-      if (!NAVIGATION[activeIndex]) return
-      const key = NAVIGATION[activeIndex].href
+      if (!items[activeIndex]) return
+      const key = items[activeIndex].href
       if (!didInitRef.current) {
         moveIndicatorTo(key, false)
         requestAnimationFrame(() => {
@@ -73,17 +75,17 @@ export function NavLava() {
       return
     }
     hideIndicator()
-  }, [activeIndex, moveIndicatorTo, hideIndicator])
+  }, [activeIndex, moveIndicatorTo, hideIndicator, items])
 
   const handleMouseLeaveContainer = React.useCallback(() => {
     setHoveredKey(null)
     if (activeIndex >= 0) {
-      if (!NAVIGATION[activeIndex]) return
-      moveIndicatorTo(NAVIGATION[activeIndex].href, true)
+      if (!items[activeIndex]) return
+      moveIndicatorTo(items[activeIndex].href, true)
       return
     }
     hideIndicator()
-  }, [activeIndex, hideIndicator, moveIndicatorTo])
+  }, [activeIndex, hideIndicator, moveIndicatorTo, items])
 
   const handleBlurContainer = React.useCallback(
     (event: React.FocusEvent<HTMLDivElement>) => {
@@ -91,31 +93,49 @@ export function NavLava() {
       const next = event.relatedTarget as Node | null
       if (!container || (next && container.contains(next))) return
       setHoveredKey(null)
-      if (activeIndex >= 0 && NAVIGATION[activeIndex]) {
-        moveIndicatorTo(NAVIGATION[activeIndex].href, true)
+      if (activeIndex >= 0 && items[activeIndex]) {
+        moveIndicatorTo(items[activeIndex].href, true)
         return
       }
       hideIndicator()
     },
-    [activeIndex, moveIndicatorTo, hideIndicator],
+    [activeIndex, moveIndicatorTo, hideIndicator, items],
   )
 
-  const handleKeyDown = React.useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return
-    event.preventDefault()
+  const handleKeyDown = React.useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return
+      event.preventDefault()
 
-    const focusable = NAVIGATION.map(item => linkRefs.current[item.href]).filter(Boolean) as HTMLAnchorElement[]
-    if (focusable.length === 0) return
+      const container = containerRef.current
+      if (!container) return
 
-    const currentIndex = focusable.findIndex(el => el === document.activeElement)
-    const delta = event.key === 'ArrowRight' ? 1 : -1
-    const nextIndex = (currentIndex + delta + focusable.length) % focusable.length
-    if (!focusable[nextIndex]) return
-    focusable[nextIndex].focus()
-  }, [])
+      const anchors = Array.from(container.querySelectorAll('a'))
+      const focusable = anchors.filter(el => {
+        if (el.hasAttribute('disabled')) return false
+        if (el.getAttribute('aria-hidden') === 'true') return false
+        const tabIndexAttr = el.getAttribute('tabindex')
+        if (tabIndexAttr !== null && Number(tabIndexAttr) < 0) return false
+        if (el.offsetParent === null) return false
+        return true
+      })
+      if (focusable.length === 0) return
+
+      const currentIndex = focusable.findIndex(el => el === document.activeElement)
+      const delta = event.key === 'ArrowRight' ? 1 : -1
+      const nextIndex =
+        currentIndex === -1
+          ? delta > 0
+            ? 0
+            : focusable.length - 1
+          : (currentIndex + delta + focusable.length) % focusable.length
+      focusable[nextIndex]?.focus()
+    },
+    [containerRef],
+  )
 
   return (
-    <nav className="hidden md:flex items-center" aria-label="Primary">
+    <nav className="hidden nav:flex items-center" aria-label="Primary">
       <div
         ref={containerRef}
         className="relative flex items-center gap-1 rounded-lg p-1"
@@ -152,60 +172,139 @@ export function NavLava() {
           }}
         />
 
-        {NAVIGATION.map(item => {
+        {items.map(item => {
           const isExternal = item.href.startsWith('http')
           const isActive = !item.href.startsWith('#') && item.href === pathname
-          const showFallback = isActive && !indicator.visible && (!hoveredKey || hoveredKey === item.href)
           return (
-            <Link
+            <NavLink
               key={item.href}
               href={item.href}
-              ref={node => {
-                if (node) {
-                  linkRefs.current[item.href] = node
-                }
+              label={item.label}
+              isActive={isActive}
+              isExternal={isExternal}
+              indicatorVisible={indicator.visible}
+              hoveredKey={hoveredKey}
+              setHoveredKey={setHoveredKey}
+              moveIndicatorTo={moveIndicatorTo}
+              registerRef={(href, node) => {
+                if (node) linkRefs.current[href] = node
               }}
-              className={cn(
-                'relative z-10 rounded-md px-3 py-2 text-sm font-medium outline-none transition-colors',
-                NAV_TEXT.base,
-                NAV_TEXT.hover,
-                isActive && (!hoveredKey || hoveredKey === item.href) ? NAV_TEXT.active : undefined,
-              )}
-              aria-current={isActive ? 'page' : undefined}
-              role="menuitem"
-              onMouseEnter={() => {
-                setHoveredKey(item.href)
-                moveIndicatorTo(item.href, true)
-              }}
-              onFocus={() => {
-                setHoveredKey(item.href)
-                moveIndicatorTo(item.href, true)
-              }}
-              {...(isExternal && {
-                target: '_blank',
-                rel: 'noopener noreferrer',
-              })}>
-              {/* Initial SSR fallback so active link is highlighted immediately */}
-              {showFallback && (
-                <>
-                  <span
-                    aria-hidden="true"
-                    className="absolute top-0 bottom-0 left-1 right-1 z-0 rounded-md bg-primary/40 blur-[1.5px] shadow-sm"
-                  />
-                  <span
-                    aria-hidden="true"
-                    className="absolute top-0 bottom-0 left-1 right-1 z-0 rounded-md bg-primary backdrop-blur-sm shadow-sm"
-                  />
-                </>
-              )}
-              <span className="relative z-10">
-                {item.label}
-                <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-current transition-all duration-300 ease-out group-hover:w-full" />
-              </span>
-            </Link>
+              showUnderline
+            />
           )
         })}
+
+        {/* Achievements link (hidden by default, shown via data attribute set pre-hydration) */}
+        <NavLink
+          key="/achievements"
+          href="/achievements"
+          label="Achievements"
+          isActive={pathname === '/achievements'}
+          indicatorVisible={indicator.visible}
+          hoveredKey={hoveredKey}
+          setHoveredKey={setHoveredKey}
+          moveIndicatorTo={moveIndicatorTo}
+          registerRef={(href, node) => {
+            if (node) linkRefs.current[href] = node
+          }}
+          className="js-achievements-nav"
+        />
+
+        {/* Pet Gallery link (hidden by default, shown via data attribute set pre-hydration) */}
+        <NavLink
+          key="/pet-gallery"
+          href="/pet-gallery"
+          label="Pet Gallery"
+          isActive={pathname === '/pet-gallery'}
+          indicatorVisible={indicator.visible}
+          hoveredKey={hoveredKey}
+          setHoveredKey={setHoveredKey}
+          moveIndicatorTo={moveIndicatorTo}
+          registerRef={(href, node) => {
+            if (node) linkRefs.current[href] = node
+          }}
+          className="js-pet-gallery-nav"
+        />
       </div>
     </nav>
+  )
+}
+
+type NavLinkProps = {
+  href: Route
+  label: string
+  isActive: boolean
+  indicatorVisible: boolean
+  hoveredKey: string | null
+  setHoveredKey: (key: string | null) => void
+  moveIndicatorTo: (key: string, animate: boolean) => void
+  registerRef: (href: string, node: HTMLAnchorElement | null) => void
+  className?: string
+  isExternal?: boolean
+  showUnderline?: boolean
+}
+
+function NavLink(props: NavLinkProps) {
+  const {
+    href,
+    label,
+    isActive,
+    indicatorVisible,
+    hoveredKey,
+    setHoveredKey,
+    moveIndicatorTo,
+    registerRef,
+    className,
+    isExternal,
+    showUnderline = false,
+  } = props
+
+  const external = typeof isExternal === 'boolean' ? isExternal : href.startsWith('http')
+  const showFallback = isActive && !indicatorVisible && (!hoveredKey || hoveredKey === href)
+
+  return (
+    <Link
+      href={href}
+      ref={node => registerRef(href, node)}
+      className={cn(
+        'relative z-10 rounded-md px-3 py-2 text-sm font-medium outline-none transition-colors',
+        NAV_TEXT.base,
+        NAV_TEXT.hover,
+        isActive && (!hoveredKey || hoveredKey === href) ? NAV_TEXT.active : undefined,
+        className,
+      )}
+      aria-current={isActive ? 'page' : undefined}
+      role="menuitem"
+      onMouseEnter={() => {
+        setHoveredKey(href)
+        moveIndicatorTo(href, true)
+      }}
+      onFocus={() => {
+        setHoveredKey(href)
+        moveIndicatorTo(href, true)
+      }}
+      {...(external && {
+        target: '_blank' as const,
+        rel: 'noopener noreferrer',
+      })}>
+      {showFallback && (
+        <>
+          <span
+            aria-hidden="true"
+            className="absolute top-0 bottom-0 left-1 right-1 z-0 rounded-md bg-primary/40 blur-[1.5px] shadow-sm"
+          />
+          <span
+            aria-hidden="true"
+            className="absolute top-0 bottom-0 left-1 right-1 z-0 rounded-md bg-primary backdrop-blur-sm shadow-sm"
+          />
+        </>
+      )}
+      <span className="relative z-10">
+        {label}
+        {showUnderline && (
+          <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-current transition-all duration-300 ease-out group-hover:w-full" />
+        )}
+      </span>
+    </Link>
   )
 }

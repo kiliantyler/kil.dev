@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useCallback, useMemo, useState } from 'react'
 
-export function HomeLogo({ condensed = false }: { condensed?: boolean }) {
+export function HomeLogo() {
   const shortContent = 'kil.dev'
   const longContent = 'Kilian.DevOps'
 
@@ -15,9 +15,8 @@ export function HomeLogo({ condensed = false }: { condensed?: boolean }) {
   const handleBlur = useCallback(() => setIsHovered(false), [])
 
   const ariaLabel = useMemo(() => {
-    if (condensed) return '{ }'
     return isHovered ? `{ ${longContent} }` : `{ ${shortContent} }`
-  }, [condensed, isHovered, longContent, shortContent])
+  }, [isHovered, longContent, shortContent])
 
   return (
     <Link
@@ -33,21 +32,11 @@ export function HomeLogo({ condensed = false }: { condensed?: boolean }) {
           <span aria-hidden="true" className="inline-block -translate-y-[0.125rem]">
             {'{ '}
           </span>
-          {/* Animated content wrapper collapses when condensed to slide right brace left */}
           <span
             aria-hidden="true"
             className={
-              'inline-block align-top overflow-hidden transition-[max-width] duration-250 ease-out relative' +
-              (condensed ? ' max-w-0' : ' max-w-[30ch]')
+              'inline-block align-top overflow-hidden transition-[max-width] duration-250 ease-out relative max-w-[30ch]'
             }>
-            {/* Right-to-left fade overlay anchored to the right edge */}
-            <span
-              aria-hidden="true"
-              className={
-                'pointer-events-none absolute top-0 right-0 bottom-0 w-[6ch] bg-gradient-to-l from-background/90 to-transparent transition-opacity duration-250 ease-out z-10' +
-                (condensed ? ' opacity-100' : ' opacity-0')
-              }
-            />
             <span className="inline-block align-top">
               <span className="relative inline-block align-top">
                 <span aria-hidden="true" className="invisible">
@@ -97,7 +86,7 @@ export function HomeLogo({ condensed = false }: { condensed?: boolean }) {
             className={
               'inline-block -translate-y-[0.125rem] transition-[margin] duration-250 ease-out will-change-[margin]'
             }>
-            {condensed ? '}' : ' }'}
+            {' }'}
           </span>
         </h2>
       </div>
