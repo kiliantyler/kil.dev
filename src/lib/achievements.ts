@@ -143,18 +143,6 @@ export function serializeUnlockedCookie(map: UnlockedMap): string {
   return JSON.stringify(payload)
 }
 
-export function buildAchievementsPresenceScript(): string {
-  const name = ACHIEVEMENTS_COOKIE_NAME
-  const key = 'RECURSIVE_REWARD'
-  return `;try{var d=document;var c=(';'+d.cookie).split('; '+${JSON.stringify(name)}+'=');if(c.length>1){var v=c.pop().split(';').shift();try{var t=decodeURIComponent(v)}catch(e){var t=v}var has=t.indexOf(${JSON.stringify(key)})>-1;if(has){d.documentElement.setAttribute('data-has-achievements','true')}}}catch(e){}`
-}
-
-export function buildPetGalleryPresenceScript(): string {
-  const name = ACHIEVEMENTS_COOKIE_NAME
-  const key = 'PET_PARADE'
-  return `;try{var d=document;var c=(';'+d.cookie).split('; '+${JSON.stringify(name)}+'=');if(c.length>1){var v=c.pop().split(';').shift();try{var t=decodeURIComponent(v)}catch(e){var t=v}var has=t.indexOf(${JSON.stringify(key)})>-1;if(has){d.documentElement.setAttribute('data-has-pet-gallery','true')}}}catch(e){}`
-}
-
 function sanitizeUnlockedRecord(obj: unknown): UnlockedMap {
   if (!obj || typeof obj !== 'object') return createEmptyUnlocked()
   const result: UnlockedMap = {}
@@ -174,4 +162,14 @@ export function parseUnlockedStorage(raw: string | null | undefined): UnlockedMa
   } catch {
     return createEmptyUnlocked()
   }
+}
+
+// Build-time bundled presence runtime integration
+import { PRESENCE_RUNTIME_BUNDLE } from '@/lib/presence-bundle'
+type PresenceConfig = { cookieName?: string; key: string; attribute: string }
+export function buildPresenceScript(cfg: PresenceConfig): string {
+  cfg.cookieName ??= ACHIEVEMENTS_COOKIE_NAME
+  const serializedCfg = JSON.stringify(cfg)
+  const invoke = ';try{window.PresenceRuntime&&window.PresenceRuntime.initPresence(' + serializedCfg + ')}catch(e){}'
+  return PRESENCE_RUNTIME_BUNDLE + invoke
 }
