@@ -145,7 +145,7 @@ export function AchievementsProvider({
     [unlocked, has, unlock, reset],
   )
 
-  // Reflect presence of RECURSIVE_REWARD to the DOM for CSS-gated UI (e.g., nav item)
+  // Reflect presence of RECURSIVE_REWARD to the DOM for CSS-gated UI (e.g., achievements nav item)
   const hasRecursiveReward = Boolean(unlocked.RECURSIVE_REWARD)
   useEffect(() => {
     if (typeof document === 'undefined') return
@@ -177,6 +177,39 @@ export function AchievementsProvider({
       } catch {}
     }
   }, [hasRecursiveReward])
+
+  // Reflect presence of PET_PARADE to the DOM for CSS-gated UI (e.g., pet gallery nav item)
+  const hasPetParade = Boolean(unlocked.PET_PARADE)
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    const root = document.documentElement
+    if (hasPetParade) {
+      root.setAttribute('data-has-pet-gallery', 'true')
+      return
+    }
+    root.removeAttribute('data-has-pet-gallery')
+  }, [hasPetParade])
+
+  // One-time sparkle on first reveal in this session for pet gallery
+  const prevHasPetParadeRef = useRef<boolean | null>(null)
+  useEffect(() => {
+    const prev = prevHasPetParadeRef.current
+    prevHasPetParadeRef.current = hasPetParade
+    if (prev === null) return
+    if (!prev && hasPetParade) {
+      try {
+        const w = window as unknown as { sessionStorage?: Storage }
+        const already = w.sessionStorage?.getItem('kd_pet_gallery_nav_sparkled')
+        if (!already) {
+          w.sessionStorage?.setItem('kd_pet_gallery_nav_sparkled', '1')
+          document.documentElement.setAttribute('data-pet-gallery-just-unlocked', 'true')
+          window.setTimeout(() => {
+            document.documentElement.removeAttribute('data-pet-gallery-just-unlocked')
+          }, 1000)
+        }
+      } catch {}
+    }
+  }, [hasPetParade])
 
   useEffect(() => {
     if (!mountedRef.current) return
