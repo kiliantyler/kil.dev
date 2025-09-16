@@ -19,6 +19,7 @@ type AchievementsContextValue = {
   unlocked: UnlockedMap
   has: (id: AchievementId) => boolean
   unlock: (id: AchievementId) => void
+  reset: () => void
 }
 
 const AchievementsContext = createContext<AchievementsContextValue | null>(null)
@@ -129,7 +130,20 @@ export function AchievementsProvider({
     [has, showToast],
   )
 
-  const value = useMemo<AchievementsContextValue>(() => ({ unlocked, has, unlock }), [unlocked, has, unlock])
+  const reset = useCallback(() => {
+    if (!mountedRef.current) return
+    setUnlocked(createEmptyUnlocked())
+    toast.success('Achievements Reset', {
+      description: 'All achievements have been reset.',
+      position: 'bottom-right',
+      duration: 3000,
+    })
+  }, [])
+
+  const value = useMemo<AchievementsContextValue>(
+    () => ({ unlocked, has, unlock, reset }),
+    [unlocked, has, unlock, reset],
+  )
 
   // Keep Sonner in sync with current site theme (light/dark)
   const { resolvedTheme } = useTheme()

@@ -1,4 +1,5 @@
 import { AchievementCard } from '@/components/layout/achievements/achievement-card'
+import { AchievementResetButton } from '@/components/layout/achievements/achievement-reset-button'
 import { LadybirdSecretListener } from '@/components/layout/achievements/ladybird-secret-listener'
 import { SectionLabel } from '@/components/ui/section-label'
 import { ACHIEVEMENTS, ACHIEVEMENTS_COOKIE_NAME, parseUnlockedCookie, type AchievementId } from '@/lib/achievements'
@@ -16,8 +17,13 @@ export default async function AchievementsPage() {
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-8">
         <LadybirdSecretListener />
         <div className="flex flex-col gap-2">
-          <SectionLabel as="p">Achievements</SectionLabel>
-          <p className="text-muted-foreground">Some are hidden. Can you find them all?</p>
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-2">
+              <SectionLabel as="p">Achievements</SectionLabel>
+              <p className="text-muted-foreground">Some are hidden. Can you find them all?</p>
+            </div>
+            <AchievementResetButton />
+          </div>
         </div>
 
         <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
