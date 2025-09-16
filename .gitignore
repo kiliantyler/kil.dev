@@ -2,6 +2,7 @@
 
 # generated
 /src/lib/theme-bundle.ts
+/src/lib/presence-bundle.ts
 
 # dependencies
 /node_modules
