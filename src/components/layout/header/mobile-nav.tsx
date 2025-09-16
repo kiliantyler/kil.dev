@@ -174,7 +174,7 @@ export function MobileNav() {
   // Prevent background scroll on small screens when menu is open
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const isSm = !window.matchMedia('(min-width: 768px)').matches
+    const isSm = !window.matchMedia('(min-width: 920px)').matches
     if (!isSm) return
     if (open) {
       const prev = document.documentElement.style.overflow
@@ -322,7 +322,7 @@ export function MobileNav() {
 
   return (
     <div ref={containerRef} className="relative">
-      <div className="relative inline-block md:hidden">
+      <div className="relative inline-block nav:hidden">
         <Button
           ref={triggerRef}
           variant="ghost"
@@ -399,7 +399,7 @@ export function MobileNav() {
           suppressHydrationWarning
           onKeyDown={handleMenuKeyDown}
           className={cn(
-            'pointer-events-none fixed md:hidden',
+            'pointer-events-none fixed nav:hidden',
             open || closing ? 'z-[110] opacity-100' : 'z-[110] opacity-0',
           )}
           style={{
@@ -451,7 +451,7 @@ export function MobileNav() {
         onClick={handleOverlayClick}
         onKeyDown={handleOverlayKeyDown}
         className={cn(
-          'fixed inset-0 md:hidden transition-opacity duration-200',
+          'fixed inset-0 nav:hidden transition-opacity duration-200',
           open ? 'z-[105] opacity-100 pointer-events-auto' : 'z-[105] opacity-0 pointer-events-none',
           'bg-black/40 backdrop-blur-sm',
         )}

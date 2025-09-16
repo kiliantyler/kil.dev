@@ -119,7 +119,7 @@ export function NavLava() {
   )
 
   return (
-    <nav className="hidden md:flex items-center" aria-label="Primary">
+    <nav className="hidden nav:flex items-center" aria-label="Primary">
       <div
         ref={containerRef}
         className="relative flex items-center gap-1 rounded-lg p-1"
