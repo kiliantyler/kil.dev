@@ -1,17 +1,17 @@
 'use client'
 
 import { useTheme } from '@/components/providers/theme-provider'
-import { Laptop, Smartphone } from 'lucide-react'
-import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent } from 'react'
-import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from 'react'
-
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { captureThemeChanged } from '@/hooks/posthog'
 import { buildPerThemeVariantCss } from '@/lib/theme-css'
 import { getAvailableThemes, getDefaultThemeForNow } from '@/lib/theme-runtime'
-import { getThemeIcon, getThemeLabel, themes, type Theme } from '@/lib/themes'
+import { themes, type Theme } from '@/lib/themes'
 import { cn, isSafari } from '@/lib/utils'
+import { getThemeIcon, getThemeLabel } from '@/utils/themes'
+import { Laptop, Smartphone } from 'lucide-react'
+import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from 'react'
 
 function SystemIcon({ className }: { className?: string }) {
   return (

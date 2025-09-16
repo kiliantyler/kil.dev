@@ -1,12 +1,5 @@
+import type { NavigationItem } from '@/types/navigation-item'
 import { Briefcase, Folder, Home, User } from 'lucide-react'
-import type { Route } from 'next'
-import type { IconComponent } from './themes'
-
-export interface NavigationItem {
-  label: string
-  href: Route
-  icon: IconComponent
-}
 
 export const NAVIGATION: NavigationItem[] = [
   { label: 'Home', href: '/', icon: Home },

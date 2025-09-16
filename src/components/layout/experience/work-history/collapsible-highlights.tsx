@@ -2,8 +2,8 @@
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { captureWorkHighlightsToggled } from '@/hooks/posthog'
-import type { WorkExperience } from '@/lib/experience'
-import type { resolveSkills } from '@/lib/skillicons'
+import type { WorkExperience } from '@/types/work-experience'
+import type { resolveSkills } from '@/utils/skillicons'
 import { ChevronDown } from 'lucide-react'
 import { useCallback, useRef, useState } from 'react'
 import { HighlightsList } from './highlights-list'

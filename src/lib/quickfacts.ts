@@ -1,11 +1,4 @@
-import type { Route } from 'next'
-
-export interface QuickFact {
-  label: string
-  value: string | React.ReactNode
-  href?: Route
-  note?: string
-}
+import type { QuickFact } from '@/types/quick-facts'
 
 export const QUICK_FACTS: QuickFact[] = [
   { label: 'Mode', value: 'Dark mode' },

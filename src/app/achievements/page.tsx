@@ -2,7 +2,8 @@ import { AchievementCard } from '@/components/layout/achievements/achievement-ca
 import { AchievementResetButton } from '@/components/layout/achievements/achievement-reset-button'
 import { LadybirdSecretListener } from '@/components/layout/achievements/ladybird-secret-listener'
 import { SectionLabel } from '@/components/ui/section-label'
-import { ACHIEVEMENTS, ACHIEVEMENTS_COOKIE_NAME, parseUnlockedCookie, type AchievementId } from '@/lib/achievements'
+import { ACHIEVEMENTS, ACHIEVEMENTS_COOKIE_NAME, type AchievementId } from '@/lib/achievements'
+import { parseUnlockedCookie } from '@/utils/achievements'
 import { cookies } from 'next/headers'
 
 export default async function AchievementsPage() {

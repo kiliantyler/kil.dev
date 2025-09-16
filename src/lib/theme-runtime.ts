@@ -1,5 +1,6 @@
+import { themes, type Theme, type ThemeEntry, type ThemeName } from '@/lib/themes'
+import type { MonthDay } from '@/types/themes'
 import { THEME_RUNTIME_BUNDLE } from './theme-bundle'
-import { themes, type MonthDay, type Theme, type ThemeEntry, type ThemeName } from './themes'
 
 export type SeasonalThemeConfig = {
   theme: ThemeName

@@ -9,7 +9,7 @@ import {
   BottomDrawerTrigger,
 } from '@/components/ui/bottom-drawer'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { CONTENT } from '@/lib/content'
+import { HOME_CONTENT } from '@/lib/content'
 import { useMemo } from 'react'
 
 type MapTooltipProps = {
@@ -19,9 +19,9 @@ type MapTooltipProps = {
 }
 
 export function MapTooltip({
-  locationLabel = CONTENT.LOCATION,
-  latitude = CONTENT.MAP_LATITUDE,
-  longitude = CONTENT.MAP_LONGITUDE,
+  locationLabel = HOME_CONTENT.LOCATION,
+  latitude = HOME_CONTENT.MAP_LATITUDE,
+  longitude = HOME_CONTENT.MAP_LONGITUDE,
 }: MapTooltipProps) {
   const embedMapSrc = useMemo(() => {
     const deltaLat = 2.0

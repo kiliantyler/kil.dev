@@ -1,13 +1,15 @@
 import { LinkButton } from '@/components/ui/link-button'
 import { MapTooltip } from '@/components/ui/map-tooltip'
-import { CONTENT } from '@/lib/content'
+import { HOME_CONTENT } from '@/lib/content'
 
 export function HeroContent() {
   return (
     <div className="order-2 flex flex-col gap-6 lg:order-1">
       <div className="flex flex-col gap-2">
-        <h1 className="text-5xl leading-tight font-black tracking-tight text-foreground md:text-6xl">{CONTENT.NAME}</h1>
-        <p className="text-primary text-lg font-semibold md:text-xl">{CONTENT.TITLE}</p>
+        <h1 className="text-5xl leading-tight font-black tracking-tight text-foreground md:text-6xl">
+          {HOME_CONTENT.NAME}
+        </h1>
+        <p className="text-primary text-lg font-semibold md:text-xl">{HOME_CONTENT.TITLE}</p>
         <MapTooltip />
       </div>
       <div className="flex flex-wrap justify-center gap-4 lg:flex-nowrap lg:justify-start">

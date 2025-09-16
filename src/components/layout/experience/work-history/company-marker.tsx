@@ -1,7 +1,7 @@
 'use client'
 
 import { captureCompanyLogoClicked } from '@/hooks/posthog'
-import type { WorkExperience } from '@/lib/experience'
+import type { WorkExperience } from '@/types/work-experience'
 import Image from 'next/image'
 import Link from 'next/link'
 

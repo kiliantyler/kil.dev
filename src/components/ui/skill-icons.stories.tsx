@@ -1,7 +1,8 @@
 'use client'
 
 import { SkillIcons } from '@/components/ui/skill-icons'
-import { resolveSkills, type SkillName } from '@/lib/skillicons'
+import type { SkillName } from '@/lib/skillicons'
+import { resolveSkills } from '@/utils/skillicons'
 import type { Meta, StoryObj } from '@storybook/react'
 
 const meta: Meta<typeof SkillIcons> = {

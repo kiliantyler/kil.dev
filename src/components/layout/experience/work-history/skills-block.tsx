@@ -1,5 +1,5 @@
 import { SkillIcons } from '@/components/ui/skill-icons'
-import type { resolveSkills } from '@/lib/skillicons'
+import type { resolveSkills } from '@/utils/skillicons'
 
 export function SkillsBlock({
   highlightCount,

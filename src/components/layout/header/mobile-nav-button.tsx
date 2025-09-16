@@ -4,8 +4,8 @@ import type { Route } from 'next'
 import Link from 'next/link'
 import * as React from 'react'
 
-import type { IconComponent } from '@/lib/themes'
 import { cn } from '@/lib/utils'
+import type { IconComponent } from '@/types/themes'
 
 type Position = { x: number; y: number }
 

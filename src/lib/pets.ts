@@ -4,18 +4,9 @@ import lilithPhoto from '@/images/pets/lilith.webp'
 import luxPhoto from '@/images/pets/lux.webp'
 import milimPhoto from '@/images/pets/milim.webp'
 import taliPhoto from '@/images/pets/tali.webp'
-import type { StaticImageData } from 'next/image'
+import type { Pet } from '@/types/pets'
 
-export interface Pet {
-  id: string
-  name: string
-  breed: string
-  birthday: string
-  gender: string
-  description: string
-  image: StaticImageData
-  imageAlt: string
-}
+export const PETS_COOKIE_NAME = 'kil.dev_pets_v1' // TODO: Find this in the code
 
 export const PETS: Pet[] = [
   {

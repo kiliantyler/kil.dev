@@ -1,9 +1,4 @@
-import type { Route } from 'next'
-
-export interface SociallLinks {
-  GITHUB: Route
-  LINKEDIN: Route
-}
+import type { SociallLinks } from '@/types/social-links'
 
 export const SOCIAL_LINKS: SociallLinks = {
   GITHUB: 'https://github.com/kiliantyler/',
