@@ -145,6 +145,39 @@ export function AchievementsProvider({
     [unlocked, has, unlock, reset],
   )
 
+  // Reflect presence of RECURSIVE_REWARD to the DOM for CSS-gated UI (e.g., nav item)
+  const hasRecursiveReward = Boolean(unlocked.RECURSIVE_REWARD)
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    const root = document.documentElement
+    if (hasRecursiveReward) {
+      root.setAttribute('data-has-achievements', 'true')
+      return
+    }
+    root.removeAttribute('data-has-achievements')
+  }, [hasRecursiveReward])
+
+  // One-time sparkle on first reveal in this session
+  const prevHasRecursiveRef = useRef<boolean | null>(null)
+  useEffect(() => {
+    const prev = prevHasRecursiveRef.current
+    prevHasRecursiveRef.current = hasRecursiveReward
+    if (prev === null) return // ignore first run to avoid false positive on reload
+    if (!prev && hasRecursiveReward) {
+      try {
+        const w = window as unknown as { sessionStorage?: Storage }
+        const already = w.sessionStorage?.getItem('kd_achievements_nav_sparkled')
+        if (!already) {
+          w.sessionStorage?.setItem('kd_achievements_nav_sparkled', '1')
+          document.documentElement.setAttribute('data-achievements-just-unlocked', 'true')
+          window.setTimeout(() => {
+            document.documentElement.removeAttribute('data-achievements-just-unlocked')
+          }, 1000)
+        }
+      } catch {}
+    }
+  }, [hasRecursiveReward])
+
   useEffect(() => {
     if (!mountedRef.current) return
     if (has('RECURSIVE_REWARD')) return
