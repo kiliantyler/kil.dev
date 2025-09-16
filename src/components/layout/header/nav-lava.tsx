@@ -1,5 +1,6 @@
 'use client'
 
+import type { Route } from 'next'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import React from 'react'
@@ -159,139 +160,136 @@ export function NavLava() {
         {items.map(item => {
           const isExternal = item.href.startsWith('http')
           const isActive = !item.href.startsWith('#') && item.href === pathname
-          const showFallback = isActive && !indicator.visible && (!hoveredKey || hoveredKey === item.href)
           return (
-            <Link
+            <NavLink
               key={item.href}
               href={item.href}
-              ref={node => {
-                if (node) {
-                  linkRefs.current[item.href] = node
-                }
+              label={item.label}
+              isActive={isActive}
+              isExternal={isExternal}
+              indicatorVisible={indicator.visible}
+              hoveredKey={hoveredKey}
+              setHoveredKey={setHoveredKey}
+              moveIndicatorTo={moveIndicatorTo}
+              registerRef={(href, node) => {
+                if (node) linkRefs.current[href] = node
               }}
-              className={cn(
-                'relative z-10 rounded-md px-3 py-2 text-sm font-medium outline-none transition-colors',
-                NAV_TEXT.base,
-                NAV_TEXT.hover,
-                isActive && (!hoveredKey || hoveredKey === item.href) ? NAV_TEXT.active : undefined,
-              )}
-              aria-current={isActive ? 'page' : undefined}
-              role="menuitem"
-              onMouseEnter={() => {
-                setHoveredKey(item.href)
-                moveIndicatorTo(item.href, true)
-              }}
-              onFocus={() => {
-                setHoveredKey(item.href)
-                moveIndicatorTo(item.href, true)
-              }}
-              {...(isExternal && {
-                target: '_blank',
-                rel: 'noopener noreferrer',
-              })}>
-              {/* Initial SSR fallback so active link is highlighted immediately */}
-              {showFallback && (
-                <>
-                  <span
-                    aria-hidden="true"
-                    className="absolute top-0 bottom-0 left-1 right-1 z-0 rounded-md bg-primary/40 blur-[1.5px] shadow-sm"
-                  />
-                  <span
-                    aria-hidden="true"
-                    className="absolute top-0 bottom-0 left-1 right-1 z-0 rounded-md bg-primary backdrop-blur-sm shadow-sm"
-                  />
-                </>
-              )}
-              <span className="relative z-10">
-                {item.label}
-                <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-current transition-all duration-300 ease-out group-hover:w-full" />
-              </span>
-            </Link>
+              showUnderline
+            />
           )
         })}
 
         {/* Achievements link (hidden by default, shown via data attribute set pre-hydration) */}
-        <Link
+        <NavLink
           key="/achievements"
-          href={'/achievements'}
-          ref={node => {
-            if (node) {
-              linkRefs.current['/achievements'] = node
-            }
+          href="/achievements"
+          label="Achievements"
+          isActive={pathname === '/achievements'}
+          indicatorVisible={indicator.visible}
+          hoveredKey={hoveredKey}
+          setHoveredKey={setHoveredKey}
+          moveIndicatorTo={moveIndicatorTo}
+          registerRef={(href, node) => {
+            if (node) linkRefs.current[href] = node
           }}
-          className={cn(
-            'relative z-10 rounded-md px-3 py-2 text-sm font-medium outline-none transition-colors js-achievements-nav',
-            NAV_TEXT.base,
-            NAV_TEXT.hover,
-            pathname === '/achievements' && (!hoveredKey || hoveredKey === '/achievements')
-              ? NAV_TEXT.active
-              : undefined,
-          )}
-          aria-current={pathname === '/achievements' ? 'page' : undefined}
-          role="menuitem"
-          onMouseEnter={() => {
-            setHoveredKey('/achievements')
-            moveIndicatorTo('/achievements', true)
-          }}
-          onFocus={() => {
-            setHoveredKey('/achievements')
-            moveIndicatorTo('/achievements', true)
-          }}>
-          {pathname === '/achievements' && !indicator.visible && (!hoveredKey || hoveredKey === '/achievements') && (
-            <>
-              <span
-                aria-hidden="true"
-                className="absolute top-0 bottom-0 left-1 right-1 z-0 rounded-md bg-primary/40 blur-[1.5px] shadow-sm"
-              />
-              <span
-                aria-hidden="true"
-                className="absolute top-0 bottom-0 left-1 right-1 z-0 rounded-md bg-primary backdrop-blur-sm shadow-sm"
-              />
-            </>
-          )}
-          <span className="relative z-10">Achievements</span>
-        </Link>
+          className="js-achievements-nav"
+        />
 
         {/* Pet Gallery link (hidden by default, shown via data attribute set pre-hydration) */}
-        <Link
+        <NavLink
           key="/pet-gallery"
-          href={'/pet-gallery'}
-          ref={node => {
-            if (node) {
-              linkRefs.current['/pet-gallery'] = node
-            }
+          href="/pet-gallery"
+          label="Pet Gallery"
+          isActive={pathname === '/pet-gallery'}
+          indicatorVisible={indicator.visible}
+          hoveredKey={hoveredKey}
+          setHoveredKey={setHoveredKey}
+          moveIndicatorTo={moveIndicatorTo}
+          registerRef={(href, node) => {
+            if (node) linkRefs.current[href] = node
           }}
-          className={cn(
-            'relative z-10 rounded-md px-3 py-2 text-sm font-medium outline-none transition-colors js-pet-gallery-nav',
-            NAV_TEXT.base,
-            NAV_TEXT.hover,
-            pathname === '/pet-gallery' && (!hoveredKey || hoveredKey === '/pet-gallery') ? NAV_TEXT.active : undefined,
-          )}
-          aria-current={pathname === '/pet-gallery' ? 'page' : undefined}
-          role="menuitem"
-          onMouseEnter={() => {
-            setHoveredKey('/pet-gallery')
-            moveIndicatorTo('/pet-gallery', true)
-          }}
-          onFocus={() => {
-            setHoveredKey('/pet-gallery')
-            moveIndicatorTo('/pet-gallery', true)
-          }}>
-          {pathname === '/pet-gallery' && !indicator.visible && (!hoveredKey || hoveredKey === '/pet-gallery') && (
-            <>
-              <span
-                aria-hidden="true"
-                className="absolute top-0 bottom-0 left-1 right-1 z-0 rounded-md bg-primary/40 blur-[1.5px] shadow-sm"
-              />
-              <span
-                aria-hidden="true"
-                className="absolute top-0 bottom-0 left-1 right-1 z-0 rounded-md bg-primary backdrop-blur-sm shadow-sm"
-              />
-            </>
-          )}
-          <span className="relative z-10">Pet Gallery</span>
-        </Link>
+          className="js-pet-gallery-nav"
+        />
       </div>
     </nav>
+  )
+}
+
+type NavLinkProps = {
+  href: Route
+  label: string
+  isActive: boolean
+  indicatorVisible: boolean
+  hoveredKey: string | null
+  setHoveredKey: (key: string | null) => void
+  moveIndicatorTo: (key: string, animate: boolean) => void
+  registerRef: (href: string, node: HTMLAnchorElement | null) => void
+  className?: string
+  isExternal?: boolean
+  showUnderline?: boolean
+}
+
+function NavLink(props: NavLinkProps) {
+  const {
+    href,
+    label,
+    isActive,
+    indicatorVisible,
+    hoveredKey,
+    setHoveredKey,
+    moveIndicatorTo,
+    registerRef,
+    className,
+    isExternal,
+    showUnderline = false,
+  } = props
+
+  const external = typeof isExternal === 'boolean' ? isExternal : href.startsWith('http')
+  const showFallback = isActive && !indicatorVisible && (!hoveredKey || hoveredKey === href)
+
+  return (
+    <Link
+      href={href}
+      ref={node => registerRef(href, node)}
+      className={cn(
+        'relative z-10 rounded-md px-3 py-2 text-sm font-medium outline-none transition-colors',
+        NAV_TEXT.base,
+        NAV_TEXT.hover,
+        isActive && (!hoveredKey || hoveredKey === href) ? NAV_TEXT.active : undefined,
+        className,
+      )}
+      aria-current={isActive ? 'page' : undefined}
+      role="menuitem"
+      onMouseEnter={() => {
+        setHoveredKey(href)
+        moveIndicatorTo(href, true)
+      }}
+      onFocus={() => {
+        setHoveredKey(href)
+        moveIndicatorTo(href, true)
+      }}
+      {...(external && {
+        target: '_blank' as const,
+        rel: 'noopener noreferrer',
+      })}>
+      {showFallback && (
+        <>
+          <span
+            aria-hidden="true"
+            className="absolute top-0 bottom-0 left-1 right-1 z-0 rounded-md bg-primary/40 blur-[1.5px] shadow-sm"
+          />
+          <span
+            aria-hidden="true"
+            className="absolute top-0 bottom-0 left-1 right-1 z-0 rounded-md bg-primary backdrop-blur-sm shadow-sm"
+          />
+        </>
+      )}
+      <span className="relative z-10">
+        {label}
+        {showUnderline && (
+          <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-current transition-all duration-300 ease-out group-hover:w-full" />
+        )}
+      </span>
+    </Link>
   )
 }
