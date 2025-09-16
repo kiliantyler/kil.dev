@@ -60,8 +60,11 @@ export function parseUnlockedStorage(raw: string | null | undefined): UnlockedMa
 
 type PresenceConfig = { cookieName?: string; key: string; attribute: string }
 export function buildPresenceScript(cfg: PresenceConfig): string {
-  cfg.cookieName ??= ACHIEVEMENTS_COOKIE_NAME
-  const serializedCfg = JSON.stringify(cfg)
+  const finalCfg = { cookieName: ACHIEVEMENTS_COOKIE_NAME, ...cfg }
+  const serializedCfg = JSON.stringify(finalCfg)
+    .replace(/</g, '\\u003c')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029')
   const invoke = ';try{window.PresenceRuntime&&window.PresenceRuntime.initPresence(' + serializedCfg + ')}catch(e){}'
   return PRESENCE_RUNTIME_BUNDLE + invoke
 }
