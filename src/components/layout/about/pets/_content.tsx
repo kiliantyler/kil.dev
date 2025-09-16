@@ -1,20 +1,16 @@
 'use client'
 
 import { PetCard } from '@/components/layout/about/pets/pet-card/_content'
-import { PetDrawer } from '@/components/layout/about/pets/pet-drawer'
 import { useAchievements } from '@/components/providers/achievements-provider'
 import { SectionLabel } from '@/components/ui/section-label'
 import type { AchievementId } from '@/lib/achievements'
 import { PETS } from '@/lib/pets'
-import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useRef, useState } from 'react'
 
 export function PetsContent() {
   const { unlock, has } = useAchievements()
   const [, setFlippedPetIds] = useState<Set<string>>(new Set())
   const celebratedRef = useRef(false)
-  const [open, setOpen] = useState(false)
-  const router = useRouter()
 
   const requiredPetIds = useMemo(() => new Set(PETS.map(p => p.id)), [])
 
@@ -26,7 +22,6 @@ export function PetsContent() {
           next.add(petId)
         }
 
-        // Check completion only when flipping to back
         if (flipped) {
           let allSeen = true
           for (const id of requiredPetIds) {
@@ -41,7 +36,6 @@ export function PetsContent() {
             if (!has('PET_PARADE')) {
               unlock('PET_PARADE' as AchievementId)
             }
-            setOpen(true)
           }
         }
 
@@ -59,15 +53,6 @@ export function PetsContent() {
           <PetCard key={pet.id} pet={pet} onFlipChange={handlePetFlipChange} frontPriority />
         ))}
       </div>
-
-      <PetDrawer
-        open={open}
-        onOpenChange={setOpen}
-        onOpenGallery={() => {
-          setOpen(false)
-          router.push('/pet-gallery')
-        }}
-      />
     </div>
   )
 }

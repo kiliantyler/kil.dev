@@ -73,7 +73,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
   PET_PARADE: {
     id: 'PET_PARADE',
     title: 'Pet Parade',
-    description: 'Ohhh you like pets? You got an achievement for that.',
+    description: 'Ohhh, you like pets? Check out the pet gallery up above!',
     icon: '🐾',
     imageSrc: PlaceholderAchievement, // TODO: Add pet parade achievement image
     imageAlt: 'Pet Parade',
