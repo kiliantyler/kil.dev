@@ -5,7 +5,7 @@ import PlaceholderAchievement from '@/images/achievements/placeholder.webp'
 import RecursiveRewardAchievement from '@/images/achievements/recursive-reward.webp'
 import type { AchievementDefinition } from '@/types/achievements'
 
-export const ACHIEVEMENTS_COOKIE_NAME = 'kil.dev_achievements_v1' // TODO: Find this in the code
+export const ACHIEVEMENTS_COOKIE_NAME = 'kil.dev_achievements_v1'
 
 export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
   ABOUT_AMBLER: {

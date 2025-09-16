@@ -6,8 +6,6 @@ import milimPhoto from '@/images/pets/milim.webp'
 import taliPhoto from '@/images/pets/tali.webp'
 import type { Pet } from '@/types/pets'
 
-export const PETS_COOKIE_NAME = 'kil.dev_pets_v1' // TODO: Find this in the code
-
 export const PETS: Pet[] = [
   {
     id: 'lux',
