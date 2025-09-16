@@ -10,6 +10,7 @@ import { type AchievementId } from '@/lib/achievements'
 import { CONTENT } from '@/lib/content'
 import { buildPerThemeVariantCss } from '@/lib/theme-css'
 import { getThemeHeadshot, themes } from '@/lib/themes'
+import { isLadybirdUA } from '@/utils/ladybird'
 import Image, { type StaticImageData } from 'next/image'
 import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 
@@ -38,25 +39,15 @@ export function ProfileImage() {
     return 'default'
   }
 
-  function isLadybirdUserAgent(ua: string): boolean {
-    const l = ua.toLowerCase()
-    if (l.includes('ladybird')) return true
-    if (l.includes('serenity') || l.includes('serenityos')) return true
-    return false
-  }
-
-  // Detect Ladybird browser and capture event once per tab session
   useEffect(() => {
-    if (typeof navigator === 'undefined') return
-    const ua = navigator.userAgent || ''
-    if (!isLadybirdUserAgent(ua)) return
+    if (!isLadybirdUA()) return
 
     setIsLadybird(true)
     try {
       if (typeof window !== 'undefined') {
         const alreadyCaptured = window.sessionStorage.getItem('ladybird_detected_event') === '1'
         if (!alreadyCaptured) {
-          captureLadybirdDetected(ua)
+          captureLadybirdDetected(navigator.userAgent || '')
           window.sessionStorage.setItem('ladybird_detected_event', '1')
         }
       }
