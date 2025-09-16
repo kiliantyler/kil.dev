@@ -1,4 +1,5 @@
 import { AchievementCard } from '@/components/layout/achievements/achievement-card'
+import { LadybirdSecretListener } from '@/components/layout/achievements/ladybird-secret-listener'
 import { SectionLabel } from '@/components/ui/section-label'
 import { ACHIEVEMENTS, ACHIEVEMENTS_COOKIE_NAME, parseUnlockedCookie, type AchievementId } from '@/lib/achievements'
 import { cookies } from 'next/headers'
@@ -13,6 +14,7 @@ export default async function AchievementsPage() {
   return (
     <div className="px-10 py-16 md:px-20 lg:px-40">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-8">
+        <LadybirdSecretListener />
         <div className="flex flex-col gap-2">
           <SectionLabel as="p">Achievements</SectionLabel>
           <p className="text-muted-foreground">Some are hidden. Can you find them all?</p>
