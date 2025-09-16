@@ -17,7 +17,7 @@ export function AchievementCard({ id, initialUnlockedAt }: { id: AchievementId; 
   if (!def) return null
 
   const title = isUnlocked ? def.title : 'Hidden achievement'
-  const description = isUnlocked ? def.cardDescription : 'Unlock to reveal details.'
+  const description = isUnlocked ? def.cardDescription : def.unlockHint
 
   let footer = 'Keep exploring the site!'
   if (isUnlocked) {
@@ -37,6 +37,10 @@ export function AchievementCard({ id, initialUnlockedAt }: { id: AchievementId; 
   const imageSrc = isUnlocked ? def.imageSrc : unknownAchievementImage
   const imageAlt = isUnlocked ? def.imageAlt : 'Unknown achievement'
   const ariaLabel = isUnlocked ? `Achievement: ${def.title}` : 'Hidden achievement'
+  const flipLabelFrontDesktop = isUnlocked ? 'View details' : 'View a hint'
+  const flipLabelFrontMobile = isUnlocked ? 'Tap for details' : 'Tap for a hint'
+  const flipLabelBackDesktop = isUnlocked ? 'Go back' : 'Go back'
+  const flipLabelBackMobile = isUnlocked ? 'Tap to go back' : 'Tap to go back'
 
   return (
     <FlippingCard
@@ -47,10 +51,10 @@ export function AchievementCard({ id, initialUnlockedAt }: { id: AchievementId; 
       backgroundSizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
       ariaLabel={ariaLabel}
       className="rounded-xl"
-      flipLabelFrontDesktop="View details"
-      flipLabelFrontMobile="Flip"
-      flipLabelBackDesktop="Go back"
-      flipLabelBackMobile="Flip"
+      flipLabelFrontDesktop={flipLabelFrontDesktop}
+      flipLabelFrontMobile={flipLabelFrontMobile}
+      flipLabelBackDesktop={flipLabelBackDesktop}
+      flipLabelBackMobile={flipLabelBackMobile}
     />
   )
 }
