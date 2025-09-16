@@ -240,8 +240,7 @@ export function ThemeProvider({
       if ((theme ?? 'system') === 'system') applyClasses('system', sys)
     }
     const onStorage = (e: StorageEvent) => {
-      if (e.key !== 'theme') return
-      // Re-read storage meta to get both value and timestamp
+      if (e.key !== storageKey('theme')) return
       const { theme: lsTheme, updatedAt } = readStorageThemeMeta()
       const next = coerceToValidTheme(lsTheme)
       setThemeState(next)
