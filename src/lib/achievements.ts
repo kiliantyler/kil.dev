@@ -64,7 +64,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     icon: '🦅',
     imageSrc: LadybirdAchievement,
     imageAlt: 'Ladybird Landing',
-    cardDescription: 'We love an open web and independent browsers! Ladybird is such a great project.',
+    cardDescription: "We love an open web and independent browsers! I'm aware this site looks bad in Ladybird.",
     unlockHint: 'You should browse this site on a truly independent web browser.',
   },
 }

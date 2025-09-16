@@ -38,22 +38,38 @@ export function ProfileImage() {
     return 'default'
   }
 
+  function isLadybirdUserAgent(ua: string): boolean {
+    const l = ua.toLowerCase()
+    if (l.includes('ladybird')) return true
+    if (l.includes('serenity') || l.includes('serenityos')) return true
+    return false
+  }
+
+  // Detect Ladybird browser and capture event once per tab session
   useEffect(() => {
     if (typeof navigator === 'undefined') return
     const ua = navigator.userAgent || ''
-    if (ua.toLowerCase().includes('ladybird')) {
-      setIsLadybird(true)
-      try {
-        if (typeof window !== 'undefined') {
-          const alreadyCaptured = window.sessionStorage.getItem('ladybird_detected_event') === '1'
-          if (!alreadyCaptured) {
-            captureLadybirdDetected(ua)
-            window.sessionStorage.setItem('ladybird_detected_event', '1')
-          }
+    if (!isLadybirdUserAgent(ua)) return
+
+    setIsLadybird(true)
+    try {
+      if (typeof window !== 'undefined') {
+        const alreadyCaptured = window.sessionStorage.getItem('ladybird_detected_event') === '1'
+        if (!alreadyCaptured) {
+          captureLadybirdDetected(ua)
+          window.sessionStorage.setItem('ladybird_detected_event', '1')
         }
-      } catch {}
-    }
+      }
+    } catch {}
   }, [])
+
+  // Ensure the achievement is unlocked once Ladybird is detected
+  useEffect(() => {
+    if (!isLadybird) return
+    if (!has('LADYBIRD_LANDING' as AchievementId)) {
+      unlock('LADYBIRD_LANDING' as AchievementId)
+    }
+  }, [isLadybird, has, unlock])
 
   useEffect(() => {
     setMounted(true)
