@@ -4,18 +4,7 @@ import lilithPhoto from '@/images/pets/lilith.webp'
 import luxPhoto from '@/images/pets/lux.webp'
 import milimPhoto from '@/images/pets/milim.webp'
 import taliPhoto from '@/images/pets/tali.webp'
-import type { StaticImageData } from 'next/image'
-
-export interface Pet {
-  id: string
-  name: string
-  breed: string
-  birthday: string
-  gender: string
-  description: string
-  image: StaticImageData
-  imageAlt: string
-}
+import type { Pet } from '@/types/pets'
 
 export const PETS: Pet[] = [
   {

@@ -1,19 +1,4 @@
-import type { Route } from 'next'
-
-export type DashboardIconFormat = 'webp' | 'svg' | 'png'
-
-export type SkillIconRef =
-  | string
-  | {
-      source: 'dashboardicons'
-      name: string
-      format?: DashboardIconFormat
-    }
-
-export type SkillInfo = {
-  icon: SkillIconRef
-  url: Route
-}
+import type { SkillInfo } from '@/types/skillicons'
 
 export const SKILLS = {
   Next: { icon: 'nextjs', url: 'https://nextjs.org' },
@@ -35,25 +20,4 @@ export const SKILLS = {
 
 export type SkillName = keyof typeof SKILLS
 export type SkillIconKey = (typeof SKILLS)[SkillName]['icon']
-
-export function getSkillIconUrl(icon: SkillIconRef): string {
-  if (typeof icon === 'string') {
-    return `/api/image/skills/${encodeURIComponent(icon)}`
-  }
-
-  if (icon.source === 'dashboardicons') {
-    const format: DashboardIconFormat = icon.format ?? 'webp'
-    const name = icon.name
-    return `/api/image/dbi/${encodeURIComponent(format)}/${encodeURIComponent(name)}.${format}`
-  }
-
-  // Fallback to syvixor if an unexpected value slips through
-  return `/api/image/skills/`
-}
-
-// Fully resolved skill entry with its name and info
 export type SkillEntry = { name: SkillName } & SkillInfo
-
-export function resolveSkills(names: SkillName[]): SkillEntry[] {
-  return names.map(name => ({ name, ...SKILLS[name] }))
-}

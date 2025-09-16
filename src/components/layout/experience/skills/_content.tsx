@@ -1,7 +1,7 @@
 import { SectionLabel } from '@/components/ui/section-label'
 import { SkillIcons } from '@/components/ui/skill-icons'
 import { SKILL_CATEGORIES } from '@/lib/experience'
-import { resolveSkills } from '@/lib/skillicons'
+import { resolveSkills } from '@/utils/skillicons'
 
 export function ExperienceSkills() {
   return (

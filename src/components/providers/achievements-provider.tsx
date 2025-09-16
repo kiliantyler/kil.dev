@@ -1,16 +1,15 @@
 'use client'
 
+import { ACHIEVEMENTS, ACHIEVEMENTS_COOKIE_NAME, type AchievementId } from '@/lib/achievements'
+import type { ThemeName } from '@/lib/themes'
 import {
-  ACHIEVEMENTS,
-  ACHIEVEMENTS_COOKIE_NAME,
   createEmptyUnlocked,
   parseUnlockedStorage,
   serializeUnlockedCookie,
-  type AchievementId,
   type UnlockedMap,
-} from '@/lib/achievements'
-import { getThemeBaseColor, type ThemeName } from '@/lib/themes'
-import { cn } from '@/lib/utils'
+} from '@/utils/achievements'
+import { getThemeBaseColor } from '@/utils/themes'
+import { cn } from '@/utils/utils'
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { Toaster, toast } from 'sonner'
 import { useTheme } from './theme-provider'
@@ -31,7 +30,7 @@ function areUnlockedEqual(a: UnlockedMap, b: UnlockedMap): boolean {
   const bKeys = Object.keys(b)
   if (aKeys.length !== bKeys.length) return false
   for (const k of aKeys) {
-    if (a[k] !== b[k]) return false
+    if (a[k as AchievementId] !== b[k as AchievementId]) return false
   }
   return true
 }

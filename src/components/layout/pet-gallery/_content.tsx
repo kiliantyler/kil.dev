@@ -1,5 +1,5 @@
 import { SectionLabel } from '@/components/ui/section-label'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils/utils'
 import { list } from '@vercel/blob'
 import { promises as fs } from 'fs'
 import sizeOf from 'image-size'

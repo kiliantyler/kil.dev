@@ -1,14 +1,13 @@
 'use client'
 
 import { useTheme } from '@/components/providers/theme-provider'
-import { useCallback, useMemo } from 'react'
-
 import { Button } from '@/components/ui/button'
 import { useThemeTransition } from '@/components/ui/theme-toggle'
 import { captureDarkModeEasterEgg } from '@/hooks/posthog'
-import { buildPerThemeVariantCss } from '@/lib/theme-css'
 import { themes } from '@/lib/themes'
-import { isSafari } from '@/lib/utils'
+import { buildPerThemeVariantCss } from '@/utils/theme-css'
+import { isSafari } from '@/utils/utils'
+import { useCallback, useMemo } from 'react'
 
 export function ModeToggleNote() {
   const noteCss = useMemo(() => {
@@ -108,9 +107,7 @@ export function ModeToggleLink() {
       size="sm"
       className="h-auto p-0 px-0"
       onClick={handleClick}
-      onKeyDown={handleKeyDown}
-      aria-label=""
-      title="">
+      onKeyDown={handleKeyDown}>
       Dark mode
     </Button>
   )

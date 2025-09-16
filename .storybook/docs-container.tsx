@@ -6,7 +6,8 @@ import { GLOBALS_UPDATED } from 'storybook/internal/core-events'
 import { themes as sbThemes } from 'storybook/theming'
 
 import { ThemeProvider } from '../src/components/providers/theme-provider'
-import { getThemeBaseColor, isThemeName, type Theme } from '../src/lib/themes'
+import { type Theme } from '../src/lib/themes'
+import { getThemeBaseColor, isThemeName } from '../src/utils/themes'
 import ThemeSync from './theme-sync'
 
 function readCookie(name: string): string | undefined {

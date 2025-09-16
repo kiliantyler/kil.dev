@@ -2,7 +2,8 @@ import { AchievementCard } from '@/components/layout/achievements/achievement-ca
 import { AchievementResetButton } from '@/components/layout/achievements/achievement-reset-button'
 import { LadybirdSecretListener } from '@/components/layout/achievements/ladybird-secret-listener'
 import { SectionLabel } from '@/components/ui/section-label'
-import { ACHIEVEMENTS, ACHIEVEMENTS_COOKIE_NAME, parseUnlockedCookie, type AchievementId } from '@/lib/achievements'
+import { ACHIEVEMENTS, ACHIEVEMENTS_COOKIE_NAME, type AchievementId } from '@/lib/achievements'
+import { parseUnlockedCookie } from '@/utils/achievements'
 import { cookies } from 'next/headers'
 
 export default async function AchievementsPage() {
@@ -10,7 +11,9 @@ export default async function AchievementsPage() {
   const cookieStore = await cookies()
   const cookieValue = cookieStore.get(ACHIEVEMENTS_COOKIE_NAME)?.value
   const unlocked = parseUnlockedCookie(cookieValue)
-  const entries: Array<[AchievementId, (typeof ACHIEVEMENTS)[AchievementId]]> = Object.entries(ACHIEVEMENTS)
+  const entries: Array<[AchievementId, (typeof ACHIEVEMENTS)[AchievementId]]> = Object.entries(ACHIEVEMENTS) as Array<
+    [AchievementId, (typeof ACHIEVEMENTS)[AchievementId]]
+  >
 
   return (
     <div className="px-10 py-16 md:px-20 lg:px-40">

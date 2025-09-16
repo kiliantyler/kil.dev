@@ -3,20 +3,11 @@ import GrumpyAchievement from '@/images/achievements/grumpy-glimpse.webp'
 import LadybirdAchievement from '@/images/achievements/ladybird-landing.webp'
 import PlaceholderAchievement from '@/images/achievements/placeholder.webp'
 import RecursiveRewardAchievement from '@/images/achievements/recursive-reward.webp'
-import type { StaticImageData } from 'next/image'
+import type { AchievementDefinition } from '@/types/achievements'
 
-export interface AchievementDefinition {
-  id: string
-  title: string
-  description: string
-  icon: string
-  imageSrc: StaticImageData
-  imageAlt: string
-  cardDescription: string
-  unlockHint: string
-}
+export const ACHIEVEMENTS_COOKIE_NAME = 'kil.dev_achievements_v1'
 
-export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
+export const ACHIEVEMENTS = {
   ABOUT_AMBLER: {
     id: 'ABOUT_AMBLER',
     title: 'About Ambler',
@@ -101,75 +92,6 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     cardDescription: "We love an open web and independent browsers! I'm aware this site looks bad in Ladybird.",
     unlockHint: 'You should browse this site on a truly independent web browser.',
   },
-}
+} as const satisfies Record<string, AchievementDefinition>
 
 export type AchievementId = keyof typeof ACHIEVEMENTS
-export type UnlockedMap = Partial<Record<AchievementId, string>>
-
-export function createEmptyUnlocked(): UnlockedMap {
-  return {}
-}
-
-export function isValidAchievementId(id: string): id is AchievementId {
-  return Object.prototype.hasOwnProperty.call(ACHIEVEMENTS, id)
-}
-
-// Cookie bridge for SSR hydration consistency
-export const ACHIEVEMENTS_COOKIE_NAME = 'kil.dev_achievements_v1'
-
-export function parseUnlockedCookie(raw: string | undefined): UnlockedMap {
-  if (!raw) return createEmptyUnlocked()
-  let text = raw
-  try {
-    // Handle percent-encoded cookie values
-    text = decodeURIComponent(raw)
-  } catch {}
-  try {
-    const parsed = JSON.parse(text) as unknown
-    return sanitizeUnlockedRecord(parsed)
-  } catch {
-    return createEmptyUnlocked()
-  }
-}
-
-export function serializeUnlockedCookie(map: UnlockedMap): string {
-  // Persist only unlocked achievements with non-empty timestamps
-  const payload: Record<string, string> = {}
-  for (const [key, value] of Object.entries(map)) {
-    if (isValidAchievementId(key) && typeof value === 'string' && value.trim().length > 0) {
-      payload[key] = value
-    }
-  }
-  return JSON.stringify(payload)
-}
-
-function sanitizeUnlockedRecord(obj: unknown): UnlockedMap {
-  if (!obj || typeof obj !== 'object') return createEmptyUnlocked()
-  const result: UnlockedMap = {}
-  for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
-    if (isValidAchievementId(key) && typeof value === 'string' && value.trim().length > 0) {
-      result[key] = value
-    }
-  }
-  return result
-}
-
-export function parseUnlockedStorage(raw: string | null | undefined): UnlockedMap {
-  if (!raw) return createEmptyUnlocked()
-  try {
-    const parsed = JSON.parse(raw) as unknown
-    return sanitizeUnlockedRecord(parsed)
-  } catch {
-    return createEmptyUnlocked()
-  }
-}
-
-// Build-time bundled presence runtime integration
-import { PRESENCE_RUNTIME_BUNDLE } from '@/lib/presence-bundle'
-type PresenceConfig = { cookieName?: string; key: string; attribute: string }
-export function buildPresenceScript(cfg: PresenceConfig): string {
-  cfg.cookieName ??= ACHIEVEMENTS_COOKIE_NAME
-  const serializedCfg = JSON.stringify(cfg)
-  const invoke = ';try{window.PresenceRuntime&&window.PresenceRuntime.initPresence(' + serializedCfg + ')}catch(e){}'
-  return PRESENCE_RUNTIME_BUNDLE + invoke
-}

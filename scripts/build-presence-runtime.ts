@@ -9,8 +9,8 @@ const __dirname = dirname(__filename)
 
 async function main() {
   const projectRoot = resolve(__dirname, '..')
-  const entry = resolve(projectRoot, 'src/lib/presence-script.ts')
-  const outFile = resolve(projectRoot, 'src/lib/presence-bundle.ts')
+  const entry = resolve(projectRoot, 'src/utils/presence-script.ts')
+  const outFile = resolve(projectRoot, 'src/utils/presence-bundle.ts')
   const isDev = process.env.NODE_ENV !== 'production' || process.argv.includes('--dev')
   const sourcemap = isDev ? 'inline' : false
 

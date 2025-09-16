@@ -1,4 +1,4 @@
-import { themes, type ThemeName } from './themes'
+import { themes, type ThemeName } from '@/lib/themes'
 
 type DisplayValue = 'none' | 'block' | 'inline' | 'inline-block'
 

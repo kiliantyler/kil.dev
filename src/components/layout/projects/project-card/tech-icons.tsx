@@ -2,7 +2,7 @@
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { SkillEntry } from '@/lib/skillicons'
-import { getSkillIconUrl } from '@/lib/skillicons'
+import { getSkillIconUrl } from '@/utils/skillicons'
 import Image from 'next/image'
 import Link from 'next/link'
 

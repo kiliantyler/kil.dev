@@ -1,12 +1,6 @@
-export interface Content {
-  NAME: string
-  TITLE: string
-  LOCATION: string
-  MAP_LATITUDE: number
-  MAP_LONGITUDE: number
-}
+import type { HomeContent } from '@/types/home-content'
 
-export const CONTENT: Content = {
+export const HOME_CONTENT: HomeContent = {
   NAME: 'Kilian Tyler',
   TITLE: 'Site Reliability | DevOps Engineer',
   LOCATION: 'Cleveland, Ohio',

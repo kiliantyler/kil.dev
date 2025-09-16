@@ -2,7 +2,7 @@
 
 import { FlippingCard } from '@/components/ui/flipping-card'
 import { captureProjectCardFlipped } from '@/hooks/posthog'
-import type { Project } from '@/lib/projects'
+import type { Project } from '@/types/projects'
 import { useCallback } from 'react'
 import { ProjectCardBack } from './card-back'
 import { ProjectCardFront } from './card-front'

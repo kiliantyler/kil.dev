@@ -1,7 +1,7 @@
 'use client'
 
-import type { UnlockedMap } from '@/lib/achievements'
 import type { ThemeName } from '@/lib/themes'
+import type { UnlockedMap } from '@/utils/achievements'
 import { AchievementsProvider } from './achievements-provider'
 import { PostHogProvider } from './posthog-provider'
 import { ThemeProvider } from './theme-provider'

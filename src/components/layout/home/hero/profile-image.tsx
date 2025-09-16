@@ -7,10 +7,11 @@ import Confused from '@/images/headshot/cartoon-confused.webp'
 import Grumpy from '@/images/headshot/cartoon-grumpy.webp'
 import Ladybird from '@/images/headshot/cartoon-ladybird.webp'
 import { type AchievementId } from '@/lib/achievements'
-import { CONTENT } from '@/lib/content'
-import { buildPerThemeVariantCss } from '@/lib/theme-css'
-import { getThemeHeadshot, themes } from '@/lib/themes'
+import { HOME_CONTENT } from '@/lib/content'
+import { themes } from '@/lib/themes'
 import { isLadybirdUA } from '@/utils/ladybird'
+import { buildPerThemeVariantCss } from '@/utils/theme-css'
+import { getThemeHeadshot } from '@/utils/themes'
 import Image, { type StaticImageData } from 'next/image'
 import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 
@@ -103,7 +104,7 @@ export function ProfileImage() {
     imageSrc = VARIANT_TO_IMAGE[variant]
   }
   const altSuffix = variant === 'default' ? 'headshot' : variant
-  const imageAlt = `${CONTENT.NAME} ${altSuffix}`
+  const imageAlt = `${HOME_CONTENT.NAME} ${altSuffix}`
 
   const isEnvDrivenVariant = variant === 'ladybird' || variant === 'confused'
   const isBaseThemeVariant = !isGrumpy && !isLadybird && !useConfused
