@@ -4,6 +4,7 @@ import {
   ACHIEVEMENTS,
   ACHIEVEMENTS_COOKIE_NAME,
   createEmptyUnlocked,
+  parseUnlockedStorage,
   serializeUnlockedCookie,
   type AchievementId,
   type UnlockedMap,
@@ -28,10 +29,7 @@ function readFromStorage(): UnlockedMap {
   if (typeof window === 'undefined') return createEmptyUnlocked()
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) return createEmptyUnlocked()
-    const parsed = JSON.parse(raw) as unknown
-    if (!parsed || typeof parsed !== 'object') return createEmptyUnlocked()
-    return { ...createEmptyUnlocked(), ...(parsed as UnlockedMap) }
+    return parseUnlockedStorage(raw)
   } catch {
     return createEmptyUnlocked()
   }
