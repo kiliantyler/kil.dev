@@ -1,6 +1,7 @@
 import ConfusedAchievement from '@/images/achievements/confused-click.webp'
 import GrumpyAchievement from '@/images/achievements/grumpy-glimpse.webp'
 import LadybirdAchievement from '@/images/achievements/ladybird-landing.webp'
+import PlaceholderAchievement from '@/images/achievements/placeholder.webp'
 import RecursiveRewardAchievement from '@/images/achievements/recursive-reward.webp'
 import type { StaticImageData } from 'next/image'
 
@@ -16,6 +17,38 @@ export interface AchievementDefinition {
 }
 
 export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
+  ABOUT_AMBLER: {
+    id: 'ABOUT_AMBLER',
+    title: 'About Ambler',
+    description: 'You clicked on the About page.',
+    icon: '👋',
+    imageSrc: PlaceholderAchievement, // TODO: Add pet parade achievement image
+    imageAlt: 'About Ambler',
+    cardDescription:
+      "You met the person behind the pixels. Turns out I'm a pretty cool guy, at least my mom thinks so.",
+    unlockHint: 'You should try learning something about me.',
+  },
+  EXPERIENCE_EXPLORER: {
+    id: 'EXPERIENCE_EXPLORER',
+    title: 'Experience Explorer',
+    description: 'You clicked on the Experience page.',
+    icon: '💼',
+    imageSrc: PlaceholderAchievement, // TODO: Add pet parade achievement image
+    imageAlt: 'Experience Explorer',
+    cardDescription: 'You donned a safari hat and trekked through my career jungle. Mind the buzzwords — they bite.',
+    unlockHint: 'Maybe if you had more experience, you would have more to explore.',
+  },
+  PROJECTS_PERUSER: {
+    id: 'PROJECTS_PERUSER',
+    title: 'Projects Peruser',
+    description: 'You clicked on the Projects page.',
+    icon: '💻',
+    imageSrc: PlaceholderAchievement, // TODO: Add pet parade achievement image
+    imageAlt: 'Projects Peruser',
+    cardDescription:
+      'You wandered the gallery of half-baked ideas and fully-caffeinated builds, nodding like a true critic.',
+    unlockHint: 'A quiet stroll through the builds can be rewarding.',
+  },
   GRUMPY_GLIMPSE: {
     id: 'GRUMPY_GLIMPSE',
     title: 'Grumpy Glimpse',
@@ -37,16 +70,16 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
       'Even though you were already on this site, you clicked to visit it again. Why? Oh well, you got an achievement for it.',
     unlockHint: 'Have you ever been so confused you clicked on the same site again?',
   },
-  // PET_PARADE: {
-  //   id: 'PET_PARADE',
-  //   title: 'Pet Parade',
-  //   description: 'Ohhh you like pets? You got an achievement for that.',
-  //   icon: '🐾',
-  //   imageSrc: PetParadeAchievement,
-  //   imageAlt: 'Pet Parade',
-  //   cardDescription: 'I have a lot of pets and I love them all. This is a celebration of them. Thanks for looking!',
-  //   unlockHint: 'How much do you love pets? Enough to learn about them all?',
-  // },
+  PET_PARADE: {
+    id: 'PET_PARADE',
+    title: 'Pet Parade',
+    description: 'Ohhh you like pets? You got an achievement for that.',
+    icon: '🐾',
+    imageSrc: PlaceholderAchievement, // TODO: Add pet parade achievement image
+    imageAlt: 'Pet Parade',
+    cardDescription: 'I have a lot of pets and I love them all. This is a celebration of them. Thanks for looking!',
+    unlockHint: 'How much do you love pets? Enough to learn about them all?',
+  },
   RECURSIVE_REWARD: {
     id: 'RECURSIVE_REWARD',
     title: 'Recursive Reward',
