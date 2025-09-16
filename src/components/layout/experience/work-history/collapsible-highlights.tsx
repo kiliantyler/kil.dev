@@ -2,8 +2,8 @@
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { captureWorkHighlightsToggled } from '@/hooks/posthog'
+import type { SkillEntry } from '@/lib/skillicons'
 import type { WorkExperience } from '@/types/work-experience'
-import type { resolveSkills } from '@/utils/skillicons'
 import { ChevronDown } from 'lucide-react'
 import { useCallback, useRef, useState } from 'react'
 import { HighlightsList } from './highlights-list'
@@ -11,7 +11,7 @@ import { SkillsBlock } from './skills-block'
 
 interface CollapsibleHighlightsProps {
   item: WorkExperience
-  skillsEntries: ReturnType<typeof resolveSkills>
+  skillsEntries: SkillEntry[]
 }
 
 export function CollapsibleHighlights({ item, skillsEntries }: CollapsibleHighlightsProps) {
