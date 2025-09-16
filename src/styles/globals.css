@@ -5,6 +5,7 @@
 @custom-variant cyberpunk (&:is(.cyberpunk *));
 @custom-variant halloween (&:is(.halloween *));
 @custom-variant thanksgiving (&:is(.thanksgiving *));
+@variant nav (@media (min-width: 920px));
 
 @theme {
   --font-sans:
