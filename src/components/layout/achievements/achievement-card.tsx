@@ -6,6 +6,7 @@ import { useAchievements } from '@/components/providers/achievements-provider'
 import { FlippingCard } from '@/components/ui/flipping-card'
 import unknownAchievementImage from '@/images/achievements/unknown.webp'
 import { ACHIEVEMENTS, type AchievementId } from '@/lib/achievements'
+import { isLadybirdUA } from '@/utils/ladybird'
 import { format, isValid as isValidDate, parseISO } from 'date-fns'
 
 export function AchievementCard({ id, initialUnlockedAt }: { id: AchievementId; initialUnlockedAt?: string }) {
@@ -17,7 +18,17 @@ export function AchievementCard({ id, initialUnlockedAt }: { id: AchievementId; 
   if (!def) return null
 
   const title = isUnlocked ? def.title : 'Hidden achievement'
-  const description = isUnlocked ? def.cardDescription : def.unlockHint
+
+  const isLadybird = isLadybirdUA()
+
+  let description = isUnlocked ? def.cardDescription : def.unlockHint
+  if (id === ('LADYBIRD_LANDING' as AchievementId)) {
+    let friendTip = "Thanks for checking out the site on Ladybird! (I assume you did that and didn't cheat, right?)"
+    if (isLadybird) {
+      friendTip = 'Tip for friends not on Ladybird: on the Achievements page, type ‘ladybird!’ to unlock this.'
+    }
+    description = isUnlocked ? `${def.cardDescription} ${friendTip}` : `${def.unlockHint}`
+  }
 
   let footer = 'Keep exploring the site!'
   if (isUnlocked) {
