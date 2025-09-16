@@ -26,6 +26,7 @@ export function NavLava() {
   const containerRef = React.useRef<HTMLDivElement | null>(null)
   const linkRefs = React.useRef<Record<string, HTMLAnchorElement | null>>({})
   const didInitRef = React.useRef(false)
+  const items = React.useMemo(() => NAVIGATION, [])
 
   const [indicator, setIndicator] = React.useState<{ left: number; width: number; visible: boolean; animate: boolean }>(
     {
@@ -37,7 +38,7 @@ export function NavLava() {
   )
   const [hoveredKey, setHoveredKey] = React.useState<string | null>(null)
 
-  const activeIndex = React.useMemo(() => getActiveIndex(NAVIGATION, pathname ?? ''), [pathname])
+  const activeIndex = React.useMemo(() => getActiveIndex(items, pathname ?? ''), [items, pathname])
 
   const moveIndicatorTo = React.useCallback((key: string, animate: boolean) => {
     const container = containerRef.current
@@ -59,8 +60,8 @@ export function NavLava() {
   // On mount: snap without animation, then enable animations; on route change: animate
   React.useLayoutEffect(() => {
     if (activeIndex >= 0) {
-      if (!NAVIGATION[activeIndex]) return
-      const key = NAVIGATION[activeIndex].href
+      if (!items[activeIndex]) return
+      const key = items[activeIndex].href
       if (!didInitRef.current) {
         moveIndicatorTo(key, false)
         requestAnimationFrame(() => {
@@ -73,17 +74,17 @@ export function NavLava() {
       return
     }
     hideIndicator()
-  }, [activeIndex, moveIndicatorTo, hideIndicator])
+  }, [activeIndex, moveIndicatorTo, hideIndicator, items])
 
   const handleMouseLeaveContainer = React.useCallback(() => {
     setHoveredKey(null)
     if (activeIndex >= 0) {
-      if (!NAVIGATION[activeIndex]) return
-      moveIndicatorTo(NAVIGATION[activeIndex].href, true)
+      if (!items[activeIndex]) return
+      moveIndicatorTo(items[activeIndex].href, true)
       return
     }
     hideIndicator()
-  }, [activeIndex, hideIndicator, moveIndicatorTo])
+  }, [activeIndex, hideIndicator, moveIndicatorTo, items])
 
   const handleBlurContainer = React.useCallback(
     (event: React.FocusEvent<HTMLDivElement>) => {
@@ -91,28 +92,31 @@ export function NavLava() {
       const next = event.relatedTarget as Node | null
       if (!container || (next && container.contains(next))) return
       setHoveredKey(null)
-      if (activeIndex >= 0 && NAVIGATION[activeIndex]) {
-        moveIndicatorTo(NAVIGATION[activeIndex].href, true)
+      if (activeIndex >= 0 && items[activeIndex]) {
+        moveIndicatorTo(items[activeIndex].href, true)
         return
       }
       hideIndicator()
     },
-    [activeIndex, moveIndicatorTo, hideIndicator],
+    [activeIndex, moveIndicatorTo, hideIndicator, items],
   )
 
-  const handleKeyDown = React.useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return
-    event.preventDefault()
+  const handleKeyDown = React.useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return
+      event.preventDefault()
 
-    const focusable = NAVIGATION.map(item => linkRefs.current[item.href]).filter(Boolean) as HTMLAnchorElement[]
-    if (focusable.length === 0) return
+      const focusable = items.map(item => linkRefs.current[item.href]).filter(Boolean) as HTMLAnchorElement[]
+      if (focusable.length === 0) return
 
-    const currentIndex = focusable.findIndex(el => el === document.activeElement)
-    const delta = event.key === 'ArrowRight' ? 1 : -1
-    const nextIndex = (currentIndex + delta + focusable.length) % focusable.length
-    if (!focusable[nextIndex]) return
-    focusable[nextIndex].focus()
-  }, [])
+      const currentIndex = focusable.findIndex(el => el === document.activeElement)
+      const delta = event.key === 'ArrowRight' ? 1 : -1
+      const nextIndex = (currentIndex + delta + focusable.length) % focusable.length
+      if (!focusable[nextIndex]) return
+      focusable[nextIndex].focus()
+    },
+    [items],
+  )
 
   return (
     <nav className="hidden md:flex items-center" aria-label="Primary">
@@ -152,7 +156,7 @@ export function NavLava() {
           }}
         />
 
-        {NAVIGATION.map(item => {
+        {items.map(item => {
           const isExternal = item.href.startsWith('http')
           const isActive = !item.href.startsWith('#') && item.href === pathname
           const showFallback = isActive && !indicator.visible && (!hoveredKey || hoveredKey === item.href)
@@ -205,6 +209,48 @@ export function NavLava() {
             </Link>
           )
         })}
+
+        {/* Achievements link (hidden by default, shown via data attribute set pre-hydration) */}
+        <Link
+          key="/achievements"
+          href={'/achievements'}
+          ref={node => {
+            if (node) {
+              linkRefs.current['/achievements'] = node
+            }
+          }}
+          className={cn(
+            'relative z-10 rounded-md px-3 py-2 text-sm font-medium outline-none transition-colors js-achievements-nav',
+            NAV_TEXT.base,
+            NAV_TEXT.hover,
+            pathname === '/achievements' && (!hoveredKey || hoveredKey === '/achievements')
+              ? NAV_TEXT.active
+              : undefined,
+          )}
+          aria-current={pathname === '/achievements' ? 'page' : undefined}
+          role="menuitem"
+          onMouseEnter={() => {
+            setHoveredKey('/achievements')
+            moveIndicatorTo('/achievements', true)
+          }}
+          onFocus={() => {
+            setHoveredKey('/achievements')
+            moveIndicatorTo('/achievements', true)
+          }}>
+          {pathname === '/achievements' && !indicator.visible && (!hoveredKey || hoveredKey === '/achievements') && (
+            <>
+              <span
+                aria-hidden="true"
+                className="absolute top-0 bottom-0 left-1 right-1 z-0 rounded-md bg-primary/40 blur-[1.5px] shadow-sm"
+              />
+              <span
+                aria-hidden="true"
+                className="absolute top-0 bottom-0 left-1 right-1 z-0 rounded-md bg-primary backdrop-blur-sm shadow-sm"
+              />
+            </>
+          )}
+          <span className="relative z-10">Achievements</span>
+        </Link>
       </div>
     </nav>
   )
