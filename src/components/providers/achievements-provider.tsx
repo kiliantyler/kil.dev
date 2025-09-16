@@ -30,7 +30,7 @@ function areUnlockedEqual(a: UnlockedMap, b: UnlockedMap): boolean {
   const bKeys = Object.keys(b)
   if (aKeys.length !== bKeys.length) return false
   for (const k of aKeys) {
-    if (a[k] !== b[k]) return false
+    if (a[k as AchievementId] !== b[k as AchievementId]) return false
   }
   return true
 }

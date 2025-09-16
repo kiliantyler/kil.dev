@@ -11,7 +11,9 @@ export default async function AchievementsPage() {
   const cookieStore = await cookies()
   const cookieValue = cookieStore.get(ACHIEVEMENTS_COOKIE_NAME)?.value
   const unlocked = parseUnlockedCookie(cookieValue)
-  const entries: Array<[AchievementId, (typeof ACHIEVEMENTS)[AchievementId]]> = Object.entries(ACHIEVEMENTS)
+  const entries: Array<[AchievementId, (typeof ACHIEVEMENTS)[AchievementId]]> = Object.entries(ACHIEVEMENTS) as Array<
+    [AchievementId, (typeof ACHIEVEMENTS)[AchievementId]]
+  >
 
   return (
     <div className="px-10 py-16 md:px-20 lg:px-40">

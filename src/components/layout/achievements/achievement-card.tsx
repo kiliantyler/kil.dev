@@ -32,9 +32,9 @@ export function AchievementCard({ id, initialUnlockedAt }: { id: AchievementId; 
   if (id === ('LADYBIRD_LANDING' as AchievementId)) {
     let friendTip = "Thanks for checking out the site on Ladybird! (I assume you did that and didn't cheat, right?)"
     if (isLadybird) {
-      friendTip = 'Tip for friends not on Ladybird: on the Achievements page, type ‘ladybird!’ to unlock this.'
+      friendTip = 'Tip for friends not on Ladybird: on the Achievements page, type "ladybird!" to unlock this.'
     }
-    description = isUnlocked ? `${def.cardDescription} ${friendTip}` : `${def.unlockHint}`
+    description = isUnlocked ? ((def.cardDescription + ' ' + friendTip) as typeof def.cardDescription) : def.unlockHint
   }
 
   let footer = 'Keep exploring the site!'
