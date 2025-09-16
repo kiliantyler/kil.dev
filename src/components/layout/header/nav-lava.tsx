@@ -107,16 +107,31 @@ export function NavLava() {
       if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return
       event.preventDefault()
 
-      const focusable = items.map(item => linkRefs.current[item.href]).filter(Boolean) as HTMLAnchorElement[]
+      const container = containerRef.current
+      if (!container) return
+
+      const anchors = Array.from(container.querySelectorAll('a'))
+      const focusable = anchors.filter(el => {
+        if (el.hasAttribute('disabled')) return false
+        if (el.getAttribute('aria-hidden') === 'true') return false
+        const tabIndexAttr = el.getAttribute('tabindex')
+        if (tabIndexAttr !== null && Number(tabIndexAttr) < 0) return false
+        if (el.offsetParent === null) return false
+        return true
+      })
       if (focusable.length === 0) return
 
       const currentIndex = focusable.findIndex(el => el === document.activeElement)
       const delta = event.key === 'ArrowRight' ? 1 : -1
-      const nextIndex = (currentIndex + delta + focusable.length) % focusable.length
-      if (!focusable[nextIndex]) return
-      focusable[nextIndex].focus()
+      const nextIndex =
+        currentIndex === -1
+          ? delta > 0
+            ? 0
+            : focusable.length - 1
+          : (currentIndex + delta + focusable.length) % focusable.length
+      focusable[nextIndex]?.focus()
     },
-    [items],
+    [containerRef],
   )
 
   return (
