@@ -1,6 +1,6 @@
 import type { Route } from 'next'
 
-export interface SociallLinks {
+export interface SocialLinks {
   GITHUB: Route
   LINKEDIN: Route
 }
