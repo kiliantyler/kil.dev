@@ -110,6 +110,12 @@ export function serializeUnlockedCookie(map: UnlockedMap): string {
   return JSON.stringify(payload)
 }
 
+export function buildAchievementsPresenceScript(): string {
+  const name = ACHIEVEMENTS_COOKIE_NAME
+  const key = 'RECURSIVE_REWARD'
+  return `;try{var d=document;var c=(';'+d.cookie).split('; '+${JSON.stringify(name)}+'=');if(c.length>1){var v=c.pop().split(';').shift();try{var t=decodeURIComponent(v)}catch(e){var t=v}var has=t.indexOf(${JSON.stringify(key)})>-1;if(has){d.documentElement.setAttribute('data-has-achievements','true')}}}catch(e){}`
+}
+
 function sanitizeUnlockedRecord(obj: unknown): UnlockedMap {
   if (!obj || typeof obj !== 'object') return createEmptyUnlocked()
   const result: UnlockedMap = {}
