@@ -4,7 +4,7 @@ import '@/styles/globals.css'
 import { Background } from '@/components/layout/background'
 import { Footer } from '@/components/layout/footer'
 import { Header } from '@/components/layout/header'
-import { buildAchievementsPresenceScript } from '@/lib/achievements'
+import { buildAchievementsPresenceScript, buildPetGalleryPresenceScript } from '@/lib/achievements'
 import { buildThemeScript } from '@/lib/theme-runtime'
 import { type Metadata } from 'next'
 import { Noto_Sans, Space_Grotesk } from 'next/font/google'
@@ -33,6 +33,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <head>
         <script id="pre-theme" dangerouslySetInnerHTML={{ __html: buildThemeScript() }} />
         <script id="pre-achievements" dangerouslySetInnerHTML={{ __html: buildAchievementsPresenceScript() }} />
+        <script id="pre-pet-gallery" dangerouslySetInnerHTML={{ __html: buildPetGalleryPresenceScript() }} />
       </head>
       <body className="font-sans flex min-h-screen flex-col bg-background text-foreground">
         <Providers>
