@@ -1,17 +1,15 @@
 'use client'
 
-import { MenuIcon } from 'lucide-react'
-import { usePathname, useRouter } from 'next/navigation'
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-
 import { MobileNavButton } from '@/components/layout/header/mobile-nav-button'
 import { useAchievements } from '@/components/providers/achievements-provider'
 import { Button } from '@/components/ui/button'
 import { useThemeTransition } from '@/components/ui/theme-toggle'
 import { NAVIGATION } from '@/lib/navmenu'
 import { cn } from '@/lib/utils'
-import { Trophy } from 'lucide-react'
+import { MenuIcon, PawPrint, Trophy } from 'lucide-react'
 import type { Route } from 'next'
+import { usePathname, useRouter } from 'next/navigation'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 export function MobileNav() {
   const pathname = usePathname()
@@ -46,16 +44,25 @@ export function MobileNav() {
 
   const { has } = useAchievements()
   const showAchievements = has('RECURSIVE_REWARD')
+  const showPetGallery = has('PET_PARADE')
   const items = useMemo(() => {
     const allowAchievements = isMounted && showAchievements
+    const allowPetGallery = isMounted && showPetGallery
+    let navigationItems = NAVIGATION
     if (allowAchievements) {
-      return [
-        ...NAVIGATION,
+      navigationItems = [
+        ...navigationItems,
         { label: 'Achievements', href: '/achievements' as Route, icon: Trophy },
       ]
     }
-    return NAVIGATION
-  }, [isMounted, showAchievements])
+    if (allowPetGallery) {
+      navigationItems = [
+        ...navigationItems,
+        { label: 'Pet Gallery', href: '/pet-gallery' as Route, icon: PawPrint },
+      ]
+    }
+    return navigationItems
+  }, [isMounted, showAchievements, showPetGallery])
 
   const injectCircleBlurTransitionStyles = useCallback((originXPercent: number, originYPercent: number) => {
     const styleId = `nav-transition-${Date.now()}`
