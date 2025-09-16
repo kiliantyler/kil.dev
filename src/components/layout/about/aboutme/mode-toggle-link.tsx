@@ -107,9 +107,7 @@ export function ModeToggleLink() {
       size="sm"
       className="h-auto p-0 px-0"
       onClick={handleClick}
-      onKeyDown={handleKeyDown}
-      aria-label=""
-      title="">
+      onKeyDown={handleKeyDown}>
       Dark mode
     </Button>
   )
