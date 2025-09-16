@@ -5,10 +5,12 @@ import { usePathname, useRouter } from 'next/navigation'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { MobileNavButton } from '@/components/layout/header/mobile-nav-button'
+import { useAchievements } from '@/components/providers/achievements-provider'
 import { Button } from '@/components/ui/button'
 import { useThemeTransition } from '@/components/ui/theme-toggle'
 import { NAVIGATION } from '@/lib/navmenu'
 import { cn } from '@/lib/utils'
+import { Trophy } from 'lucide-react'
 import type { Route } from 'next'
 
 export function MobileNav() {
@@ -18,6 +20,8 @@ export function MobileNav() {
   const [open, setOpen] = useState(false)
   const [closing, setClosing] = useState(false)
   const [openedViaKeyboard, setOpenedViaKeyboard] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
+  useEffect(() => setIsMounted(true), [])
   const containerRef = useRef<HTMLDivElement | null>(null)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
   const itemRefs = useRef<Array<HTMLAnchorElement | null>>([])
@@ -39,6 +43,19 @@ export function MobileNav() {
   const isExpanded = open && !closing
 
   const overlayRef = useRef<HTMLDivElement | null>(null)
+
+  const { has } = useAchievements()
+  const showAchievements = has('RECURSIVE_REWARD')
+  const items = useMemo(() => {
+    const allowAchievements = isMounted && showAchievements
+    if (allowAchievements) {
+      return [
+        ...NAVIGATION,
+        { label: 'Achievements', href: '/achievements' as Route, icon: Trophy },
+      ]
+    }
+    return NAVIGATION
+  }, [isMounted, showAchievements])
 
   const injectCircleBlurTransitionStyles = useCallback((originXPercent: number, originYPercent: number) => {
     const styleId = `nav-transition-${Date.now()}`
@@ -110,9 +127,9 @@ export function MobileNav() {
       setOpen(false)
       setOpenedViaKeyboard(false)
       triggerCloseFx()
-      const total = CLOSE_DURATION_MS + (NAVIGATION.length - 1) * STAGGER_MS
+      const total = CLOSE_DURATION_MS + (items.length - 1) * STAGGER_MS
       const navigateDelay =
-        typeof perItemIdx === 'number' ? CLOSE_DURATION_MS + (NAVIGATION.length - 1 - perItemIdx) * STAGGER_MS : total
+        typeof perItemIdx === 'number' ? CLOSE_DURATION_MS + (items.length - 1 - perItemIdx) * STAGGER_MS : total
       window.setTimeout(() => {
         if (navigateHref) {
           startTransition(() => {
@@ -123,7 +140,7 @@ export function MobileNav() {
         triggerRef.current?.focus()
       }, navigateDelay)
     },
-    [router, startTransition, triggerCloseFx],
+    [router, startTransition, triggerCloseFx, items.length],
   )
 
   // Document listeners (outside click + Escape) → shared callbacks
@@ -199,27 +216,30 @@ export function MobileNav() {
     }
   }, [])
 
-  const handleMenuKeyDown = useCallback((e: React.KeyboardEvent<HTMLUListElement>) => {
-    const currentIndex = itemRefs.current.findIndex(el => el === document.activeElement)
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-      e.preventDefault()
-      const next = currentIndex < 0 ? 0 : Math.min(NAVIGATION.length - 1, currentIndex + 1)
-      itemRefs.current[next]?.focus()
-      return
-    }
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-      e.preventDefault()
-      const prev = currentIndex < 0 ? 0 : Math.max(0, currentIndex - 1)
-      itemRefs.current[prev]?.focus()
-      return
-    }
-    if (e.key === 'Escape') {
-      e.preventDefault()
-      setOpen(false)
-      setOpenedViaKeyboard(false)
-      triggerRef.current?.focus()
-    }
-  }, [])
+  const handleMenuKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLUListElement>) => {
+      const currentIndex = itemRefs.current.findIndex(el => el === document.activeElement)
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault()
+        const next = currentIndex < 0 ? 0 : Math.min(items.length - 1, currentIndex + 1)
+        itemRefs.current[next]?.focus()
+        return
+      }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault()
+        const prev = currentIndex < 0 ? 0 : Math.max(0, currentIndex - 1)
+        itemRefs.current[prev]?.focus()
+        return
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setOpen(false)
+        setOpenedViaKeyboard(false)
+        triggerRef.current?.focus()
+      }
+    },
+    [items.length],
+  )
 
   // Overlay interactions → share the same close logic
   const handleOverlayClick = useCallback(() => {
@@ -246,8 +266,8 @@ export function MobileNav() {
   // Pre-compute ladder positions shooting down-right from the trigger
   type LadderPoint = { x: number; y: number }
   const positions = useMemo<LadderPoint[]>(() => {
-    return NAVIGATION.map((_, idx) => ({ x: ladderXOffset + idx * ladderStepX, y: ladderYOffset + idx * ladderStepY }))
-  }, [ladderXOffset, ladderYOffset, ladderStepX, ladderStepY])
+    return items.map((_, idx) => ({ x: ladderXOffset + idx * ladderStepX, y: ladderYOffset + idx * ladderStepY }))
+  }, [items, ladderXOffset, ladderYOffset, ladderStepX, ladderStepY])
 
   // Anchor the ladder to the actual button center (viewport coordinates)
   useEffect(() => {
@@ -380,7 +400,7 @@ export function MobileNav() {
             top: `${anchor.y}px`,
             transition: 'opacity 120ms ease-out',
           }}>
-          {NAVIGATION.map((item, idx) => {
+          {items.map((item, idx) => {
             const isActive = !item.href.startsWith('#') && item.href === pathname
             const Icon = item.icon
             const { x, y } = positions[idx] ?? { x: 0, y: 0 }
@@ -397,7 +417,7 @@ export function MobileNav() {
                 open={open}
                 closing={closing}
                 position={{ x, y }}
-                transitionDelayMs={(closing ? NAVIGATION.length - 1 - idx : idx) * STAGGER_MS}
+                transitionDelayMs={(closing ? items.length - 1 - idx : idx) * STAGGER_MS}
                 onClick={() => {
                   const btnRect = triggerRef.current?.getBoundingClientRect()
                   if (btnRect) {
