@@ -7,7 +7,7 @@ import type { AchievementDefinition } from '@/types/achievements'
 
 export const ACHIEVEMENTS_COOKIE_NAME = 'kil.dev_achievements_v1'
 
-export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
+export const ACHIEVEMENTS = {
   ABOUT_AMBLER: {
     id: 'ABOUT_AMBLER',
     title: 'About Ambler',
@@ -92,5 +92,6 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     cardDescription: "We love an open web and independent browsers! I'm aware this site looks bad in Ladybird.",
     unlockHint: 'You should browse this site on a truly independent web browser.',
   },
-}
+} as const satisfies Record<string, AchievementDefinition>
+
 export type AchievementId = keyof typeof ACHIEVEMENTS
