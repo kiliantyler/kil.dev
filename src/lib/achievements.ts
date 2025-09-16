@@ -1,6 +1,7 @@
 import ConfusedAchievement from '@/images/achievements/confused-click.webp'
 import GrumpyAchievement from '@/images/achievements/grumpy-glimpse.webp'
 import LadybirdAchievement from '@/images/achievements/ladybird-landing.webp'
+import RecursiveRewardAchievement from '@/images/achievements/recursive-reward.webp'
 import type { StaticImageData } from 'next/image'
 
 export interface AchievementDefinition {
@@ -46,17 +47,17 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
   //   cardDescription: 'I have a lot of pets and I love them all. This is a celebration of them. Thanks for looking!',
   //   unlockHint: 'How much do you love pets? Enough to learn about them all?',
   // },
-  // RECURSIVE_REWARD: {
-  //   id: 'RECURSIVE_REWARD',
-  //   title: 'Recursive Reward',
-  //   description: 'You got an achievement for getting an achievement. How meta!',
-  //   icon: '🎉',
-  //   imageSrc: RecursiveRewardAchievement,
-  //   imageAlt: 'Recursive Reward',
-  //   cardDescription:
-  //     'You unlocked three achievements and got a fourth one as a reward! An achievement collectors dream!',
-  //   unlockHint: 'How are you even viewing this page without having unlocked this? Did you look at the source code?',
-  // },
+  RECURSIVE_REWARD: {
+    id: 'RECURSIVE_REWARD',
+    title: 'Recursive Reward',
+    description: 'You got an achievement for getting an achievement. How meta!',
+    icon: '🎉',
+    imageSrc: RecursiveRewardAchievement,
+    imageAlt: 'Recursive Reward',
+    cardDescription:
+      'You unlocked three achievements and got a fourth one as a reward! An achievement collectors dream!',
+    unlockHint: 'How are you even viewing this page without having unlocked this? Did you look at the source code?',
+  },
   LADYBIRD_LANDING: {
     id: 'LADYBIRD_LANDING',
     title: 'Ladybird Landing',

@@ -145,7 +145,21 @@ export function AchievementsProvider({
     [unlocked, has, unlock, reset],
   )
 
-  // Keep Sonner in sync with current site theme (light/dark)
+  useEffect(() => {
+    if (!mountedRef.current) return
+    if (has('RECURSIVE_REWARD')) return
+
+    let earnedCount = 0
+    for (const [key, value] of Object.entries(unlocked)) {
+      if (key === 'RECURSIVE_REWARD') continue
+      if (typeof value === 'string' && value.trim().length > 0) earnedCount += 1
+    }
+
+    if (earnedCount >= 3) {
+      queueMicrotask(() => unlock('RECURSIVE_REWARD'))
+    }
+  }, [unlocked, has, unlock])
+
   const { resolvedTheme } = useTheme()
   const sonnerTheme: 'light' | 'dark' = useMemo(() => {
     const rt = resolvedTheme
