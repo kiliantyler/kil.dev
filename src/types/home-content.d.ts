@@ -4,4 +4,5 @@ export interface HomeContent {
   LOCATION: string
   MAP_LATITUDE: number
   MAP_LONGITUDE: number
+  LOCATION_TOOLTIP: string
 }

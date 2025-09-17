@@ -6,7 +6,16 @@ export interface WorkExperience {
   id: string
   role: string
   company: string
-  location?: string
+  workLocation: {
+    location: string
+    latitude?: number
+    longitude?: number
+  }
+  officeLocation: {
+    location: string
+    latitude: number
+    longitude: number
+  }
   from: string
   to?: string
   summary: string
