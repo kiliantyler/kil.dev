@@ -52,3 +52,5 @@ yarn-error.log*
 
 *storybook.log
 storybook-static
+
+.plans/
