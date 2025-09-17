@@ -1,6 +1,7 @@
 'use client'
 
 import { useTheme } from '@/components/providers/theme-provider'
+import { useAchievements } from '@/components/providers/achievements-provider'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { captureThemeChanged } from '@/hooks/posthog'
@@ -25,21 +26,40 @@ function SystemIcon({ className }: { className?: string }) {
 export function ThemeToggle() {
   const { theme, setTheme, resolvedTheme, systemTheme } = useTheme()
   const { startTransition } = useThemeTransition()
+  const { unlocked, has, unlock } = useAchievements()
 
   const currentPreference: Theme = theme ?? 'system'
 
   const [open, setOpen] = useState(false)
   const [openedViaKeyboard, setOpenedViaKeyboard] = useState(false)
   const [tooltipHold, setTooltipHold] = useState(false)
+  const [toggleCount, setToggleCount] = useState(0)
+  const [themeSelected, setThemeSelected] = useState(false)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([])
   const optionsRef = useRef<HTMLDivElement | null>(null)
 
   const [hydrated, setHydrated] = useState(false)
+  const [forceUpdate, setForceUpdate] = useState(0)
   useEffect(() => {
     setHydrated(true)
   }, [])
+
+  // Force re-render after achievement state changes to ensure localStorage sync
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setForceUpdate(prev => prev + 1)
+
+      // Check if current theme is still available after achievement reset
+      const availableThemes = getAvailableThemes() as readonly Theme[]
+      if (currentPreference && !availableThemes.includes(currentPreference)) {
+        // Current theme is no longer available, switch to system
+        setTheme('system')
+      }
+    }, 100) // Small delay to ensure localStorage is updated
+    return () => clearTimeout(timer)
+  }, [unlocked.THEME_COLLECTOR, currentPreference, setTheme])
 
   // Build CSS that shows exactly one icon based on <html> theme classes
   const themeIconCss = useMemo(() => {
@@ -103,6 +123,21 @@ export function ThemeToggle() {
 
   const handleThemeChange = useCallback(
     (nextPref: Theme, event?: ReactMouseEvent) => {
+      // Mark that a theme was selected (this will reset the counter)
+      setThemeSelected(true)
+
+      // Reset the counter immediately when a theme is selected
+      setToggleCount(0)
+
+      // Check if the theme is available
+      const availableThemes = getAvailableThemes() as readonly Theme[]
+
+      // Only proceed if the theme is available
+      if (!availableThemes.includes(nextPref)) {
+        setOpen(false)
+        return
+      }
+
       // Compute the visual (CSS) theme for current and next preferences,
       // treating the seasonal default as equivalent to explicitly selecting it.
       const seasonalDefault = getDefaultThemeForNow()
@@ -169,7 +204,7 @@ export function ThemeToggle() {
       const resolvedIcon: IconComponent = iconByTheme[t] ?? getThemeIcon(t, SystemIcon)
       return { label, value: t, Icon: resolvedIcon }
     })
-  }, [iconByTheme])
+  }, [iconByTheme, has, unlocked, forceUpdate])
 
   const optionsToShow = useMemo(() => {
     if (currentPreference === 'system') {
@@ -282,6 +317,29 @@ export function ThemeToggle() {
             onClick={() => {
               setOpen(o => {
                 const next = !o
+
+                // When opening the menu, reset theme selection tracking
+                if (!o && next) {
+                  setThemeSelected(false)
+                }
+
+                // When closing the menu, only increment if no theme was selected
+                if (o && !next && !themeSelected) {
+                  const newCount = toggleCount + 1
+                  setToggleCount(newCount)
+
+                  // Unlock achievement after 6 toggles
+                  if (newCount >= 6 && !has('THEME_COLLECTOR')) {
+                    unlock('THEME_COLLECTOR')
+                    setToggleCount(0) // Reset counter after unlocking
+                  }
+                }
+
+                // If a theme was selected, reset the counter
+                if (o && !next && themeSelected) {
+                  setToggleCount(0)
+                }
+
                 setOpenedViaKeyboard(false)
                 return next
               })
