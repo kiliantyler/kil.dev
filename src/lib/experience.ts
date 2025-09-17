@@ -8,10 +8,17 @@ export const WORK_HISTORY: WorkExperience[] = [
     id: 'qgenda',
     role: 'Senior Site Reliability Engineer',
     company: 'QGenda',
-    location: 'Remote [Atlanta, GA]',
+    workLocation: {
+      location: 'Remote',
+    },
+    officeLocation: {
+      location: 'Atlanta, GA',
+      latitude: 33.749,
+      longitude: -84.388,
+    },
     from: '2025-07-01',
     to: undefined,
-    summary: 'Qgenda bought New Innovations and I joined as a Senior Site Reliability Engineer.',
+    summary: 'QGenda bought New Innovations and I joined as a Senior Site Reliability Engineer.',
     highlights: [
       'Transitioned from New Innovations to QGenda',
     ],
@@ -27,7 +34,14 @@ export const WORK_HISTORY: WorkExperience[] = [
     id: 'newinnov',
     role: 'Senior DevOps Engineer',
     company: 'New Innovations',
-    location: 'Remote [Akron, OH]',
+    workLocation: {
+      location: 'Remote',
+    },
+    officeLocation: {
+      location: 'Akron, OH',
+      latitude: 41.0812,
+      longitude: -81.519,
+    },
     from: '2024-08-01',
     to: '2025-07-01',
     summary: '',
@@ -41,7 +55,14 @@ export const WORK_HISTORY: WorkExperience[] = [
     id: 'draftkings',
     role: 'Senior Site Reliability Engineer',
     company: 'DraftKings',
-    location: 'Remote [Boston, MA]',
+    workLocation: {
+      location: 'Remote',
+    },
+    officeLocation: {
+      location: 'Boston, MA',
+      latitude: 42.3601,
+      longitude: -71.0589,
+    },
     from: '2020-04-28',
     to: '2024-07-15',
     summary: '',
@@ -55,6 +76,14 @@ export const WORK_HISTORY: WorkExperience[] = [
     id: 'unknown',
     role: 'Previous Roles',
     company: 'Various',
+    workLocation: {
+      location: 'Remote',
+    },
+    officeLocation: {
+      location: 'Various',
+      latitude: 0,
+      longitude: 0,
+    },
     from: '2013-04-01',
     to: '2020-04-27',
     summary: "I'll fill the rest in later.",
