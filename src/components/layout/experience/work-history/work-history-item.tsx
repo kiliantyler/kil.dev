@@ -1,3 +1,4 @@
+import { ExperienceMapTooltip } from '@/components/ui/experience-map-tooltip'
 import type { WorkExperience } from '@/types/work-experience'
 import { resolveSkills } from '@/utils/skillicons'
 import { formatMonthYear } from '@/utils/utils'
@@ -24,9 +25,11 @@ export function WorkHistoryItem({ item }: { item: WorkExperience }) {
           </div>
           <div className="text-muted-foreground text-xs md:text-sm flex flex-col md:flex-row md:items-center">
             <span>{when}</span>
-            <span className="md:ml-2 md:before:content-['·'] md:before:mx-2 md:before:text-inherit">
-              {item.workLocation.location} [{item.officeLocation.location}]
-            </span>
+            <ExperienceMapTooltip workExperience={item}>
+              <span className="md:ml-2 md:before:content-['·'] md:before:mx-2 md:before:text-inherit text-primary">
+                {item.workLocation.location} [{item.officeLocation.location}]
+              </span>
+            </ExperienceMapTooltip>
           </div>
           <p className="text-sm md:text-base leading-relaxed">{item.summary}</p>
 
