@@ -4,13 +4,13 @@ import { THEME_RUNTIME_BUNDLE } from './theme-bundle'
 
 // Helper function to check if achievement is unlocked
 // This avoids circular imports by accessing localStorage directly
-function hasThemeCollectorAchievement(): boolean {
+function hasThemeTapdanceAchievement(): boolean {
   if (typeof window === 'undefined') return false
   try {
     const stored = localStorage.getItem('kil.dev/achievements/v1')
     if (!stored) return false
-    const unlocked = JSON.parse(stored)
-    return Boolean(unlocked.THEME_COLLECTOR)
+    const unlocked = JSON.parse(stored) as Record<string, unknown>
+    return Boolean(unlocked.THEME_TAPDANCE)
   } catch {
     return false
   }
@@ -70,7 +70,7 @@ export function getActiveSeasonalThemes(date: Date = new Date()): SeasonalThemeC
 
 export function getAvailableThemes(date: Date = new Date(), overrideDateRestrictions = false): Theme[] {
   // Check if we should bypass date restrictions
-  if (overrideDateRestrictions || hasThemeCollectorAchievement()) {
+  if (overrideDateRestrictions || hasThemeTapdanceAchievement()) {
     // Return all themes when achievement is unlocked
     return ['system', ...BASE_CSS_THEMES, ...SEASONAL_THEMES.map(st => st.theme)]
   }

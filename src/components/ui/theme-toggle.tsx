@@ -1,7 +1,7 @@
 'use client'
 
-import { useTheme } from '@/components/providers/theme-provider'
 import { useAchievements } from '@/components/providers/achievements-provider'
+import { useTheme } from '@/components/providers/theme-provider'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { captureThemeChanged } from '@/hooks/posthog'
@@ -59,7 +59,7 @@ export function ThemeToggle() {
       }
     }, 100) // Small delay to ensure localStorage is updated
     return () => clearTimeout(timer)
-  }, [unlocked.THEME_COLLECTOR, currentPreference, setTheme])
+  }, [unlocked.THEME_TAPDANCE, currentPreference, setTheme])
 
   // Build CSS that shows exactly one icon based on <html> theme classes
   const themeIconCss = useMemo(() => {
@@ -204,6 +204,7 @@ export function ThemeToggle() {
       const resolvedIcon: IconComponent = iconByTheme[t] ?? getThemeIcon(t, SystemIcon)
       return { label, value: t, Icon: resolvedIcon }
     })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [iconByTheme, has, unlocked, forceUpdate])
 
   const optionsToShow = useMemo(() => {
@@ -329,8 +330,8 @@ export function ThemeToggle() {
                   setToggleCount(newCount)
 
                   // Unlock achievement after 6 toggles
-                  if (newCount >= 6 && !has('THEME_COLLECTOR')) {
-                    unlock('THEME_COLLECTOR')
+                  if (newCount >= 6 && !has('THEME_TAPDANCE')) {
+                    unlock('THEME_TAPDANCE')
                     setToggleCount(0) // Reset counter after unlocking
                   }
                 }

@@ -92,15 +92,17 @@ export const ACHIEVEMENTS = {
     cardDescription: "We love an open web and independent browsers! I'm aware this site looks bad in Ladybird.",
     unlockHint: 'You should browse this site on a truly independent web browser.',
   },
-  THEME_COLLECTOR: {
-    id: 'THEME_COLLECTOR',
-    title: 'Theme Collector',
-    description: 'You tried to select a theme that isn\'t available yet!',
+  THEME_TAPDANCE: {
+    id: 'THEME_TAPDANCE',
+    title: 'Theme Tapdance',
+    description: 'Open close, open close, open close... Open that theme menu one more time.',
     icon: '🎨',
     imageSrc: PlaceholderAchievement,
-    imageAlt: 'Theme Collector',
-    cardDescription: 'Curiosity got the better of you! You discovered that some themes are hidden behind seasonal dates, and now you have access to all of them.',
-    unlockHint: 'Try clicking on themes that aren\'t available yet...',
+    imageAlt: 'Theme Tapdance',
+    cardDescription:
+      'Curiosity got the better of you! You discovered that some themes are hidden behind seasonal dates, and now you have access to all of them anytime you want. Neat!',
+    unlockHint:
+      "That theme menu is a lot of fun to play with, really cool animation when it opens. I'd probably get sick of it after 5 or 6 times.",
   },
 } as const satisfies Record<string, AchievementDefinition>
 
