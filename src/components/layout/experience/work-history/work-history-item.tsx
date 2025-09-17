@@ -24,11 +24,9 @@ export function WorkHistoryItem({ item }: { item: WorkExperience }) {
           </div>
           <div className="text-muted-foreground text-xs md:text-sm flex flex-col md:flex-row md:items-center">
             <span>{when}</span>
-            {item.location ? (
-              <span className="md:ml-2 md:before:content-['·'] md:before:mx-2 md:before:text-inherit">
-                {item.location}
-              </span>
-            ) : null}
+            <span className="md:ml-2 md:before:content-['·'] md:before:mx-2 md:before:text-inherit">
+              {item.workLocation.location} [{item.officeLocation.location}]
+            </span>
           </div>
           <p className="text-sm md:text-base leading-relaxed">{item.summary}</p>
 
