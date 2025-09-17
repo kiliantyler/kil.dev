@@ -60,7 +60,7 @@
     "@storybook/addon-themes": "9.1.6",
     "@storybook/addon-vitest": "9.1.6",
     "@tailwindcss/postcss": "4.1.13",
-    "@types/node": "22.18.4",
+    "@types/node": "22.18.5",
     "@types/react": "19.1.13",
     "@types/react-dom": "19.1.9",
     "esbuild": "0.25.9",
