@@ -81,8 +81,8 @@ export const WORK_HISTORY: WorkExperience[] = [
     },
     officeLocation: {
       location: 'Various',
-      latitude: 0,
-      longitude: 0,
+      latitude: 39.8283, // Geographic center of contiguous US
+      longitude: -98.5795,
     },
     from: '2013-04-01',
     to: '2020-04-27',
