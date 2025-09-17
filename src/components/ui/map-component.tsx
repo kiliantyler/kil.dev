@@ -7,7 +7,7 @@ type MapComponentProps = {
   className?: string
 }
 
-export function MapComponent({ center, zoom = 5, label, className = "w-full h-full rounded-md" }: MapComponentProps) {
+export function MapComponent({ center, zoom = 5, label, className = 'w-full h-full rounded-md' }: MapComponentProps) {
   const [latitude, longitude] = center
 
   // Google Maps embed with built-in marker (no API key needed)

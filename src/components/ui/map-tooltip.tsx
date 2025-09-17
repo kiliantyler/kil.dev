@@ -8,9 +8,8 @@ import {
   BottomDrawerTitle,
   BottomDrawerTrigger,
 } from '@/components/ui/bottom-drawer'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { HOME_CONTENT } from '@/lib/content'
 import { MapComponent } from '@/components/ui/map-component'
+import { HOME_CONTENT } from '@/lib/content'
 
 type MapTooltipProps = {
   locationLabel?: string
@@ -23,7 +22,6 @@ export function MapTooltip({
   latitude = HOME_CONTENT.MAP_LATITUDE,
   longitude = HOME_CONTENT.MAP_LONGITUDE,
 }: MapTooltipProps) {
-
   return (
     <div className="w-full">
       <BottomDrawer>
