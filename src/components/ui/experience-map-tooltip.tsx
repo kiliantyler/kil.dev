@@ -39,9 +39,7 @@ export function ExperienceMapTooltip({ workExperience, children }: ExperienceMap
 
   return (
     <BottomDrawer>
-      <BottomDrawerTrigger asChild>
-        {children}
-      </BottomDrawerTrigger>
+      <BottomDrawerTrigger asChild>{children}</BottomDrawerTrigger>
       <BottomDrawerContent className="pb-4">
         <BottomDrawerHeader className="p-0 mt-3">
           <BottomDrawerTitle className="sr-only">
@@ -52,11 +50,7 @@ export function ExperienceMapTooltip({ workExperience, children }: ExperienceMap
           </BottomDrawerDescription>
         </BottomDrawerHeader>
         <div className="p-0 h-[400px] md:h-[500px]">
-          <MultiMapComponent
-            locations={locations}
-            zoom={6}
-            className="w-full h-full rounded-md"
-          />
+          <MultiMapComponent locations={locations} zoom={6} className="w-full h-full rounded-md" />
         </div>
         <div className="px-6 py-4">
           <div className="flex flex-col gap-2 text-sm">
