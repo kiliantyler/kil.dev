@@ -92,6 +92,16 @@ export const ACHIEVEMENTS = {
     cardDescription: "We love an open web and independent browsers! I'm aware this site looks bad in Ladybird.",
     unlockHint: 'You should browse this site on a truly independent web browser.',
   },
+  THEME_COLLECTOR: {
+    id: 'THEME_COLLECTOR',
+    title: 'Theme Collector',
+    description: 'You tried to select a theme that isn\'t available yet!',
+    icon: '🎨',
+    imageSrc: PlaceholderAchievement,
+    imageAlt: 'Theme Collector',
+    cardDescription: 'Curiosity got the better of you! You discovered that some themes are hidden behind seasonal dates, and now you have access to all of them.',
+    unlockHint: 'Try clicking on themes that aren\'t available yet...',
+  },
 } as const satisfies Record<string, AchievementDefinition>
 
 export type AchievementId = keyof typeof ACHIEVEMENTS
