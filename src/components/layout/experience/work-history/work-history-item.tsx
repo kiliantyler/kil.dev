@@ -26,9 +26,13 @@ export function WorkHistoryItem({ item }: { item: WorkExperience }) {
           <div className="text-muted-foreground text-xs md:text-sm flex flex-col md:flex-row md:items-center">
             <span>{when}</span>
             <ExperienceMapTooltip workExperience={item}>
-              <span className="md:ml-2 md:before:content-['·'] md:before:mx-2 md:before:text-inherit text-primary">
+              <button
+                type="button"
+                className="md:ml-2 md:before:content-['·'] md:before:mx-2 md:before:text-inherit text-primary"
+                aria-label={`Open map of ${item.workLocation.location} and ${item.officeLocation.location}`}
+                title={`View map: ${item.workLocation.location} and ${item.officeLocation.location}`}>
                 {item.workLocation.location} [{item.officeLocation.location}]
-              </span>
+              </button>
             </ExperienceMapTooltip>
           </div>
           <p className="text-sm md:text-base leading-relaxed">{item.summary}</p>
