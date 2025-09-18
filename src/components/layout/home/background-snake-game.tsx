@@ -391,28 +391,28 @@ export function BackgroundSnakeGame() {
       ctx.fillText('GAME OVER', borderLeft + borderWidth / 2, borderTop + 60)
 
       ctx.font = '40px VT323, monospace'
-      ctx.fillText(`Score: ${scoreValue}`, borderLeft + borderWidth / 2, borderTop + 100)
+      ctx.fillText(`Score: ${score}`, borderLeft + borderWidth / 2, borderTop + 100)
 
-      if (loadingLeaderboard) {
+      if (isLoadingLeaderboard) {
         ctx.fillStyle = '#10b981'
         ctx.font = '36px VT323, monospace'
         ctx.fillText('Loading leaderboard...', borderLeft + borderWidth / 2, borderTop + 140)
-      } else if (leaderboardData.length > 0) {
+      } else if (leaderboard.length > 0) {
         ctx.fillStyle = '#10b981'
         ctx.font = 'bold 40px VT323, monospace'
         ctx.fillText('LEADERBOARD', borderLeft + borderWidth / 2, borderTop + 140)
 
         const startY = borderTop + 170
         const lineHeight = 20
-        const maxEntries = Math.min(leaderboardData.length, 10)
+        const maxEntries = Math.min(leaderboard.length, 10)
         const leaderboardWidth = 200
         const leaderboardLeft = borderLeft + (borderWidth - leaderboardWidth) / 2
 
         for (let i = 0; i < maxEntries; i++) {
-          const entry = leaderboardData[i]
+          const entry = leaderboard[i]
           if (!entry) continue
           const y = startY + i * lineHeight
-          if (entry.score === scoreValue) {
+          if (entry.score === score) {
             ctx.fillStyle = 'rgba(16, 185, 129, 0.2)'
             ctx.fillRect(leaderboardLeft, y - 12, leaderboardWidth, lineHeight)
           }
@@ -421,19 +421,19 @@ export function BackgroundSnakeGame() {
           ctx.textAlign = 'left'
           ctx.fillText(`#${i + 1}`, leaderboardLeft + 10, y)
 
-          ctx.fillStyle = entry.score === scoreValue ? '#ffffff' : '#10b981'
+          ctx.fillStyle = entry.score === score ? '#ffffff' : '#10b981'
           ctx.font = 'bold 20px VT323, monospace'
           ctx.fillText(entry.name, leaderboardLeft + 40, y)
 
-          ctx.fillStyle = entry.score === scoreValue ? '#ffffff' : '#10b981'
+          ctx.fillStyle = entry.score === score ? '#ffffff' : '#10b981'
           ctx.font = '20px VT323, monospace'
           ctx.textAlign = 'right'
           ctx.fillText(entry.score.toString().padStart(4, '0'), leaderboardLeft + leaderboardWidth - 10, y)
         }
       }
 
-      if (shouldShowNameInput) {
-        const leaderboardHeight = leaderboardData.length > 0 ? Math.min(leaderboardData.length, 8) * 25 + 50 : 0
+      if (showNameInput) {
+        const leaderboardHeight = leaderboard.length > 0 ? Math.min(leaderboard.length, 8) * 25 + 50 : 0
         const nameInputY = borderTop + 170 + leaderboardHeight + 20
         ctx.fillStyle = '#10b981'
         ctx.font = 'bold 32px VT323, monospace'
@@ -451,13 +451,13 @@ export function BackgroundSnakeGame() {
 
         for (let i = 0; i < 3; i++) {
           const x = nameStartX + i * (boxWidth + boxSpacing)
-          ctx.strokeStyle = namePos === i ? '#ffffff' : '#10b981'
-          ctx.lineWidth = namePos === i ? 3 : 2
+          ctx.strokeStyle = nameInputPosition === i ? '#ffffff' : '#10b981'
+          ctx.lineWidth = nameInputPosition === i ? 3 : 2
           ctx.strokeRect(x, nameY - 20, boxWidth, 30)
           ctx.fillStyle = '#10b981'
           ctx.font = 'bold 32px VT323, monospace'
           ctx.textAlign = 'center'
-          ctx.fillText(nameChars[i] ?? 'A', x + boxWidth / 2, nameY)
+          ctx.fillText(playerName[i] ?? 'A', x + boxWidth / 2, nameY)
         }
 
         ctx.fillStyle = '#10b981'
@@ -465,7 +465,7 @@ export function BackgroundSnakeGame() {
         ctx.textAlign = 'center'
         ctx.fillText('↑↓ Change letter  ←→ Move  SPACE Next/Submit', borderLeft + borderWidth / 2, nameInputY + 110)
 
-        if (submitting) {
+        if (isSubmittingScore) {
           ctx.fillStyle = '#ffffff'
           ctx.font = '24px VT323, monospace'
           ctx.textAlign = 'center'
@@ -483,22 +483,23 @@ export function BackgroundSnakeGame() {
       ctx.textAlign = 'center'
       ctx.fillText('ESC to quit', borderLeft + borderWidth / 2, borderTop + borderHeight - 10)
     },
-    [],
+    [isLoadingLeaderboard, leaderboard, nameInputPosition, playerName, score, showNameInput, isSubmittingScore],
   )
 
   const drawStartScreen = useCallback(
-    (
-      ctx: CanvasRenderingContext2D,
-      dimensions: GameBoxDimensions,
-      squareGridSize: number,
-      centerGridX: number,
-      safeYMin: number,
-      showSnakeForStart: boolean,
-      isPlayingState: boolean,
-      gameOverState: boolean,
-    ) => {
-      if (!showSnakeForStart || isPlayingState || gameOverState) return
-      const { gridCellSize, gridOffset, borderLeft, borderTop, borderWidth, borderHeight } = dimensions
+    (ctx: CanvasRenderingContext2D, dimensions: ReturnType<typeof getDimensions>) => {
+      if (isPlaying || gameOver) return
+      const {
+        gridCellSize,
+        gridOffset,
+        borderLeft,
+        borderTop,
+        borderWidth,
+        borderHeight,
+        centerGridX,
+        squareGridSize,
+        safeYMin,
+      } = dimensions
       const cornerRadius = 12
 
       ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
@@ -554,779 +555,74 @@ export function BackgroundSnakeGame() {
       ctx.textAlign = 'center'
       ctx.fillText('ESC to quit', centerXPx, borderTop + borderHeight - 10)
     },
-    [],
+    [isPlaying, gameOver],
   )
 
-  // Start CRT turn-on animation (mirror of power-down: point → horizontal line → full frame)
-  const startCrtAnimation = useCallback(() => {
-    // Ensure CRT is on for opening animation
-    setIsCrtOff(false)
-    // Get all dimensions from centralized calculation
-    const { centerX, centerY, borderWidth, borderHeight } = getGameBoxDimensions()
-
-    setCrtAnimation({
-      isAnimating: true,
-      centerX,
-      centerY,
-      horizontalWidth: 0,
-      verticalHeight: 0,
-      opacity: 0,
-      glowIntensity: 0,
-    })
-
-    // Animation timeline - mirror the power-down feel
-    const pointDuration = 300 // Hold a single point briefly
-    const horizontalDuration = 700 // Expand to a horizontal line
-    const verticalDuration = 500 // Then expand vertically to full frame
-    const duration = pointDuration + horizontalDuration + verticalDuration // 1500ms total
-    const glowDuration = 1200 // Strong glow early, then soften
-
-    const startTime = Date.now()
-
-    const animate = () => {
-      const elapsed = Date.now() - startTime
-      const progress = Math.min(elapsed / duration, 1)
-
-      // Phase 1: Single point in center (0-0.3s)
-      const pointProgress = Math.min(elapsed / pointDuration, 1)
-      const pointSize = pointProgress * 8 // Larger, more visible point
-
-      // Phase 2: Horizontal line grows (0.3-1.0s)
-      const horizontalStart = pointDuration
-      const horizontalProgress = Math.max(0, Math.min((elapsed - horizontalStart) / horizontalDuration, 1))
-      // Ease-out for smoother horizontal expansion
-      const horizontalEased = 1 - Math.pow(1 - horizontalProgress, 3)
-      const horizontalWidth = horizontalEased * borderWidth
-
-      // Phase 3: Vertical expansion (1.0-1.5s)
-      const verticalStart = pointDuration + horizontalDuration
-      const verticalProgress = Math.max(0, Math.min((elapsed - verticalStart) / verticalDuration, 1))
-      // Ease-out for smoother vertical expansion
-      const verticalEased = 1 - Math.pow(1 - verticalProgress, 2)
-      const verticalHeight = verticalEased * borderHeight
-
-      // Opacity animation: ramp in smoothly across most of timeline
-      const opacityStart = 100
-      const opacityProgress = Math.max(0, Math.min((elapsed - opacityStart) / (duration - 200), 1))
-      // Ease-out for smoother opacity transition
-      const opacityEased = 1 - Math.pow(1 - opacityProgress, 2)
-      const opacity = Math.min(opacityEased, 1)
-
-      // Glow intensity: strong early (point/line), then soften
-      const glowProgress = Math.min(elapsed / glowDuration, 1)
-      const glowIntensity = glowProgress < 0.5 ? 0.9 : 0.9 * (1 - (glowProgress - 0.5) / 0.5)
-
-      setCrtAnimation({
-        isAnimating: progress < 1,
-        centerX,
-        centerY,
-        horizontalWidth: Math.max(horizontalWidth, pointSize),
-        verticalHeight: Math.max(verticalHeight, pointSize),
-        opacity,
-        glowIntensity,
-      })
-
-      if (progress < 1) {
-        requestAnimationFrame(animate)
-      } else {
-        // Animation completed - set final state smoothly
-        setCrtAnimation(prev => ({
-          ...prev,
-          isAnimating: false,
-          horizontalWidth: borderWidth,
-          verticalHeight: borderHeight,
-          opacity: 1,
-          glowIntensity: 0.3, // Maintain subtle glow for consistency
-        }))
-      }
-    }
-
-    requestAnimationFrame(animate)
-
-    // Fallback timeout to ensure game becomes visible
-    const fallbackTimeout = setTimeout(() => {
-      setCrtAnimation(prev => ({
-        ...prev,
-        isAnimating: false,
-        horizontalWidth: borderWidth,
-        verticalHeight: borderHeight,
-        opacity: 1,
-        glowIntensity: 0.3, // Maintain subtle glow for consistency
-      }))
-    }, 1600) // 1.6s fallback (0.6s delay + 1.5s animation)
-
-    return () => clearTimeout(fallbackTimeout)
-  }, [getGameBoxDimensions])
-
-  // Start CRT turn-off animation (reverse)
-  const startCrtCloseAnimation = useCallback(() => {
-    if (crtCloseRef.current.isClosing) return
-
-    const { centerX, centerY, borderWidth, borderHeight } = getGameBoxDimensions()
-
-    // Initialize to full open state
-    setCrtAnimation({
-      isAnimating: true,
-      centerX,
-      centerY,
-      horizontalWidth: borderWidth,
-      verticalHeight: borderHeight,
-      opacity: 1,
-      glowIntensity: 0.3,
-    })
-
-    // Close timeline tuned to read as CRT-off:
-    // 1) Vertical collapse to a horizontal line (fast)
-    // 2) Horizontal collapse to a bright center point (medium)
-    // 3) Point flickers and fades out (short)
-    const verticalDuration = 500
-    const horizontalDuration = 700
-    const pointDuration = 300
-
-    const startTime = Date.now()
-    crtCloseRef.current.isClosing = true
-    setIsCrtClosing(true)
-    // Reset signal
-    let hasSignaledReturn = false
-
-    const animate = () => {
-      const elapsed = Date.now() - startTime
-      const total = verticalDuration + horizontalDuration + pointDuration
-
-      // Phase 1: Vertical collapse
-      const verticalProgress = Math.min(elapsed / verticalDuration, 1)
-      const verticalEased = 1 - Math.pow(1 - verticalProgress, 2)
-      const currentVerticalHeight = (1 - verticalEased) * borderHeight
-
-      // Phase 2: Horizontal collapse
-      const horizontalElapsed = Math.max(0, elapsed - verticalDuration)
-      const horizontalProgress = Math.min(horizontalElapsed / horizontalDuration, 1)
-      const horizontalEased = 1 - Math.pow(1 - horizontalProgress, 3)
-      const currentHorizontalWidth = (1 - horizontalEased) * borderWidth
-
-      // Phase 3: Point flicker/fade
-      const pointElapsed = Math.max(0, elapsed - verticalDuration - horizontalDuration)
-      const pointProgress = Math.min(pointElapsed / pointDuration, 1)
-      const pointSize = (1 - pointProgress) * 8
-
-      // Trigger content return late in the horizontal collapse (>=70%), before the line disappears
-      const signalDuringLine = verticalProgress >= 1 && horizontalProgress >= 0.7 && pointElapsed === 0
-      if (!hasSignaledReturn && signalDuringLine) {
-        closeAnimation()
-        hasSignaledReturn = true
-      }
-
-      // Opacity: keep solid until point phase, then fade
-      const opacityProgress = Math.min(elapsed / total, 1)
-      const opacity =
-        opacityProgress < (verticalDuration + horizontalDuration) / total
-          ? 1
-          : 1 - (opacityProgress - (verticalDuration + horizontalDuration) / total) / (pointDuration / total)
-
-      // Glow: strong throughout, brief peak at the start of point phase, then decay
-      let glowIntensity = 0.6
-      if (pointElapsed > 0 && pointElapsed < 120) {
-        glowIntensity = 1
-      } else if (pointElapsed >= 120) {
-        glowIntensity = Math.max(0, 1 - (pointElapsed - 120) / (pointDuration - 120))
-      }
-
-      setCrtAnimation(prev => ({
-        ...prev,
-        isAnimating: elapsed < total,
-        centerX,
-        centerY,
-        horizontalWidth: Math.max(currentHorizontalWidth, pointSize),
-        verticalHeight: Math.max(currentVerticalHeight, pointSize),
-        opacity: Math.max(0, Math.min(1, opacity)),
-        glowIntensity,
-      }))
-
-      if (elapsed < total) {
-        crtCloseRef.current.rafId = requestAnimationFrame(animate)
-      } else {
-        crtCloseRef.current.isClosing = false
-        crtCloseRef.current.rafId = null
-        setIsCrtClosing(false)
-        setIsCrtOff(true)
-        finishCloseAnimation()
-      }
-    }
-
-    crtCloseRef.current.rafId = requestAnimationFrame(animate)
-  }, [getGameBoxDimensions, finishCloseAnimation, closeAnimation])
-
-  // If the provider enters returning state for any reason, ensure CRT close runs
-  useEffect(() => {
-    if (isReturning) {
-      startCrtCloseAnimation()
-    }
-  }, [isReturning, startCrtCloseAnimation])
-
-  // Start CRT animation immediately when component mounts (simultaneous with Konami)
-  useEffect(() => {
-    startCrtAnimation()
-  }, [startCrtAnimation])
-
-  // Generate random food position
-  const generateFood = useCallback(
-    (gridWidth: number, gridHeight: number): { position: Position; isGolden: boolean } => {
-      const { safeYMin, safeYMax, safeXMin, safeXMax } = getSafeBoundaries()
-
-      // Golden apple chance
-      const isGolden = Math.random() < GOLDEN_APPLE_CHANCE
-
-      // Ensure we have valid safe range
-      if (safeYMin >= safeYMax || safeXMin >= safeXMax) {
-        // Fallback to full grid if calculation fails
-        const newFood = {
-          x: Math.floor(Math.random() * gridWidth),
-          y: Math.floor(Math.random() * gridHeight),
-        }
-
-        const isOnSnake = snake.some(segment => segment.x === newFood.x && segment.y === newFood.y)
-        if (isOnSnake) {
-          return generateFood(gridWidth, gridHeight)
-        }
-        return { position: newFood, isGolden }
-      }
-
-      const newFood = {
-        x: safeXMin + Math.floor(Math.random() * (safeXMax - safeXMin + 1)),
-        y: safeYMin + Math.floor(Math.random() * (safeYMax - safeYMin + 1)),
-      }
-
-      // Make sure food doesn't spawn on snake
-      const isOnSnake = snake.some(segment => segment.x === newFood.x && segment.y === newFood.y)
-      if (isOnSnake) {
-        return generateFood(gridWidth, gridHeight)
-      }
-
-      return { position: newFood, isGolden }
-    },
-    [snake, getSafeBoundaries],
-  )
-
-  // Initialize game
-  const initGame = useCallback(() => {
-    const { gridWidth, gridHeight } = getGridDimensions()
-    const { safeYMin, safeYMax, safeXMin, safeXMax } = getSafeBoundaries()
-
-    // Start snake in safe area
-    const startX = Math.max(safeXMin + 2, Math.min(5, safeXMax - 2))
-    const startY = Math.max(safeYMin + 2, Math.min(5, safeYMax - 2))
-    setSnake([{ x: startX, y: startY }])
-
-    const foodData = generateFood(gridWidth, gridHeight)
-    setFood(foodData.position)
-    setIsGoldenApple(foodData.isGolden)
-    foodRef.current = foodData.position
-    isGoldenAppleRef.current = foodData.isGolden
-
-    setDirection('RIGHT')
-    setGameOver(false)
-    setScore(0)
-    setIsPlaying(true)
-    setLeaderboard([])
-    setIsLoadingLeaderboard(false)
-    setShowNameInput(false)
-    setPlayerName(['A', 'A', 'A'])
-    setNameInputPosition(0)
-    setIsSubmittingScore(false)
-    setShouldSubmitScore(false)
-    lastFoodEatenRef.current = null
-  }, [generateFood, getGridDimensions, getSafeBoundaries])
-
-  // Check if score qualifies for leaderboard
-  const checkScoreQualification = useCallback(async (currentScore: number) => {
-    try {
-      console.log('Checking score qualification for score:', currentScore)
-      const response = await fetch(`/api/scores/check?score=${currentScore}`)
-      const parsed = checkScoreResponseSchema.safeParse(await response.json())
-      if (!parsed.success) {
-        console.error('Invalid qualification response:', parsed.error)
-        return false
-      }
-      console.log('Qualification response:', parsed.data)
-      return parsed.data.qualifies
-    } catch (error) {
-      console.error('Error checking score qualification:', error)
-      return false
-    }
-  }, [])
-
-  // Fetch leaderboard data
-  const fetchLeaderboard = useCallback(async () => {
-    setIsLoadingLeaderboard(true)
-    try {
-      const response = await fetch('/api/scores')
-      const data = (await response.json()) as { success: boolean; leaderboard: LeaderboardEntry[] }
-      if (data.success) {
-        setLeaderboard(data.leaderboard)
-      }
-    } catch (error) {
-      console.error('Error fetching leaderboard:', error)
-    } finally {
-      setIsLoadingLeaderboard(false)
-    }
-  }, [])
-
-  // Handle name input navigation
-  const handleNameInputKey = useCallback(
+  // Keyboard orchestration for overlay/name input
+  const onNameInputKey = useCallback(
     (e: KeyboardEvent) => {
       if (!showNameInput) return
-
-      switch (e.key) {
-        case 'ArrowUp':
-          e.preventDefault()
-          setPlayerName(prev => {
-            const newName = [...prev]
-            const currentChar = newName[nameInputPosition]
-            if (!currentChar) return newName
-            const newChar = currentChar === 'Z' ? 'A' : String.fromCharCode(currentChar.charCodeAt(0) + 1)
-            newName[nameInputPosition] = newChar
-            return newName
-          })
-          break
-        case 'ArrowDown':
-          e.preventDefault()
-          setPlayerName(prev => {
-            const newName = [...prev]
-            const currentChar = newName[nameInputPosition]
-            if (!currentChar) return newName
-            const newChar = currentChar === 'A' ? 'Z' : String.fromCharCode(currentChar.charCodeAt(0) - 1)
-            newName[nameInputPosition] = newChar
-            return newName
-          })
-          break
-        case 'ArrowLeft':
-          e.preventDefault()
-          setNameInputPosition(prev => Math.max(0, prev - 1))
-          break
-        case 'ArrowRight':
-          e.preventDefault()
+      if (e.key === ' ') {
+        e.preventDefault()
+        if (nameInputPosition < 2) {
           setNameInputPosition(prev => Math.min(2, prev + 1))
-          break
-        case ' ':
-          e.preventDefault()
-          if (nameInputPosition < 2) {
-            setNameInputPosition(prev => prev + 1)
-          } else {
-            // Set flag to submit score after state updates are processed
-            setShouldSubmitScore(true)
-          }
-          break
+        } else {
+          void submitScore(score)
+        }
+        return
       }
+      handleNameInputKey(e)
     },
-    [showNameInput, nameInputPosition],
+    [showNameInput, nameInputPosition, setNameInputPosition, submitScore, score, handleNameInputKey],
   )
 
-  // Submit score to leaderboard
-  const handleScoreSubmit = useCallback(async () => {
-    if (isSubmittingScore) return
-
-    setIsSubmittingScore(true)
-    try {
-      const response = await fetch('/api/scores', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: playerName.join(''),
-          score,
-        }),
-      })
-
-      const data = (await response.json()) as { success: boolean; message: string; leaderboard?: LeaderboardEntry[] }
-
-      if (data.success) {
-        // Update leaderboard with new data
-        if (data.leaderboard) {
-          setLeaderboard(data.leaderboard)
-        }
-        // Keep name input visible briefly to show the updated leaderboard
-        setTimeout(() => {
-          setShowNameInput(false)
-        }, 1000)
-      } else {
-        console.error('Failed to submit score:', data.message)
-        setShowNameInput(false)
-      }
-    } catch (error) {
-      console.error('Error submitting score:', error)
-      setShowNameInput(false)
-    } finally {
-      setIsSubmittingScore(false)
-    }
-  }, [playerName, score, isSubmittingScore])
-
-  // Handle game over logic
-  const handleGameOver = useCallback(async () => {
-    // Fetch leaderboard first
-    await fetchLeaderboard()
-
-    // Check if score qualifies
-    const qualifies = await checkScoreQualification(score)
-
-    if (qualifies) {
-      setShowNameInput(true)
-      setPlayerName(['A', 'A', 'A'])
-      setNameInputPosition(0)
-    }
-  }, [score, fetchLeaderboard, checkScoreQualification])
-
-  // Handle score submission when flag is set
+  // Body class for grid lights
   useEffect(() => {
-    if (shouldSubmitScore && !isSubmittingScore) {
-      setShouldSubmitScore(false)
-      void handleScoreSubmit()
-    }
-  }, [shouldSubmitScore, isSubmittingScore, handleScoreSubmit])
-
-  // Handle keyboard input
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (showNameInput) {
-        handleNameInputKey(e)
-        return
-      }
-
-      if (!isPlaying) return
-
-      switch (e.key) {
-        case 'ArrowUp':
-          if (direction !== 'DOWN') setDirection('UP')
-          break
-        case 'ArrowDown':
-          if (direction !== 'UP') setDirection('DOWN')
-          break
-        case 'ArrowLeft':
-          if (direction !== 'RIGHT') setDirection('LEFT')
-          break
-        case 'ArrowRight':
-          if (direction !== 'LEFT') setDirection('RIGHT')
-          break
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyPress)
-    return () => window.removeEventListener('keydown', handleKeyPress)
-  }, [direction, isPlaying, showNameInput, handleNameInputKey, handleGameOver])
-
-  // Create moveSnake function that can be reused
-  const moveSnake = useCallback(() => {
-    const { gridWidth, gridHeight } = getGridDimensions()
-
-    setSnake(prevSnake => {
-      if (!prevSnake[0]) return prevSnake
-      const head: Position = { x: prevSnake[0].x, y: prevSnake[0].y }
-
-      // Move head based on direction
-      switch (direction) {
-        case 'UP':
-          head.y -= 1
-          break
-        case 'DOWN':
-          head.y += 1
-          break
-        case 'LEFT':
-          head.x -= 1
-          break
-        case 'RIGHT':
-          head.x += 1
-          break
-      }
-
-      // Get current grid dimensions for accurate boundary detection
-      const { safeYMin, safeYMax, safeXMin, safeXMax } = getSafeBoundaries()
-
-      // Check boundaries - walls kill the snake
-      if (head.x < safeXMin || head.x > safeXMax || head.y < safeYMin || head.y > safeYMax) {
-        setGameOver(true)
-        setIsPlaying(false)
-        playGameOverSound()
-        void handleGameOver()
-        return prevSnake
-      }
-
-      // Check self collision
-      if (prevSnake.some(segment => segment.x === head.x && segment.y === head.y)) {
-        setGameOver(true)
-        setIsPlaying(false)
-        playGameOverSound()
-        void handleGameOver()
-        return prevSnake
-      }
-
-      const newSnake = [head, ...prevSnake]
-
-      // Check food collision using current food state
-      if (head.x === food.x && head.y === food.y) {
-        // Prevent double scoring by checking if we already ate this food
-        const currentFood = { x: food.x, y: food.y }
-        if (
-          lastFoodEatenRef.current &&
-          lastFoodEatenRef.current.x === currentFood.x &&
-          lastFoodEatenRef.current.y === currentFood.y
-        ) {
-          // Already processed this food, just return snake without growing
-          return newSnake
-        }
-
-        // Mark this food as eaten
-        lastFoodEatenRef.current = currentFood
-
-        const points = isGoldenApple ? 50 : 10
-        setScore(prev => {
-          const newScore = prev + points
-          playScoreSound(newScore)
-          return newScore
-        })
-
-        const foodData = generateFood(gridWidth, gridHeight)
-        setFood(foodData.position)
-        setIsGoldenApple(foodData.isGolden)
-        foodRef.current = foodData.position
-        isGoldenAppleRef.current = foodData.isGolden
-
-        // Don't remove tail since we ate food
-        return newSnake
-      } else {
-        // Clear the last food eaten when we're not on food
-        lastFoodEatenRef.current = null
-
-        // Remove tail if no food eaten
-        newSnake.pop()
-        return newSnake
-      }
-    })
-  }, [
-    direction,
-    generateFood,
-    getGridDimensions,
-    getSafeBoundaries,
-    food,
-    isGoldenApple,
-    handleGameOver,
-  ])
-
-  // Game loop
-  useEffect(() => {
-    if (!isPlaying || gameOver) return
-
-    // Clear any existing interval
-    if (gameLoopRef.current) {
-      clearInterval(gameLoopRef.current)
-    }
-
-    // Calculate current speed based on snake length
-    const currentSpeed = getCurrentGameSpeed(snake.length)
-    gameLoopRef.current = window.setInterval(moveSnake, currentSpeed)
-    return () => {
-      if (gameLoopRef.current) {
-        clearInterval(gameLoopRef.current)
-      }
-    }
-  }, [
-    gameOver,
-    isPlaying,
-    snake.length,
-    getCurrentGameSpeed,
-    moveSnake,
-    getGridDimensions,
-    getSafeBoundaries,
-  ])
-
-  // Draw game
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    // Get all dimensions from centralized calculation
-    const gameBox = getGameBoxDimensions()
-    const { centerGridX, safeYMin, squareGridSize } = gameBox
-
-    // Set canvas size to window size
-    canvas.width = window.innerWidth
-    canvas.height = window.innerHeight
-
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-    // When CRT is fully off, stop drawing frame/background
-    if (isCrtOff) {
-      ctx.restore()
-      return
-    }
-
-    // Apply CRT animation effects
-    ctx.save()
-
-    // Apply opacity. When closing, let opacity drive the collapse visibility, otherwise maintain minimum
-    ctx.globalAlpha = Math.max(crtAnimation.opacity, isCrtClosing ? 0 : 0.1)
-
-    // Always draw CRT frame/background. Game elements inside are gated by `showSnake`.
-
-    // Create CRT mask during animation (expanded to account for glow)
-    if (crtAnimation.isAnimating || isCrtClosing) {
-      const { centerX, centerY, horizontalWidth, verticalHeight } = crtAnimation
-
-      // Expand clipping area to account for glow effect (20px on each side)
-      const glowPadding = 20
-      const rectX = centerX - horizontalWidth / 2 - glowPadding
-      const rectY = centerY - verticalHeight / 2 - glowPadding
-      const rectWidth = horizontalWidth + glowPadding * 2
-      const rectHeight = verticalHeight + glowPadding * 2
-
-      ctx.beginPath()
-      ctx.rect(rectX, rectY, rectWidth, rectHeight)
-      ctx.clip()
-    }
-
-    // Draw border and background inside CRT mask
-    drawGameBorder(ctx, gameBox, showSnake)
-
-    // Only draw game elements when snake game is ready to show
-    if (showSnake) {
-      drawSnake(ctx, snake, gameBox)
-      drawFood(ctx, food, isGoldenApple, gameBox)
-    }
-
-    // CRT effects and glow
-    drawCRTEffects(ctx, gameBox, crtAnimation, resolvedTheme, showSnake)
-
-    // Draw game over overlay (only when snake game is ready)
-    if (showSnake && gameOver) {
-      drawGameOverOverlay(
-        ctx,
-        score,
-        leaderboard,
-        isLoadingLeaderboard,
-        showNameInput,
-        playerName,
-        nameInputPosition,
-        isSubmittingScore,
-        gameBox,
-      )
-    }
-
-    // Draw start screen (only when snake game is ready)
-    if (showSnake && !isPlaying && !gameOver) {
-      drawStartScreen(ctx, gameBox, squareGridSize, centerGridX, safeYMin, showSnake, isPlaying, gameOver)
-    }
-
-    // Restore context after CRT effects
-    ctx.restore()
-  }, [
-    snake,
-    food,
-    gameOver,
-    isPlaying,
-    score,
-    getGameBoxDimensions,
-    isGoldenApple,
-    crtAnimation,
-    showSnake,
-    resolvedTheme,
-    leaderboard,
-    isLoadingLeaderboard,
-    showNameInput,
-    playerName,
-    nameInputPosition,
-    isSubmittingScore,
-    isCrtClosing,
-    isCrtOff,
-    drawGameBorder,
-    drawSnake,
-    drawFood,
-    drawCRTEffects,
-    drawGameOverOverlay,
-    drawStartScreen,
-  ])
-
-  // Handle restart and resize
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (typeof e.preventDefault === 'function') e.preventDefault()
-        // Start reverse CRT animation and trigger provider close
-        setIsPlaying(false)
-        startCrtCloseAnimation()
-        return
-      }
-      if (e.key === ' ') {
-        // Don't restart if we're in name input mode
-        if (showNameInput) return
-
-        if (gameOver || !isPlaying) {
-          initGame()
-        }
-      }
-    }
-
-    const handleResize = () => {
-      // Redraw on resize
-      if (canvasRef.current) {
-        const canvas = canvasRef.current
-        const ctx = canvas.getContext('2d')
-        if (ctx) {
-          canvas.width = window.innerWidth
-          canvas.height = window.innerHeight
-        }
-      }
-      // Game loop will automatically restart due to windowSize state change
-    }
-
-    window.addEventListener('keydown', handleKeyPress)
-    window.addEventListener('resize', handleResize)
-    const rafIdAtSubscribe = crtCloseRef.current.rafId
-    return () => {
-      window.removeEventListener('keydown', handleKeyPress)
-      window.removeEventListener('resize', handleResize)
-      if (rafIdAtSubscribe) cancelAnimationFrame(rafIdAtSubscribe)
-    }
-  }, [gameOver, isPlaying, initGame, showNameInput, startCrtCloseAnimation])
-
-  // Control grid lights visibility when game is playing
-  useEffect(() => {
-    if (isPlaying) {
-      document.body.classList.add('snake-game-active')
-      console.log('Snake game active - grid lights should be hidden')
-    } else {
-      document.body.classList.remove('snake-game-active')
-      console.log('Snake game inactive - grid lights should be visible')
-    }
-
-    // Cleanup on unmount
-    return () => {
-      document.body.classList.remove('snake-game-active')
-    }
+    if (isPlaying) document.body.classList.add('snake-game-active')
+    else document.body.classList.remove('snake-game-active')
+    return () => document.body.classList.remove('snake-game-active')
   }, [isPlaying])
 
   return (
     <>
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0 z-10"
-        style={{ pointerEvents: isPlaying ? 'none' : 'auto' }}
+      <SnakeCanvas
+        snake={snake}
+        food={food}
+        isGoldenApple={isGoldenApple}
+        crtAnimation={crtAnimation}
+        gameBox={gameBox}
+        showSnake={showSnake && !isCrtOff}
+        theme={resolvedTheme}
+        isPlaying={isPlaying}
+        gameOver={gameOver}
+        drawGameOverOverlay={drawGameOverOverlay}
+        drawStartScreen={drawStartScreen}
       />
 
-      {/* Floating score counter */}
+      <GameOverlay
+        isPlaying={isPlaying}
+        gameOver={gameOver}
+        score={score}
+        showNameInput={showNameInput}
+        playerName={playerName}
+        nameInputPosition={nameInputPosition}
+        isSubmittingScore={isSubmittingScore}
+        dimensions={gameBox}
+        onRestart={() => initGame()}
+        onEsc={() => {
+          setIsPlaying(false)
+          startCrtCloseAnimation()
+        }}
+        onNameInputKey={onNameInputKey}
+      />
+
       {isPlaying &&
         (() => {
-          const { borderLeft, borderTop } = getGameBoxDimensions()
-
+          const { borderLeft, borderTop } = gameBox
           return (
             <div
               className="absolute z-50 bg-black/40 text-white px-4 py-2 rounded-lg border border-green-500/30 shadow-lg"
-              style={{
-                top: `${borderTop + 8}px`,
-                left: `${borderLeft + 8}px`,
-              }}>
+              style={{ top: `${borderTop + 8}px`, left: `${borderLeft + 8}px` }}>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                 <span className="text-lg font-bold text-green-400" style={{ fontFamily: 'VT323, monospace' }}>
