@@ -79,7 +79,7 @@ export function BackgroundSnakeGame() {
     return Math.floor(80 / gridCellSize) * gridCellSize + 20
   }, [getGridDimensions])
 
-  // Calculate safe play area boundaries that match the visual border
+  // Calculate safe play area boundaries that match the visual border (square)
   const getSafeBoundaries = useCallback(() => {
     const { gridCellSize, gridOffset } = getGridDimensions()
     const headerHeight = getHeaderHeight()
@@ -97,11 +97,22 @@ export function BackgroundSnakeGame() {
     const safeYMin = baseYMin + 1 // Top inset
     const safeYMax = baseYMax - 1 // Bottom inset
     const safeXMin = 1 // Left inset
-    const safeXMax = Math.floor(width / gridCellSize) - 2 // Right stays the same
+
+    // Calculate available height and width for square
+    const availableHeight = safeYMax - safeYMin + 1
+    const maxWidth = Math.floor(width / gridCellSize) - 2 // Right boundary
+    const availableWidth = maxWidth - safeXMin + 1
+
+    // Make the play area square by using the smaller dimension
+    const squareSize = Math.min(availableWidth, availableHeight)
+
+    // Recalculate safe boundaries based on square size
+    const safeXMax = safeXMin + squareSize - 1
+    const safeYMaxAdjusted = safeYMin + squareSize - 1
 
     return {
       safeYMin,
-      safeYMax,
+      safeYMax: safeYMaxAdjusted,
       safeXMin,
       safeXMax,
       actualHeaderHeight,
@@ -110,16 +121,56 @@ export function BackgroundSnakeGame() {
     }
   }, [getGridDimensions, getHeaderHeight, windowSize])
 
+  // Centralized game box sizing calculation
+  const getGameBoxDimensions = useCallback(() => {
+    const { gridCellSize, gridOffset } = getGridDimensions()
+    const { safeYMin, safeYMax } = getSafeBoundaries()
+    const totalGridWidth = Math.floor((windowSize.width || window.innerWidth) / gridCellSize)
+    const squareGridSize = safeYMax - safeYMin + 1
+    const centerGridX = Math.floor((totalGridWidth - squareGridSize) / 2)
+
+    // Calculate all dimensions
+    const squareSize = (safeYMax - safeYMin + 1) * gridCellSize
+    const borderLeft = centerGridX * gridCellSize + gridOffset
+    const borderTop = safeYMin * gridCellSize + gridOffset
+    const borderBottom = (safeYMax + 1) * gridCellSize + gridOffset
+    const borderWidth = squareSize
+    const borderHeight = borderBottom - borderTop
+
+    // Calculate center points
+    const centerX = borderLeft + borderWidth / 2
+    const centerY = borderTop + borderHeight / 2
+
+    return {
+      // Grid info
+      gridCellSize,
+      gridOffset,
+      centerGridX,
+      squareGridSize,
+
+      // Dimensions
+      squareSize,
+      borderLeft,
+      borderTop,
+      borderBottom,
+      borderWidth,
+      borderHeight,
+
+      // Centers
+      centerX,
+      centerY,
+
+      // Safe boundaries for game logic
+      safeYMin,
+      safeYMax,
+      safeXMin: getSafeBoundaries().safeXMin,
+    }
+  }, [getGridDimensions, getSafeBoundaries, windowSize])
+
   // Start CRT turn-on animation
   const startCrtAnimation = useCallback(() => {
-    // Get the center of the play area for the animation
-    const { gridCellSize, gridOffset, gridWidth } = getGridDimensions()
-    const { safeYMin, safeYMax } = getSafeBoundaries()
-
-    const playAreaWidth = gridWidth * gridCellSize
-    const playAreaHeight = (safeYMax - safeYMin + 1) * gridCellSize
-    const centerX = 1 * gridCellSize + gridOffset + playAreaWidth / 2
-    const centerY = safeYMin * gridCellSize + gridOffset + playAreaHeight / 2
+    // Get all dimensions from centralized calculation
+    const { centerX, centerY, borderWidth, borderHeight } = getGameBoxDimensions()
 
     setCrtAnimation({
       isAnimating: true,
@@ -153,14 +204,14 @@ export function BackgroundSnakeGame() {
       const horizontalProgress = Math.max(0, Math.min((elapsed - horizontalStart) / horizontalDuration, 1))
       // Ease-out for smoother horizontal expansion
       const horizontalEased = 1 - Math.pow(1 - horizontalProgress, 3)
-      const horizontalWidth = horizontalEased * playAreaWidth
+      const horizontalWidth = horizontalEased * borderWidth
 
       // Phase 3: Vertical expansion (0.6-1.6s)
       const verticalStart = pointDuration + horizontalDuration
       const verticalProgress = Math.max(0, Math.min((elapsed - verticalStart) / verticalDuration, 1))
       // Ease-out for smoother vertical expansion
       const verticalEased = 1 - Math.pow(1 - verticalProgress, 2)
-      const verticalHeight = verticalEased * playAreaHeight
+      const verticalHeight = verticalEased * borderHeight
 
       // Opacity animation (starts at 0.1s, reaches 1 at 1.2s)
       const opacityStart = 100
@@ -191,8 +242,8 @@ export function BackgroundSnakeGame() {
         setCrtAnimation(prev => ({
           ...prev,
           isAnimating: false,
-          horizontalWidth: playAreaWidth,
-          verticalHeight: playAreaHeight,
+          horizontalWidth: borderWidth,
+          verticalHeight: borderHeight,
           opacity: 1,
           glowIntensity: 0.3, // Maintain subtle glow for consistency
         }))
@@ -206,15 +257,15 @@ export function BackgroundSnakeGame() {
       setCrtAnimation(prev => ({
         ...prev,
         isAnimating: false,
-        horizontalWidth: playAreaWidth,
-        verticalHeight: playAreaHeight,
+        horizontalWidth: borderWidth,
+        verticalHeight: borderHeight,
         opacity: 1,
         glowIntensity: 0.3, // Maintain subtle glow for consistency
       }))
     }, 1400) // 1.4 seconds fallback (0.6s delay + 0.8s animation)
 
     return () => clearTimeout(fallbackTimeout)
-  }, [getGridDimensions, getSafeBoundaries])
+  }, [getGameBoxDimensions])
 
   // Start CRT animation immediately when component mounts (simultaneous with Konami)
   useEffect(() => {
@@ -431,7 +482,10 @@ export function BackgroundSnakeGame() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const { gridCellSize, gridOffset, gridWidth } = getGridDimensions()
+    // Get all dimensions from centralized calculation
+    const gameBox = getGameBoxDimensions()
+    const { gridCellSize, gridOffset, borderLeft, borderTop, borderWidth, borderHeight, centerGridX, safeXMin } =
+      gameBox
 
     // Set canvas size to window size
     canvas.width = window.innerWidth
@@ -462,20 +516,11 @@ export function BackgroundSnakeGame() {
       ctx.clip()
     }
 
-    // Draw play area border with enhanced styling
-    const playAreaWidth = gridWidth * gridCellSize
+    // Draw play area border with enhanced styling (square, centered)
     const cornerRadius = 12
-    const { safeYMin, safeYMax } = getSafeBoundaries()
-
-    // Align border to grid like snake and food, with top/bottom moved out by 1 grid
-    const borderTop = safeYMin * gridCellSize + gridOffset
-    const borderBottom = (safeYMax + 1) * gridCellSize + gridOffset
-    const borderHeight = borderBottom - borderTop
-    const borderLeft = 1 * gridCellSize + gridOffset
-    const borderWidth = playAreaWidth - gridCellSize
 
     // Create gradient for border
-    const gradient = ctx.createLinearGradient(borderLeft, borderTop, borderLeft + borderWidth, borderBottom)
+    const gradient = ctx.createLinearGradient(borderLeft, borderTop, borderLeft + borderWidth, borderTop + borderHeight)
     gradient.addColorStop(0, 'rgba(16, 185, 129, 0.8)')
     gradient.addColorStop(0.5, 'rgba(34, 197, 94, 0.6)')
     gradient.addColorStop(1, 'rgba(16, 185, 129, 0.8)')
@@ -506,17 +551,17 @@ export function BackgroundSnakeGame() {
 
     // Only draw game elements when snake game is ready to show
     if (showSnake) {
-      // Draw snake aligned with background grid
+      // Draw snake aligned with centered square grid
       snake.forEach((segment, index) => {
-        const x = segment.x * gridCellSize + gridOffset
+        const x = (centerGridX + segment.x - safeXMin) * gridCellSize + gridOffset
         const y = segment.y * gridCellSize + gridOffset
 
         ctx.fillStyle = index === 0 ? '#10b981' : '#34d399' // Head is brighter
         ctx.fillRect(x + 2, y + 2, gridCellSize - 4, gridCellSize - 4)
       })
 
-      // Draw food aligned with background grid
-      const foodX = food.x * gridCellSize + gridOffset
+      // Draw food aligned with centered square grid
+      const foodX = (centerGridX + food.x - safeXMin) * gridCellSize + gridOffset
       const foodY = food.y * gridCellSize + gridOffset
       ctx.fillStyle = isGoldenApple ? '#fbbf24' : '#ef4444'
       ctx.fillRect(foodX + 2, foodY + 2, gridCellSize - 4, gridCellSize - 4)
@@ -599,12 +644,12 @@ export function BackgroundSnakeGame() {
       ctx.fillStyle = '#ffffff'
       ctx.font = 'bold 48px monospace'
       ctx.textAlign = 'center'
-      ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 40)
+      ctx.fillText('GAME OVER', borderLeft + borderWidth / 2, borderTop + borderHeight / 2 - 40)
 
       ctx.font = '24px monospace'
-      ctx.fillText(`Score: ${score}`, canvas.width / 2, canvas.height / 2 + 20)
+      ctx.fillText(`Score: ${score}`, borderLeft + borderWidth / 2, borderTop + borderHeight / 2 + 20)
       ctx.font = '18px monospace'
-      ctx.fillText('Press SPACE to restart', canvas.width / 2, canvas.height / 2 + 60)
+      ctx.fillText('Press SPACE to restart', borderLeft + borderWidth / 2, borderTop + borderHeight / 2 + 60)
     }
 
     // Draw start screen (only when snake game is ready)
@@ -618,12 +663,12 @@ export function BackgroundSnakeGame() {
       ctx.fillStyle = '#10b981'
       ctx.font = 'bold 64px monospace'
       ctx.textAlign = 'center'
-      ctx.fillText('SNAKE', canvas.width / 2, canvas.height / 2 - 60)
+      ctx.fillText('SNAKE', borderLeft + borderWidth / 2, borderTop + borderHeight / 2 - 60)
 
       ctx.fillStyle = '#ffffff'
       ctx.font = '24px monospace'
-      ctx.fillText('Use arrow keys to move', canvas.width / 2, canvas.height / 2)
-      ctx.fillText('Press SPACE to start', canvas.width / 2, canvas.height / 2 + 40)
+      ctx.fillText('Use arrow keys to move', borderLeft + borderWidth / 2, borderTop + borderHeight / 2)
+      ctx.fillText('Press SPACE to start', borderLeft + borderWidth / 2, borderTop + borderHeight / 2 + 40)
     }
 
     // Restore context after CRT effects
@@ -634,9 +679,8 @@ export function BackgroundSnakeGame() {
     gameOver,
     isPlaying,
     score,
-    getGridDimensions,
+    getGameBoxDimensions,
     isGoldenApple,
-    getSafeBoundaries,
     crtAnimation,
     showSnake,
   ])
@@ -697,21 +741,26 @@ export function BackgroundSnakeGame() {
       />
 
       {/* Floating score counter */}
-      {isPlaying && (
-        <div
-          className="absolute z-50 bg-black/40 text-white px-4 py-2 rounded-lg border border-green-500/30 shadow-lg"
-          style={{
-            top: `${getSafeBoundaries().safeYMin * getGridDimensions().gridCellSize + getGridDimensions().gridOffset + 8}px`,
-            left: `${getSafeBoundaries().safeXMin * getGridDimensions().gridCellSize + getGridDimensions().gridOffset + 8}px`,
-          }}>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-            <span className="font-mono text-lg font-bold text-green-400">
-              SCORE: <span className="text-white">{score}</span>
-            </span>
-          </div>
-        </div>
-      )}
+      {isPlaying &&
+        (() => {
+          const { borderLeft, borderTop } = getGameBoxDimensions()
+
+          return (
+            <div
+              className="absolute z-50 bg-black/40 text-white px-4 py-2 rounded-lg border border-green-500/30 shadow-lg"
+              style={{
+                top: `${borderTop + 8}px`,
+                left: `${borderLeft + 8}px`,
+              }}>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <span className="font-mono text-lg font-bold text-green-400">
+                  SCORE: <span className="text-white">{score}</span>
+                </span>
+              </div>
+            </div>
+          )
+        })()}
     </>
   )
 }
