@@ -1,3 +1,4 @@
+import { env } from '@/env'
 import { type LeaderboardEntry } from '@/types/leaderboard'
 import { redis } from './redis'
 
@@ -5,6 +6,24 @@ import { redis } from './redis'
 export const LEADERBOARD_KEY = 'snake:leaderboard'
 export const SCORE_QUALIFICATION_THRESHOLD = 100 // Minimum score to qualify
 export const MAX_LEADERBOARD_SIZE = 10
+
+// In-memory fallback for development/local if Redis is unavailable
+const memoryLeaderboard: LeaderboardEntry[] = []
+
+function addScoreToMemory(entry: LeaderboardEntry): number {
+  memoryLeaderboard.push(entry)
+  memoryLeaderboard.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score
+    return a.timestamp - b.timestamp
+  })
+  if (memoryLeaderboard.length > MAX_LEADERBOARD_SIZE) memoryLeaderboard.length = MAX_LEADERBOARD_SIZE
+  const rank = memoryLeaderboard.findIndex(e => e.id === entry.id)
+  return rank >= 0 ? rank + 1 : 0
+}
+
+function getLeaderboardFromMemory(): LeaderboardEntry[] {
+  return [...memoryLeaderboard]
+}
 
 export async function addScoreToLeaderboard(entry: LeaderboardEntry): Promise<number> {
   try {
@@ -55,7 +74,11 @@ export async function addScoreToLeaderboard(entry: LeaderboardEntry): Promise<nu
 
     // Return rank (0-indexed, so add 1) or 0 if rank is null
     return rank !== null ? rank + 1 : 0
-  } catch {
+  } catch (err) {
+    // Fallback to in-memory leaderboard in non-production
+    if (env.NODE_ENV !== 'production') {
+      return addScoreToMemory(entry)
+    }
     throw new Error('Failed to add score to leaderboard')
   }
 }
@@ -87,7 +110,9 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
     }
 
     return leaderboard
-  } catch {
+  } catch (err) {
+    // Fallback to in-memory leaderboard in non-production
+    if (env.NODE_ENV !== 'production') return getLeaderboardFromMemory()
     return [] // Return empty array on error
   }
 }
@@ -131,7 +156,20 @@ export async function getQualificationThreshold(): Promise<number> {
     const threshold = tenthHighestScore + 1 // Must beat the 10th highest score, not just tie it
     // Ensure threshold is never 0 or negative
     return Math.max(threshold, SCORE_QUALIFICATION_THRESHOLD)
-  } catch {
+  } catch (err) {
+    // Fallback: derive threshold from in-memory leaderboard when available
+    if (env.NODE_ENV !== 'production') {
+      const size = memoryLeaderboard.length
+      if (size === 0) return SCORE_QUALIFICATION_THRESHOLD
+      if (size < MAX_LEADERBOARD_SIZE) {
+        const lowest = memoryLeaderboard[memoryLeaderboard.length - 1]
+        if (lowest) return Math.max(lowest.score + 1, SCORE_QUALIFICATION_THRESHOLD)
+        return SCORE_QUALIFICATION_THRESHOLD
+      }
+      const tenth = memoryLeaderboard[Math.min(memoryLeaderboard.length - 1, MAX_LEADERBOARD_SIZE - 1)]
+      if (tenth) return Math.max(tenth.score + 1, SCORE_QUALIFICATION_THRESHOLD)
+      return SCORE_QUALIFICATION_THRESHOLD
+    }
     return SCORE_QUALIFICATION_THRESHOLD // Fallback to default
   }
 }
