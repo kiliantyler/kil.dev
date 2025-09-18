@@ -433,31 +433,27 @@ export function ThemeToggle() {
         )}>
         {hydrated &&
           optionsToShow.map((opt, idx) => (
-            <Tooltip key={opt.value}>
-              <TooltipTrigger asChild>
-                <Button
-                  ref={el => {
-                    optionRefs.current[idx] = el
-                  }}
-                  onClick={e => handleThemeChange(opt.value, e)}
-                  role="menuitem"
-                  aria-label={opt.label}
-                  title={opt.label}
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    'transition-all duration-200 ease-out hover:bg-accent/70 justify-start gap-2',
-                    open ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-2 scale-95',
-                  )}
-                  style={{ transitionDelay: `${idx * 60}ms` }}>
-                  <span className="grid size-8 place-items-center shrink-0">
-                    <opt.Icon className="size-4" />
-                  </span>
-                  <span className="text-xs font-medium text-foreground/90">{opt.label}</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{opt.label}</TooltipContent>
-            </Tooltip>
+            <Button
+              key={opt.value}
+              ref={el => {
+                optionRefs.current[idx] = el
+              }}
+              onClick={e => handleThemeChange(opt.value, e)}
+              role="menuitem"
+              aria-label={opt.label}
+              title={opt.label}
+              variant="ghost"
+              size="sm"
+              className={cn(
+                'transition-all duration-200 ease-out hover:bg-accent/70 justify-start gap-2',
+                open ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-2 scale-95',
+              )}
+              style={{ transitionDelay: `${idx * 60}ms` }}>
+              <span className="grid size-8 place-items-center shrink-0">
+                <opt.Icon className="size-4" />
+              </span>
+              <span className="text-xs font-medium text-foreground/90">{opt.label}</span>
+            </Button>
           ))}
       </div>
     </div>
