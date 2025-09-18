@@ -1,7 +1,12 @@
 'use client'
 
 import { themes, type Theme, type ThemeName } from '@/lib/themes'
-import { getAvailableThemes, getDefaultThemeForNow, SEASONAL_THEMES, getActiveSeasonalThemes } from '@/utils/theme-runtime'
+import {
+  getActiveSeasonalThemes,
+  getAvailableThemes,
+  getDefaultThemeForNow,
+  SEASONAL_THEMES,
+} from '@/utils/theme-runtime'
 import * as React from 'react'
 
 type SystemTheme = 'light' | 'dark'
@@ -31,8 +36,8 @@ function coerceToValidTheme(value: Theme | undefined): Theme {
   const pref = value ?? 'system'
 
   // Check if user has theme tapdance achievement before validating theme availability
-  const hasThemeTapdance = typeof document !== 'undefined' &&
-    document.documentElement.hasAttribute('data-has-theme-tapdance')
+  const hasThemeTapdance =
+    typeof document !== 'undefined' && document.documentElement.hasAttribute('data-has-theme-tapdance')
 
   // If user has achievement, all themes are valid except expired seasonal themes for system
   if (hasThemeTapdance) {
@@ -152,8 +157,8 @@ function applyClasses(preference: Theme, system: SystemTheme | undefined) {
     if (root.classList.contains(other)) remove(other)
 
     // Check if user has theme tapdance achievement
-    const hasThemeTapdance = typeof document !== 'undefined' &&
-      document.documentElement.hasAttribute('data-has-theme-tapdance')
+    const hasThemeTapdance =
+      typeof document !== 'undefined' && document.documentElement.hasAttribute('data-has-theme-tapdance')
 
     // Handle seasonal themes based on requirements
     const activeSeasonalThemes = getActiveSeasonalThemes()
@@ -317,8 +322,8 @@ export function ThemeProvider({
 
     const id = window.setTimeout(() => {
       // Check if user has theme tapdance achievement before checking availability
-      const hasThemeTapdance = typeof document !== 'undefined' &&
-        document.documentElement.hasAttribute('data-has-theme-tapdance')
+      const hasThemeTapdance =
+        typeof document !== 'undefined' && document.documentElement.hasAttribute('data-has-theme-tapdance')
 
       // Skip auto-revert if user has theme tapdance achievement
       if (hasThemeTapdance) {

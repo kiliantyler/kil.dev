@@ -130,7 +130,7 @@ export function initTheme(config: ThemeScriptConfig): void {
       try {
         const cookieRegex = /(?:^|;\s*)kil\.dev_achievements_v1=([^;]+)/
         const cookieMatch = cookieRegex.exec(document.cookie)
-        if (cookieMatch && cookieMatch[1]) {
+        if (cookieMatch?.[1]) {
           const cookieValue = decodeURIComponent(cookieMatch[1])
           if (cookieValue.includes('THEME_TAPDANCE')) {
             hasThemeTapdance = true
@@ -145,8 +145,8 @@ export function initTheme(config: ThemeScriptConfig): void {
     : uniqueStrings([...config.base, ...active.map(s => s.theme)])
 
   const defaultTheme = hasThemeTapdance
-    ? active[0]?.theme ?? null  // Only use active seasonal themes, even when unlocked
-    : active[0]?.theme ?? null
+    ? (active[0]?.theme ?? null) // Only use active seasonal themes, even when unlocked
+    : (active[0]?.theme ?? null)
 
   const isAllowed = (t: unknown): t is string => typeof t === 'string' && allowed.includes(t)
 
