@@ -869,15 +869,119 @@ export function BackgroundSnakeGame() {
       ctx.roundRect(borderLeft, borderTop, borderWidth, borderHeight, cornerRadius)
       ctx.fill()
 
+      // Draw game over text
       ctx.fillStyle = '#ffffff'
-      ctx.font = 'bold 48px monospace'
+      ctx.font = 'bold 36px monospace'
       ctx.textAlign = 'center'
-      ctx.fillText('GAME OVER', borderLeft + borderWidth / 2, borderTop + borderHeight / 2 - 40)
+      ctx.fillText('GAME OVER', borderLeft + borderWidth / 2, borderTop + 60)
 
-      ctx.font = '24px monospace'
-      ctx.fillText(`Score: ${score}`, borderLeft + borderWidth / 2, borderTop + borderHeight / 2 + 20)
-      ctx.font = '18px monospace'
-      ctx.fillText('Press SPACE to restart', borderLeft + borderWidth / 2, borderTop + borderHeight / 2 + 60)
+      // Draw score
+      ctx.font = '20px monospace'
+      ctx.fillText(`Score: ${score}`, borderLeft + borderWidth / 2, borderTop + 100)
+
+      // Always draw leaderboard first
+      if (isLoadingLeaderboard) {
+        ctx.fillStyle = '#10b981'
+        ctx.font = '16px monospace'
+        ctx.fillText('Loading leaderboard...', borderLeft + borderWidth / 2, borderTop + 140)
+      } else if (leaderboard.length > 0) {
+        // Draw leaderboard title
+        ctx.fillStyle = '#10b981'
+        ctx.font = 'bold 18px monospace'
+        ctx.fillText('LEADERBOARD', borderLeft + borderWidth / 2, borderTop + 140)
+
+        // Draw leaderboard entries
+        const startY = borderTop + 170
+        const lineHeight = 25
+        const maxEntries = Math.min(leaderboard.length, 10) // Show max 10 entries
+
+        for (let i = 0; i < maxEntries; i++) {
+          const entry = leaderboard[i]
+          if (!entry) continue
+
+          const y = startY + i * lineHeight
+
+          // Highlight current score if it matches
+          if (entry.score === score) {
+            ctx.fillStyle = 'rgba(16, 185, 129, 0.2)'
+            ctx.fillRect(borderLeft + 20, y - 15, borderWidth - 40, lineHeight)
+          }
+
+          // Rank
+          ctx.fillStyle = '#10b981'
+          ctx.font = '14px monospace'
+          ctx.textAlign = 'left'
+          ctx.fillText(`#${i + 1}`, borderLeft + 30, y)
+
+          // Name
+          ctx.fillStyle = entry.score === score ? '#ffffff' : '#10b981'
+          ctx.font = 'bold 14px monospace'
+          ctx.fillText(entry.name, borderLeft + 80, y)
+
+          // Score
+          ctx.fillStyle = entry.score === score ? '#ffffff' : '#10b981'
+          ctx.font = '14px monospace'
+          ctx.textAlign = 'right'
+          ctx.fillText(entry.score.toString().padStart(4, '0'), borderLeft + borderWidth - 30, y)
+        }
+      }
+
+      // Draw name input below leaderboard if active
+      if (showNameInput) {
+        // Calculate position below leaderboard
+        const leaderboardHeight = leaderboard.length > 0 ? Math.min(leaderboard.length, 8) * 25 + 50 : 0
+        const nameInputY = borderTop + 170 + leaderboardHeight + 20
+
+        // Draw name input title
+        ctx.fillStyle = '#10b981'
+        ctx.font = 'bold 18px monospace'
+        ctx.textAlign = 'center'
+        ctx.fillText('NEW HIGH SCORE!', borderLeft + borderWidth / 2, nameInputY)
+
+        ctx.font = '16px monospace'
+        ctx.fillText('Enter your initials:', borderLeft + borderWidth / 2, nameInputY + 30)
+
+        // Draw name input boxes - properly centered
+        const boxWidth = 30
+        const boxSpacing = 20
+        const totalWidth = boxWidth * 3 + boxSpacing * 2 // 3 boxes + 2 gaps between them
+        const nameStartX = borderLeft + borderWidth / 2 - totalWidth / 2
+        const nameY = nameInputY + 60
+
+        for (let i = 0; i < 3; i++) {
+          const x = nameStartX + i * (boxWidth + boxSpacing)
+
+          // Draw box
+          ctx.strokeStyle = nameInputPosition === i ? '#ffffff' : '#10b981'
+          ctx.lineWidth = nameInputPosition === i ? 3 : 2
+          ctx.strokeRect(x, nameY - 20, boxWidth, 30)
+
+          // Draw letter
+          ctx.fillStyle = '#10b981'
+          ctx.font = 'bold 20px monospace'
+          ctx.textAlign = 'center'
+          ctx.fillText(playerName[i] ?? 'A', x + boxWidth / 2, nameY)
+        }
+
+        // Draw instructions
+        ctx.fillStyle = '#10b981'
+        ctx.font = '14px monospace'
+        ctx.textAlign = 'center'
+        ctx.fillText('↑↓ Change letter  ←→ Move  SPACE Next/Submit', borderLeft + borderWidth / 2, nameInputY + 110)
+
+        if (isSubmittingScore) {
+          ctx.fillStyle = '#ffffff'
+          ctx.font = '16px monospace'
+          ctx.textAlign = 'center'
+          ctx.fillText('Submitting...', borderLeft + borderWidth / 2, nameInputY + 140)
+        }
+      }
+
+      // Draw restart instruction
+      ctx.fillStyle = '#ffffff'
+      ctx.font = '16px monospace'
+      ctx.textAlign = 'center'
+      ctx.fillText('Press SPACE to restart', borderLeft + borderWidth / 2, borderTop + borderHeight - 30)
     }
 
     // Draw start screen (only when snake game is ready)
@@ -912,12 +1016,21 @@ export function BackgroundSnakeGame() {
     crtAnimation,
     showSnake,
     resolvedTheme,
+    leaderboard,
+    isLoadingLeaderboard,
+    showNameInput,
+    playerName,
+    nameInputPosition,
+    isSubmittingScore,
   ])
 
   // Handle restart and resize
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.key === ' ') {
+        // Don't restart if we're in name input mode
+        if (showNameInput) return
+
         if (gameOver || !isPlaying) {
           initGame()
         }
