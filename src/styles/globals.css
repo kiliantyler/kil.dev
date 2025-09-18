@@ -438,3 +438,53 @@ html[data-has-pet-gallery='true'][data-pet-gallery-just-unlocked='true'] .js-pet
     content: none;
   }
 }
+
+/* Konami Code animations */
+.konami-fly-left {
+  animation: konami-fly-left 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.konami-fly-right {
+  animation: konami-fly-right 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes konami-fly-left {
+  0% {
+    transform: translateX(0) rotate(0deg);
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(-20px) rotate(-5deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-150vw) rotate(-15deg);
+    opacity: 0;
+  }
+}
+
+@keyframes konami-fly-right {
+  0% {
+    transform: translateX(0) rotate(0deg);
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(20px) rotate(5deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(150vw) rotate(15deg);
+    opacity: 0;
+  }
+}
+
+/* Keep elements off-screen after animation */
+.konami-fly-left.konami-complete {
+  transform: translateX(-150vw) rotate(-15deg);
+  opacity: 0;
+}
+
+.konami-fly-right.konami-complete {
+  transform: translateX(150vw) rotate(15deg);
+  opacity: 0;
+}
