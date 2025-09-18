@@ -768,8 +768,18 @@ export function BackgroundSnakeGame() {
 
     // Get all dimensions from centralized calculation
     const gameBox = getGameBoxDimensions()
-    const { gridCellSize, gridOffset, borderLeft, borderTop, borderWidth, borderHeight, centerGridX, safeXMin } =
-      gameBox
+    const {
+      gridCellSize,
+      gridOffset,
+      borderLeft,
+      borderTop,
+      borderWidth,
+      borderHeight,
+      centerGridX,
+      safeXMin,
+      safeYMin,
+      squareGridSize,
+    } = gameBox
 
     // Set canvas size to window size
     canvas.width = window.innerWidth
