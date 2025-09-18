@@ -3,6 +3,7 @@ import GrumpyAchievement from '@/images/achievements/grumpy-glimpse.webp'
 import LadybirdAchievement from '@/images/achievements/ladybird-landing.webp'
 import PlaceholderAchievement from '@/images/achievements/placeholder.webp'
 import RecursiveRewardAchievement from '@/images/achievements/recursive-reward.webp'
+import ThemeTapdanceAchievement from '@/images/achievements/theme-tapdance.webp'
 import type { AchievementDefinition } from '@/types/achievements'
 
 export const ACHIEVEMENTS_COOKIE_NAME = 'kil.dev_achievements_v1'
@@ -95,9 +96,9 @@ export const ACHIEVEMENTS = {
   THEME_TAPDANCE: {
     id: 'THEME_TAPDANCE',
     title: 'Theme Tapdance',
-    description: 'Open close, open close, open close... Open that theme menu one more time.',
+    description: 'Open close, open close... Open that menu one more time and see what goodies you find!',
     icon: '🎨',
-    imageSrc: PlaceholderAchievement,
+    imageSrc: ThemeTapdanceAchievement,
     imageAlt: 'Theme Tapdance',
     cardDescription:
       'Curiosity got the better of you! You discovered that some themes are hidden behind seasonal dates, and now you have access to all of them anytime you want. Neat!',
