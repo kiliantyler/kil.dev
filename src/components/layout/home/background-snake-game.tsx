@@ -1138,18 +1138,7 @@ export function BackgroundSnakeGame() {
 
     // Get all dimensions from centralized calculation
     const gameBox = getGameBoxDimensions()
-    const {
-      gridCellSize,
-      gridOffset,
-      borderLeft,
-      borderTop,
-      borderWidth,
-      borderHeight,
-      centerGridX,
-      safeXMin,
-      safeYMin,
-      squareGridSize,
-    } = gameBox
+    const { centerGridX, safeYMin, squareGridSize } = gameBox
 
     // Set canvas size to window size
     canvas.width = window.innerWidth
@@ -1188,375 +1177,36 @@ export function BackgroundSnakeGame() {
       ctx.clip()
     }
 
-    // Draw play area border with enhanced styling (square, centered)
-    const cornerRadius = 12
-
-    // Create gradient for border
-    const gradient = ctx.createLinearGradient(borderLeft, borderTop, borderLeft + borderWidth, borderTop + borderHeight)
-    gradient.addColorStop(0, 'rgba(16, 185, 129, 0.8)')
-    gradient.addColorStop(0.5, 'rgba(34, 197, 94, 0.6)')
-    gradient.addColorStop(1, 'rgba(16, 185, 129, 0.8)')
-
-    // Draw border with rounded corners
-    ctx.strokeStyle = gradient
-    ctx.lineWidth = 3
-    ctx.lineCap = 'round'
-    ctx.lineJoin = 'round'
-
-    // Draw rounded rectangle border (also during closing so the collapse is visible)
-    ctx.beginPath()
-    ctx.roundRect(borderLeft, borderTop, borderWidth, borderHeight, cornerRadius)
-    ctx.stroke()
-
-    // Add inner glow effect (keep for closing too)
-    ctx.strokeStyle = 'rgba(16, 185, 129, 0.2)'
-    ctx.lineWidth = 1
-    ctx.beginPath()
-    ctx.roundRect(borderLeft + 2, borderTop + 2, borderWidth - 4, borderHeight - 4, cornerRadius - 2)
-    ctx.stroke()
-
-    // Add subtle background fill only when showing gameplay
-    if (showSnake) {
-      ctx.fillStyle = 'rgba(16, 185, 129, 0.05)'
-      ctx.beginPath()
-      ctx.roundRect(borderLeft, borderTop, borderWidth, borderHeight, cornerRadius)
-      ctx.fill()
-    }
+    // Draw border and background inside CRT mask
+    drawGameBorder(ctx, gameBox, showSnake)
 
     // Only draw game elements when snake game is ready to show
     if (showSnake) {
-      // Draw snake aligned with centered square grid
-      snake.forEach((segment, index) => {
-        const x = (centerGridX + segment.x - safeXMin) * gridCellSize + gridOffset
-        const y = segment.y * gridCellSize + gridOffset
-
-        ctx.fillStyle = index === 0 ? '#10b981' : '#34d399' // Head is brighter
-        ctx.fillRect(x + 2, y + 2, gridCellSize - 4, gridCellSize - 4)
-      })
-
-      // Draw food aligned with centered square grid
-      const foodX = (centerGridX + food.x - safeXMin) * gridCellSize + gridOffset
-      const foodY = food.y * gridCellSize + gridOffset
-      ctx.fillStyle = isGoldenApple ? '#fbbf24' : '#ef4444'
-      ctx.fillRect(foodX + 2, foodY + 2, gridCellSize - 4, gridCellSize - 4)
+      drawSnake(ctx, snake, gameBox)
+      drawFood(ctx, food, isGoldenApple, gameBox)
     }
 
-    // Add CRT scan lines effect
-    if (showSnake) {
-      ctx.save()
-
-      // Create scan lines pattern - adaptive to theme
-      const scanLineHeight = 2
-      const scanLineSpacing = 4
-      const isDarkMode = resolvedTheme === 'dark'
-      const scanLineOpacity = isDarkMode ? 0.15 : 0.04 // Very light in light mode
-      const scanLineColor = isDarkMode ? '0, 0, 0' : '0, 0, 0' // Black lines for both modes
-
-      // Draw horizontal scan lines across the game area
-      ctx.fillStyle = `rgba(${scanLineColor}, ${scanLineOpacity})`
-      for (let y = borderTop; y < borderTop + borderHeight; y += scanLineHeight + scanLineSpacing) {
-        ctx.fillRect(borderLeft, y, borderWidth, scanLineHeight)
-      }
-
-      // Add subtle vertical scan lines for more authentic CRT look
-      const verticalScanLineWidth = 1
-      const verticalScanLineSpacing = 8
-      const verticalScanLineOpacity = isDarkMode ? 0.08 : 0.02 // Very light in light mode
-
-      ctx.fillStyle = `rgba(${scanLineColor}, ${verticalScanLineOpacity})`
-      for (let x = borderLeft; x < borderLeft + borderWidth; x += verticalScanLineWidth + verticalScanLineSpacing) {
-        ctx.fillRect(x, borderTop, verticalScanLineWidth, borderHeight)
-      }
-
-      // Add subtle screen curvature effect - adaptive to theme
-      ctx.save()
-      ctx.globalCompositeOperation = 'multiply'
-      const curvatureOpacity = isDarkMode ? 0.05 : 0.01 // Very light in light mode
-      ctx.fillStyle = `rgba(0, 0, 0, ${curvatureOpacity})`
-
-      // Create a subtle vignette effect to simulate CRT screen curvature
-      const gradient = ctx.createRadialGradient(
-        borderLeft + borderWidth / 2,
-        borderTop + borderHeight / 2,
-        0,
-        borderLeft + borderWidth / 2,
-        borderTop + borderHeight / 2,
-        Math.max(borderWidth, borderHeight) / 2,
-      )
-      gradient.addColorStop(0, 'rgba(0, 0, 0, 0)')
-      gradient.addColorStop(0.7, 'rgba(0, 0, 0, 0)')
-      gradient.addColorStop(1, `rgba(0, 0, 0, ${isDarkMode ? 0.1 : 0.02})`)
-
-      ctx.fillStyle = gradient
-      ctx.fillRect(borderLeft, borderTop, borderWidth, borderHeight)
-
-      ctx.restore()
-      ctx.restore()
-    }
-
-    // Add bright CRT glow effect after clipping
-    if (crtAnimation.isAnimating) {
-      const { centerX, centerY, horizontalWidth, verticalHeight } = crtAnimation
-
-      // Create bright glow for single point phase
-      if (horizontalWidth < 20) {
-        // Pulsing glow effect
-        const pulseIntensity = 0.8 + 0.2 * Math.sin(Date.now() * 0.01) // Fast pulse
-
-        // Bright center point with strong glow
-        ctx.shadowColor = '#10b981'
-        ctx.shadowBlur = 30 * pulseIntensity
-        ctx.fillStyle = 'rgba(16, 185, 129, 1)'
-        ctx.fillRect(centerX - 4, centerY - 4, 8, 8)
-
-        // Additional outer glow
-        ctx.shadowBlur = 60 * pulseIntensity
-        ctx.fillStyle = 'rgba(16, 185, 129, 0.8)'
-        ctx.fillRect(centerX - 8, centerY - 8, 16, 16)
-
-        // Reset shadow
-        ctx.shadowBlur = 0
-      }
-
-      // Create bright glow for horizontal line phase
-      else if (verticalHeight < 20) {
-        const rectX = centerX - horizontalWidth / 2
-        const rectY = centerY - 3
-
-        // Pulsing glow effect for horizontal line
-        const pulseIntensity = 0.7 + 0.3 * Math.sin(Date.now() * 0.008) // Slightly slower pulse
-
-        // Bright horizontal line with strong glow
-        ctx.shadowColor = '#10b981'
-        ctx.shadowBlur = 25 * pulseIntensity
-        ctx.fillStyle = 'rgba(16, 185, 129, 1)'
-        ctx.fillRect(rectX, rectY, horizontalWidth, 6)
-
-        // Additional outer glow
-        ctx.shadowBlur = 45 * pulseIntensity
-        ctx.fillStyle = 'rgba(16, 185, 129, 0.8)'
-        ctx.fillRect(rectX - 8, rectY - 8, horizontalWidth + 16, 22)
-
-        // Reset shadow
-        ctx.shadowBlur = 0
-      }
-    }
-
-    // Add consistent CRT glow effect to border
-    if (crtAnimation.isAnimating || crtAnimation.glowIntensity > 0) {
-      ctx.shadowColor = '#10b981'
-      ctx.shadowBlur = 20 * Math.max(crtAnimation.glowIntensity, 0.3) // Minimum glow during animation
-      ctx.shadowOffsetX = 0
-      ctx.shadowOffsetY = 0
-
-      // Redraw border with consistent glow
-      ctx.strokeStyle = gradient
-      ctx.lineWidth = 3
-      ctx.beginPath()
-      ctx.roundRect(borderLeft, borderTop, borderWidth, borderHeight, cornerRadius)
-      ctx.stroke()
-
-      // Reset shadow
-      ctx.shadowBlur = 0
-    }
+    // CRT effects and glow
+    drawCRTEffects(ctx, gameBox, crtAnimation, resolvedTheme, showSnake)
 
     // Draw game over overlay (only when snake game is ready)
     if (showSnake && gameOver) {
-      // Draw rounded overlay background
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'
-      ctx.beginPath()
-      ctx.roundRect(borderLeft, borderTop, borderWidth, borderHeight, cornerRadius)
-      ctx.fill()
-
-      // Draw game over text
-      ctx.fillStyle = '#ffffff'
-      ctx.font = 'bold 100px VT323, monospace'
-      ctx.textAlign = 'center'
-      ctx.fillText('GAME OVER', borderLeft + borderWidth / 2, borderTop + 60)
-
-      // Draw score
-      ctx.font = '40px VT323, monospace'
-      ctx.fillText(`Score: ${score}`, borderLeft + borderWidth / 2, borderTop + 100)
-
-      // Always draw leaderboard first
-      if (isLoadingLeaderboard) {
-        ctx.fillStyle = '#10b981'
-        ctx.font = '36px VT323, monospace'
-        ctx.fillText('Loading leaderboard...', borderLeft + borderWidth / 2, borderTop + 140)
-      } else if (leaderboard.length > 0) {
-        // Draw leaderboard title
-        ctx.fillStyle = '#10b981'
-        ctx.font = 'bold 40px VT323, monospace'
-        ctx.fillText('LEADERBOARD', borderLeft + borderWidth / 2, borderTop + 140)
-
-        // Draw leaderboard entries - compact and centered
-        const startY = borderTop + 170
-        const lineHeight = 20
-        const maxEntries = Math.min(leaderboard.length, 10) // Show max 10 entries
-
-        // Calculate compact leaderboard width and position
-        const leaderboardWidth = 200
-        const leaderboardLeft = borderLeft + (borderWidth - leaderboardWidth) / 2
-
-        for (let i = 0; i < maxEntries; i++) {
-          const entry = leaderboard[i]
-          if (!entry) continue
-
-          const y = startY + i * lineHeight
-
-          // Highlight current score if it matches
-          if (entry.score === score) {
-            ctx.fillStyle = 'rgba(16, 185, 129, 0.2)'
-            ctx.fillRect(leaderboardLeft, y - 12, leaderboardWidth, lineHeight)
-          }
-
-          // Rank
-          ctx.fillStyle = '#10b981'
-          ctx.font = '20px VT323, monospace'
-          ctx.textAlign = 'left'
-          ctx.fillText(`#${i + 1}`, leaderboardLeft + 10, y)
-
-          // Name
-          ctx.fillStyle = entry.score === score ? '#ffffff' : '#10b981'
-          ctx.font = 'bold 20px VT323, monospace'
-          ctx.fillText(entry.name, leaderboardLeft + 40, y)
-
-          // Score
-          ctx.fillStyle = entry.score === score ? '#ffffff' : '#10b981'
-          ctx.font = '20px VT323, monospace'
-          ctx.textAlign = 'right'
-          ctx.fillText(entry.score.toString().padStart(4, '0'), leaderboardLeft + leaderboardWidth - 10, y)
-        }
-      }
-
-      // Draw name input below leaderboard if active
-      if (showNameInput) {
-        // Calculate position below leaderboard
-        const leaderboardHeight = leaderboard.length > 0 ? Math.min(leaderboard.length, 8) * 25 + 50 : 0
-        const nameInputY = borderTop + 170 + leaderboardHeight + 20
-
-        // Draw name input title
-        ctx.fillStyle = '#10b981'
-        ctx.font = 'bold 32px VT323, monospace'
-        ctx.textAlign = 'center'
-        ctx.fillText('NEW HIGH SCORE!', borderLeft + borderWidth / 2, nameInputY)
-
-        ctx.font = '24px VT323, monospace'
-        ctx.fillText('Enter your initials:', borderLeft + borderWidth / 2, nameInputY + 30)
-
-        // Draw name input boxes - properly centered
-        const boxWidth = 30
-        const boxSpacing = 20
-        const totalWidth = boxWidth * 3 + boxSpacing * 2 // 3 boxes + 2 gaps between them
-        const nameStartX = borderLeft + borderWidth / 2 - totalWidth / 2
-        const nameY = nameInputY + 60
-
-        for (let i = 0; i < 3; i++) {
-          const x = nameStartX + i * (boxWidth + boxSpacing)
-
-          // Draw box
-          ctx.strokeStyle = nameInputPosition === i ? '#ffffff' : '#10b981'
-          ctx.lineWidth = nameInputPosition === i ? 3 : 2
-          ctx.strokeRect(x, nameY - 20, boxWidth, 30)
-
-          // Draw letter
-          ctx.fillStyle = '#10b981'
-          ctx.font = 'bold 32px VT323, monospace'
-          ctx.textAlign = 'center'
-          ctx.fillText(playerName[i] ?? 'A', x + boxWidth / 2, nameY)
-        }
-
-        // Draw instructions
-        ctx.fillStyle = '#10b981'
-        ctx.font = '20px VT323, monospace'
-        ctx.textAlign = 'center'
-        ctx.fillText('↑↓ Change letter  ←→ Move  SPACE Next/Submit', borderLeft + borderWidth / 2, nameInputY + 110)
-
-        if (isSubmittingScore) {
-          ctx.fillStyle = '#ffffff'
-          ctx.font = '24px VT323, monospace'
-          ctx.textAlign = 'center'
-          ctx.fillText('Submitting...', borderLeft + borderWidth / 2, nameInputY + 140)
-        }
-      }
-
-      // Draw restart instruction
-      ctx.fillStyle = '#ffffff'
-      ctx.font = '24px VT323, monospace'
-      ctx.textAlign = 'center'
-      ctx.fillText('Press SPACE to restart', borderLeft + borderWidth / 2, borderTop + borderHeight - 30)
-
-      // Draw quit instruction
-      ctx.fillStyle = '#ffffff'
-      ctx.font = '18px VT323, monospace'
-      ctx.textAlign = 'center'
-      ctx.fillText('ESC to quit', borderLeft + borderWidth / 2, borderTop + borderHeight - 10)
+      drawGameOverOverlay(
+        ctx,
+        score,
+        leaderboard,
+        isLoadingLeaderboard,
+        showNameInput,
+        playerName,
+        nameInputPosition,
+        isSubmittingScore,
+        gameBox,
+      )
     }
 
     // Draw start screen (only when snake game is ready)
     if (showSnake && !isPlaying && !gameOver) {
-      // Draw rounded overlay background
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
-      ctx.beginPath()
-      ctx.roundRect(borderLeft, borderTop, borderWidth, borderHeight, cornerRadius)
-      ctx.fill()
-
-      // Draw SNAKE using snake pieces aligned to the grid
-      type Letter = 'S' | 'N' | 'A' | 'K' | 'E'
-      const letters: Letter[] = ['S', 'N', 'A', 'K', 'E']
-      const spacing = 1 // grid cells between letters
-
-      // 3x5 patterns
-      const glyph3x5: Record<Letter, string[]> = {
-        S: ['111', '100', '111', '001', '111'],
-        N: ['111', '101', '101', '101', '101'],
-        A: ['010', '101', '111', '101', '101'],
-        K: ['101', '101', '110', '101', '101'],
-        E: ['111', '100', '110', '100', '111'],
-      }
-
-      // Use only 3x5 glyphs
-      const glyph: Record<Letter, string[]> = glyph3x5
-      const letterW = 3
-      const letterH = 5
-
-      const totalWordW = letters.length * letterW + (letters.length - 1) * spacing
-      const xStartGrid = centerGridX + Math.max(0, Math.floor((squareGridSize - totalWordW) / 2))
-      const yCenter = safeYMin + Math.floor(squareGridSize / 2)
-      const yStartGrid = Math.max(safeYMin + 1, yCenter - Math.floor(letterH / 2) - 2)
-
-      ctx.fillStyle = '#10b981'
-      for (let i = 0; i < letters.length; i++) {
-        const ch = letters[i]
-        if (!ch) continue
-        const rows: string[] | undefined = glyph[ch]
-        if (!rows) continue
-        const letterX = xStartGrid + i * (letterW + spacing)
-        for (let r = 0; r < rows.length; r++) {
-          const row: string = rows[r] ?? ''
-          for (let c = 0; c < row.length; c++) {
-            if (row[c] !== '1') continue
-            const gx = (letterX + c) * gridCellSize + gridOffset
-            const gy = (yStartGrid + r) * gridCellSize + gridOffset
-            ctx.fillRect(gx + 2, gy + 2, gridCellSize - 4, gridCellSize - 4)
-          }
-        }
-      }
-
-      // Draw instructions near the bottom (similar to game over screen)
-      const centerXPx = borderLeft + borderWidth / 2
-
-      ctx.fillStyle = '#ffffff'
-      ctx.font = '28px VT323, monospace'
-      ctx.textAlign = 'center'
-      ctx.fillText('Use arrow keys to move', centerXPx, borderTop + borderHeight - 60)
-      ctx.fillText('Press SPACE to start', centerXPx, borderTop + borderHeight - 30)
-
-      // Draw quit instruction on start screen
-      ctx.fillStyle = '#ffffff'
-      ctx.font = '20px VT323, monospace'
-      ctx.textAlign = 'center'
-      ctx.fillText('ESC to quit', centerXPx, borderTop + borderHeight - 10)
+      drawStartScreen(ctx, gameBox, squareGridSize, centerGridX, safeYMin, showSnake, isPlaying, gameOver)
     }
 
     // Restore context after CRT effects
