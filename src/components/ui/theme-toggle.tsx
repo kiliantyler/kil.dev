@@ -52,11 +52,14 @@ export function ThemeToggle() {
       setForceUpdate(prev => prev + 1)
 
       // Check if current theme is still available after achievement reset
-      const availableThemes = getAvailableThemes() as readonly Theme[]
-      if (currentPreference && !availableThemes.includes(currentPreference)) {
-        // Current theme is no longer available, switch to system
-        setTheme('system')
-      }
+      // Add additional delay to ensure CSS attribute is synchronized
+      setTimeout(() => {
+        const availableThemes = getAvailableThemes() as readonly Theme[]
+        if (currentPreference && !availableThemes.includes(currentPreference)) {
+          // Current theme is no longer available, switch to system
+          setTheme('system')
+        }
+      }, 50) // Additional delay for CSS attribute sync
     }, 100) // Small delay to ensure localStorage is updated
     return () => clearTimeout(timer)
   }, [unlocked.THEME_TAPDANCE, currentPreference, setTheme])
