@@ -10,17 +10,30 @@ export async function addScoreToLeaderboard(entry: LeaderboardEntry): Promise<nu
   try {
     // Store the full entry data as JSON in the member field
     const entryData = JSON.stringify(entry)
-    await redis.zadd(LEADERBOARD_KEY, { score: entry.score, member: entryData })
+
+    // Use Redis pipeline to atomically execute zadd, zcard, and zrank
+    const pipeline = redis.pipeline()
+    pipeline.zadd(LEADERBOARD_KEY, { score: entry.score, member: entryData })
+    pipeline.zcard(LEADERBOARD_KEY)
+    pipeline.zrank(LEADERBOARD_KEY, entryData)
+
+    // Execute the pipeline and get the results
+    const results = await pipeline.exec()
+
+    // Parse the pipeline results
+    // results[0] = zadd result (number of elements added)
+    // results[1] = zcard result (current size)
+    // results[2] = zrank result (rank or null)
+    const currentSize = Number(results[1])
+    const rank = results[2] !== null ? Number(results[2]) : null
 
     // Remove excess entries if we have more than MAX_LEADERBOARD_SIZE
-    const currentSize = await redis.zcard(LEADERBOARD_KEY)
     if (currentSize > MAX_LEADERBOARD_SIZE) {
       // Remove the lowest scores to keep only the top MAX_LEADERBOARD_SIZE
       await redis.zremrangebyrank(LEADERBOARD_KEY, 0, currentSize - MAX_LEADERBOARD_SIZE - 1)
     }
 
-    // Get the rank (position) of this score (0-indexed, so add 1)
-    const rank = await redis.zrank(LEADERBOARD_KEY, entryData)
+    // Return rank (0-indexed, so add 1) or 0 if rank is null
     return rank !== null ? rank + 1 : 0
   } catch {
     throw new Error('Failed to add score to leaderboard')
