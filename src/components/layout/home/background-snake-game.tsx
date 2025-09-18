@@ -1,382 +1,49 @@
 'use client'
 
-import { useKonamiAnimation } from '@/components/providers/konami-animation-provider'
+import { GameOverlay } from '@/components/layout/home/game-overlay'
+import { SnakeCanvas } from '@/components/layout/home/snake-canvas'
 import { useTheme } from '@/components/providers/theme-provider'
-import { LIGHT_GRID } from '@/lib/light-grid'
-import type { LeaderboardEntry } from '@/types/leaderboard'
-import { playGameOverSound, playScoreSound } from '@/utils/arcade-utils'
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { z } from 'zod'
-
-type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT'
-type Position = { x: number; y: number }
-
-const BASE_GAME_SPEED = 150
-const MIN_GAME_SPEED = 80
-const SPEED_REDUCTION_PER_SEGMENT = 2
-const GOLDEN_APPLE_CHANCE = 0.02
-
-const checkScoreResponseSchema = z.object({
-  qualifies: z.boolean(),
-  currentThreshold: z.number().optional(),
-})
+import { useCrtAnimation } from '@/hooks/use-crt-animation'
+import { useLeaderboard } from '@/hooks/use-leaderboard'
+import { useSnakeGame } from '@/hooks/use-snake-game'
+import { useCallback, useEffect, useMemo } from 'react'
 
 export function BackgroundSnakeGame() {
-  const { showSnake, closeAnimation, finishCloseAnimation, isReturning } = useKonamiAnimation()
   const { resolvedTheme } = useTheme()
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [snake, setSnake] = useState<Position[]>([{ x: 5, y: 5 }])
-  const [food, setFood] = useState<Position>({ x: 10, y: 10 })
-  const [isGoldenApple, setIsGoldenApple] = useState(false)
-  const [direction, setDirection] = useState<Direction>('RIGHT')
-  const [gameOver, setGameOver] = useState(false)
-  const [score, setScore] = useState(0)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
-  const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(false)
-  const [showNameInput, setShowNameInput] = useState(false)
-  const [playerName, setPlayerName] = useState(['A', 'A', 'A'])
-  const [nameInputPosition, setNameInputPosition] = useState(0)
-  const [isSubmittingScore, setIsSubmittingScore] = useState(false)
-  const [shouldSubmitScore, setShouldSubmitScore] = useState(false)
-  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 })
-  const [crtAnimation, setCrtAnimation] = useState({
-    isAnimating: true, // Start animating immediately
-    centerX: 0,
-    centerY: 0,
-    horizontalWidth: 0,
-    verticalHeight: 0,
-    opacity: 0,
-    glowIntensity: 0,
+
+  // Leaderboard and name input flow
+  const {
+    leaderboard,
+    isLoadingLeaderboard,
+    isSubmittingScore,
+    showNameInput,
+    playerName,
+    nameInputPosition,
+    setNameInputPosition,
+    submitScore,
+    handleGameOverFlow,
+    handleNameInputKey,
+  } = useLeaderboard()
+
+  // Core game
+  const { snake, food, isGoldenApple, gameOver, score, isPlaying, initGame, setIsPlaying, getDimensions } =
+    useSnakeGame({
+      isInputActive: showNameInput,
+      onGameOver: (finalScore: number) => {
+        void handleGameOverFlow(finalScore)
+      },
+    })
+
+  // CRT animation
+  const { showSnake, crtAnimation, isCrtOff, startCrtCloseAnimation } = useCrtAnimation({
+    getDimensions,
   })
-  const gameLoopRef = useRef<number | null>(null)
-  const crtCloseRef = useRef<{ isClosing: boolean; rafId: number | null }>({ isClosing: false, rafId: null })
-  const [isCrtClosing, setIsCrtClosing] = useState(false)
-  const [isCrtOff, setIsCrtOff] = useState(false)
 
-  // Use refs to track current food state to avoid stale closures
-  const foodRef = useRef<Position>({ x: 10, y: 10 })
-  const isGoldenAppleRef = useRef<boolean>(false)
-  const lastFoodEatenRef = useRef<Position | null>(null)
+  const gameBox = useMemo(() => getDimensions(), [getDimensions])
 
-  // Calculate current game speed based on snake length
-  const getCurrentGameSpeed = useCallback((snakeLength: number) => {
-    const speedReduction = (snakeLength - 1) * SPEED_REDUCTION_PER_SEGMENT
-    const newSpeed = BASE_GAME_SPEED - speedReduction
-    return Math.max(newSpeed, MIN_GAME_SPEED)
-  }, [])
-
-  // Track window size changes
-  useEffect(() => {
-    const updateWindowSize = () => {
-      setWindowSize({ width: window.innerWidth, height: window.innerHeight })
-    }
-
-    // Set initial size
-    updateWindowSize()
-
-    window.addEventListener('resize', updateWindowSize)
-    return () => window.removeEventListener('resize', updateWindowSize)
-  }, [])
-
-  // Calculate grid dimensions based on window size
-  const getGridDimensions = useCallback(() => {
-    const gridCellSize = LIGHT_GRID.GRID_SIZE_PX
-    const gridOffset = LIGHT_GRID.GRID_OFFSET_PX
-    const width = windowSize.width || window.innerWidth
-    const height = windowSize.height || window.innerHeight
-
-    return {
-      gridWidth: Math.floor(width / gridCellSize) - 1,
-      gridHeight: Math.floor(height / gridCellSize),
-      gridCellSize,
-      gridOffset,
-    }
-  }, [windowSize])
-
-  const getHeaderHeight = useCallback(() => {
-    const { gridCellSize } = getGridDimensions()
-    return Math.floor(80 / gridCellSize) * gridCellSize + 20
-  }, [getGridDimensions])
-
-  // Calculate safe play area boundaries that match the visual border (square)
-  const getSafeBoundaries = useCallback(() => {
-    const { gridCellSize, gridOffset } = getGridDimensions()
-    const headerHeight = getHeaderHeight()
-    const borderOffset = 40
-    const actualHeaderHeight = headerHeight + borderOffset
-    const footerHeight = Math.floor(60 / gridCellSize) * gridCellSize
-    const width = windowSize.width || window.innerWidth
-    const height = windowSize.height || window.innerHeight
-
-    // Convert pixel positions to grid coordinates, then add inset
-    const baseYMin = Math.floor((actualHeaderHeight - gridOffset) / gridCellSize)
-    const baseYMax = Math.floor((height - footerHeight - gridOffset) / gridCellSize) - 1
-
-    // Apply 1-grid-cell inset on top, left, and bottom
-    const safeYMin = baseYMin + 1 // Top inset
-    const safeYMax = baseYMax - 1 // Bottom inset
-    const safeXMin = 1 // Left inset
-
-    // Calculate available height and width for square
-    const availableHeight = safeYMax - safeYMin + 1
-    const maxWidth = Math.floor(width / gridCellSize) - 2 // Right boundary
-    const availableWidth = maxWidth - safeXMin + 1
-
-    // Make the play area square by using the smaller dimension
-    const squareSize = Math.min(availableWidth, availableHeight)
-
-    // Recalculate safe boundaries based on square size
-    const safeXMax = safeXMin + squareSize - 1
-    const safeYMaxAdjusted = safeYMin + squareSize - 1
-
-    return {
-      safeYMin,
-      safeYMax: safeYMaxAdjusted,
-      safeXMin,
-      safeXMax,
-      actualHeaderHeight,
-      footerHeight,
-      borderOffset,
-    }
-  }, [getGridDimensions, getHeaderHeight, windowSize])
-
-  // Centralized game box sizing calculation
-  const getGameBoxDimensions = useCallback(() => {
-    const { gridCellSize, gridOffset } = getGridDimensions()
-    const { safeYMin, safeYMax } = getSafeBoundaries()
-    const totalGridWidth = Math.floor((windowSize.width || window.innerWidth) / gridCellSize)
-    const squareGridSize = safeYMax - safeYMin + 1
-    const centerGridX = Math.floor((totalGridWidth - squareGridSize) / 2)
-
-    // Calculate all dimensions
-    const squareSize = (safeYMax - safeYMin + 1) * gridCellSize
-    const borderLeft = centerGridX * gridCellSize + gridOffset
-    const borderTop = safeYMin * gridCellSize + gridOffset
-    const borderBottom = (safeYMax + 1) * gridCellSize + gridOffset
-    const borderWidth = squareSize
-    const borderHeight = borderBottom - borderTop
-
-    // Calculate center points
-    const centerX = borderLeft + borderWidth / 2
-    const centerY = borderTop + borderHeight / 2
-
-    return {
-      // Grid info
-      gridCellSize,
-      gridOffset,
-      centerGridX,
-      squareGridSize,
-
-      // Dimensions
-      squareSize,
-      borderLeft,
-      borderTop,
-      borderBottom,
-      borderWidth,
-      borderHeight,
-
-      // Centers
-      centerX,
-      centerY,
-
-      // Safe boundaries for game logic
-      safeYMin,
-      safeYMax,
-      safeXMin: getSafeBoundaries().safeXMin,
-    }
-  }, [getGridDimensions, getSafeBoundaries, windowSize])
-
-  // Types for drawing helpers
-  type GameBoxDimensions = ReturnType<typeof getGameBoxDimensions>
-
-  // Draw helpers
-  const drawGameBorder = useCallback(
-    (ctx: CanvasRenderingContext2D, dimensions: GameBoxDimensions, showSnakeForBg: boolean) => {
-      const { borderLeft, borderTop, borderWidth, borderHeight } = dimensions
-      const cornerRadius = 12
-
-      const gradient = ctx.createLinearGradient(
-        borderLeft,
-        borderTop,
-        borderLeft + borderWidth,
-        borderTop + borderHeight,
-      )
-      gradient.addColorStop(0, 'rgba(16, 185, 129, 0.8)')
-      gradient.addColorStop(0.5, 'rgba(34, 197, 94, 0.6)')
-      gradient.addColorStop(1, 'rgba(16, 185, 129, 0.8)')
-
-      ctx.strokeStyle = gradient
-      ctx.lineWidth = 3
-      ctx.lineCap = 'round'
-      ctx.lineJoin = 'round'
-
-      ctx.beginPath()
-      ctx.roundRect(borderLeft, borderTop, borderWidth, borderHeight, cornerRadius)
-      ctx.stroke()
-
-      ctx.strokeStyle = 'rgba(16, 185, 129, 0.2)'
-      ctx.lineWidth = 1
-      ctx.beginPath()
-      ctx.roundRect(borderLeft + 2, borderTop + 2, borderWidth - 4, borderHeight - 4, cornerRadius - 2)
-      ctx.stroke()
-
-      if (showSnakeForBg) {
-        ctx.fillStyle = 'rgba(16, 185, 129, 0.05)'
-        ctx.beginPath()
-        ctx.roundRect(borderLeft, borderTop, borderWidth, borderHeight, cornerRadius)
-        ctx.fill()
-      }
-    },
-    [],
-  )
-
-  const drawSnake = useCallback(
-    (ctx: CanvasRenderingContext2D, snakeBody: Position[], dimensions: GameBoxDimensions) => {
-      const { gridCellSize, gridOffset, centerGridX, safeXMin } = dimensions
-      snakeBody.forEach((segment, index) => {
-        const x = (centerGridX + segment.x - safeXMin) * gridCellSize + gridOffset
-        const y = segment.y * gridCellSize + gridOffset
-        ctx.fillStyle = index === 0 ? '#10b981' : '#34d399'
-        ctx.fillRect(x + 2, y + 2, gridCellSize - 4, gridCellSize - 4)
-      })
-    },
-    [],
-  )
-
-  const drawFood = useCallback(
-    (ctx: CanvasRenderingContext2D, foodPos: Position, golden: boolean, dimensions: GameBoxDimensions) => {
-      const { gridCellSize, gridOffset, centerGridX, safeXMin } = dimensions
-      const foodX = (centerGridX + foodPos.x - safeXMin) * gridCellSize + gridOffset
-      const foodY = foodPos.y * gridCellSize + gridOffset
-      ctx.fillStyle = golden ? '#fbbf24' : '#ef4444'
-      ctx.fillRect(foodX + 2, foodY + 2, gridCellSize - 4, gridCellSize - 4)
-    },
-    [],
-  )
-
-  const drawCRTEffects = useCallback(
-    (
-      ctx: CanvasRenderingContext2D,
-      dimensions: GameBoxDimensions,
-      crt: typeof crtAnimation,
-      theme: string | undefined,
-      showSnakeForCrt: boolean,
-    ) => {
-      const { borderLeft, borderTop, borderWidth, borderHeight } = dimensions
-      const isDarkMode = theme === 'dark'
-
-      if (showSnakeForCrt) {
-        ctx.save()
-        const scanLineHeight = 2
-        const scanLineSpacing = 4
-        const scanLineOpacity = isDarkMode ? 0.15 : 0.04
-        const scanLineColor = '0, 0, 0'
-
-        ctx.fillStyle = `rgba(${scanLineColor}, ${scanLineOpacity})`
-        for (let y = borderTop; y < borderTop + borderHeight; y += scanLineHeight + scanLineSpacing) {
-          ctx.fillRect(borderLeft, y, borderWidth, scanLineHeight)
-        }
-
-        const verticalScanLineWidth = 1
-        const verticalScanLineSpacing = 8
-        const verticalScanLineOpacity = isDarkMode ? 0.08 : 0.02
-
-        ctx.fillStyle = `rgba(${scanLineColor}, ${verticalScanLineOpacity})`
-        for (let x = borderLeft; x < borderLeft + borderWidth; x += verticalScanLineWidth + verticalScanLineSpacing) {
-          ctx.fillRect(x, borderTop, verticalScanLineWidth, borderHeight)
-        }
-
-        ctx.save()
-        ctx.globalCompositeOperation = 'multiply'
-        const curvatureOpacity = isDarkMode ? 0.05 : 0.01
-        ctx.fillStyle = `rgba(0, 0, 0, ${curvatureOpacity})`
-
-        const vignette = ctx.createRadialGradient(
-          borderLeft + borderWidth / 2,
-          borderTop + borderHeight / 2,
-          0,
-          borderLeft + borderWidth / 2,
-          borderTop + borderHeight / 2,
-          Math.max(borderWidth, borderHeight) / 2,
-        )
-        vignette.addColorStop(0, 'rgba(0, 0, 0, 0)')
-        vignette.addColorStop(0.7, 'rgba(0, 0, 0, 0)')
-        vignette.addColorStop(1, `rgba(0, 0, 0, ${isDarkMode ? 0.1 : 0.02})`)
-
-        ctx.fillStyle = vignette
-        ctx.fillRect(borderLeft, borderTop, borderWidth, borderHeight)
-        ctx.restore()
-        ctx.restore()
-      }
-
-      if (crt.isAnimating) {
-        const { centerX, centerY, horizontalWidth, verticalHeight } = crt
-        if (horizontalWidth < 20) {
-          const pulseIntensity = 0.8 + 0.2 * Math.sin(Date.now() * 0.01)
-          ctx.shadowColor = '#10b981'
-          ctx.shadowBlur = 30 * pulseIntensity
-          ctx.fillStyle = 'rgba(16, 185, 129, 1)'
-          ctx.fillRect(centerX - 4, centerY - 4, 8, 8)
-          ctx.shadowBlur = 60 * pulseIntensity
-          ctx.fillStyle = 'rgba(16, 185, 129, 0.8)'
-          ctx.fillRect(centerX - 8, centerY - 8, 16, 16)
-          ctx.shadowBlur = 0
-        } else if (verticalHeight < 20) {
-          const rectX = centerX - horizontalWidth / 2
-          const rectY = centerY - 3
-          const pulseIntensity = 0.7 + 0.3 * Math.sin(Date.now() * 0.008)
-          ctx.shadowColor = '#10b981'
-          ctx.shadowBlur = 25 * pulseIntensity
-          ctx.fillStyle = 'rgba(16, 185, 129, 1)'
-          ctx.fillRect(rectX, rectY, horizontalWidth, 6)
-          ctx.shadowBlur = 45 * pulseIntensity
-          ctx.fillStyle = 'rgba(16, 185, 129, 0.8)'
-          ctx.fillRect(rectX - 8, rectY - 8, horizontalWidth + 16, 22)
-          ctx.shadowBlur = 0
-        }
-      }
-
-      if (crt.isAnimating || crt.glowIntensity > 0) {
-        const { borderLeft, borderTop, borderWidth, borderHeight } = dimensions
-        const cornerRadius = 12
-        const gradient = ctx.createLinearGradient(
-          borderLeft,
-          borderTop,
-          borderLeft + borderWidth,
-          borderTop + borderHeight,
-        )
-        gradient.addColorStop(0, 'rgba(16, 185, 129, 0.8)')
-        gradient.addColorStop(0.5, 'rgba(34, 197, 94, 0.6)')
-        gradient.addColorStop(1, 'rgba(16, 185, 129, 0.8)')
-
-        ctx.shadowColor = '#10b981'
-        ctx.shadowBlur = 20 * Math.max(crt.glowIntensity, 0.3)
-        ctx.shadowOffsetX = 0
-        ctx.shadowOffsetY = 0
-        ctx.strokeStyle = gradient
-        ctx.lineWidth = 3
-        ctx.beginPath()
-        ctx.roundRect(borderLeft, borderTop, borderWidth, borderHeight, cornerRadius)
-        ctx.stroke()
-        ctx.shadowBlur = 0
-      }
-    },
-    [],
-  )
-
+  // Drawing callbacks
   const drawGameOverOverlay = useCallback(
-    (
-      ctx: CanvasRenderingContext2D,
-      scoreValue: number,
-      leaderboardData: LeaderboardEntry[],
-      loadingLeaderboard: boolean,
-      shouldShowNameInput: boolean,
-      nameChars: string[],
-      namePos: number,
-      submitting: boolean,
-      dimensions: GameBoxDimensions,
-    ) => {
+    (ctx: CanvasRenderingContext2D, dimensions: ReturnType<typeof getDimensions>) => {
       const { borderLeft, borderTop, borderWidth, borderHeight } = dimensions
       const cornerRadius = 12
 
