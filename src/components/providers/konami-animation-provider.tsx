@@ -2,12 +2,15 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 
-type KonamiAnimationContextType = {
+export type KonamiAnimationContextType = {
   isAnimating: boolean
   hasAnimated: boolean
   showSnake: boolean
   startCrtAnimation: boolean
+  isReturning: boolean
   triggerAnimation: () => void
+  closeAnimation: () => void
+  finishCloseAnimation: () => void
 }
 
 const KonamiAnimationContext = createContext<KonamiAnimationContextType | undefined>(undefined)
@@ -17,6 +20,7 @@ export function KonamiAnimationProvider({ children }: { children: ReactNode }) {
   const [hasAnimated, setHasAnimated] = useState(false)
   const [showSnake, setShowSnake] = useState(false)
   const [startCrtAnimation, setStartCrtAnimation] = useState(false)
+  const [isReturning, setIsReturning] = useState(false)
 
   useEffect(() => {
     // Clear the animation state on page load to ensure content is visible
@@ -44,9 +48,42 @@ export function KonamiAnimationProvider({ children }: { children: ReactNode }) {
     }, 1500)
   }
 
+  const closeAnimation = () => {
+    // Begin reverse animation sequence
+    setIsReturning(true)
+    // Hide snake gameplay visuals immediately (game can still animate CRT close)
+    setShowSnake(false)
+  }
+
+  const finishCloseAnimation = () => {
+    // Unmount the BackgroundSnakeGame
+    setStartCrtAnimation(false)
+
+    // Clear animation flags so content is fully restored
+    setHasAnimated(false)
+    setIsAnimating(false)
+
+    // Keep isReturning true long enough for the return animation (1.5s) to finish
+    setTimeout(() => {
+      setIsReturning(false)
+      try {
+        sessionStorage.removeItem('konami-animated')
+      } catch {}
+    }, 1600)
+  }
+
   return (
     <KonamiAnimationContext.Provider
-      value={{ isAnimating, hasAnimated, showSnake, startCrtAnimation, triggerAnimation }}>
+      value={{
+        isAnimating,
+        hasAnimated,
+        showSnake,
+        startCrtAnimation,
+        isReturning,
+        triggerAnimation,
+        closeAnimation,
+        finishCloseAnimation,
+      }}>
       {children}
     </KonamiAnimationContext.Provider>
   )
