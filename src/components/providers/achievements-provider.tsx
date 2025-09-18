@@ -10,6 +10,7 @@ import {
 } from '@/utils/achievements'
 import { getThemeBaseColor } from '@/utils/themes'
 import { cn } from '@/utils/utils'
+import confetti from 'canvas-confetti'
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { Toaster, toast } from 'sonner'
 import { useTheme } from './theme-provider'
@@ -110,14 +111,43 @@ export function AchievementsProvider({
     })
   }, [])
 
+  const triggerConfetti = useCallback(() => {
+    // Create confetti from bottom corners
+    const leftCorner = {
+      x: 0,
+      y: 1,
+      angle: 45,
+      startVelocity: 55,
+      spread: 90,
+      particleCount: 50,
+      origin: { x: 0, y: 1 },
+    }
+
+    const rightCorner = {
+      x: 1,
+      y: 1,
+      angle: 135,
+      startVelocity: 55,
+      spread: 90,
+      particleCount: 50,
+      origin: { x: 1, y: 1 },
+    }
+
+    // Fire from both corners with slight delay
+    void confetti(leftCorner)
+    void confetti(rightCorner)
+  }, [])
+
   // Prevent duplicate unlocks/toasts in the same tick via a pending set
   const pendingUnlocksRef = useRef<Set<AchievementId>>(new Set())
+  const pendingConfettiRef = useRef<Set<AchievementId>>(new Set())
   const unlock = useCallback(
     (id: AchievementId) => {
       if (!mountedRef.current) return
       if (pendingUnlocksRef.current.has(id)) return
       if (has(id)) return
 
+      const def = ACHIEVEMENTS[id]
       pendingUnlocksRef.current.add(id)
       const timestampIso = new Date().toISOString()
       setUnlocked(prev => ({ ...prev, [id]: timestampIso }))
@@ -125,8 +155,16 @@ export function AchievementsProvider({
       queueMicrotask(() => pendingUnlocksRef.current.delete(id))
 
       showToast(id)
+
+      // Trigger confetti if achievement has confetti enabled (but only once)
+      if (def?.confetti && !pendingConfettiRef.current.has(id)) {
+        pendingConfettiRef.current.add(id)
+        triggerConfetti()
+        // Clean up the confetti pending flag after animation completes
+        setTimeout(() => pendingConfettiRef.current.delete(id), 1000)
+      }
     },
-    [has, showToast],
+    [has, showToast, triggerConfetti],
   )
 
   const reset = useCallback(() => {
