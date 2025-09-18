@@ -108,9 +108,10 @@ export async function POST(request: NextRequest) {
     const { name, score, sessionId, secret } = validation.data
     const sanitizedName = sanitizeName(name)
 
-    // If session data is provided, validate the score through game validation
-    if (sessionId && secret) {
-      const gameValidation = validateGameScore(sessionId, secret, score)
+    // If session data is provided, validate the score through game validation (secret no longer required post end-only validation)
+    if (typeof sessionId === 'string') {
+      const safeSecret = typeof secret === 'string' ? secret : ''
+      const gameValidation = validateGameScore(sessionId, safeSecret, score)
       if (!gameValidation.success) {
         return NextResponse.json(
           { success: false, message: 'Score validation failed', details: gameValidation.message },
@@ -144,29 +145,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(response, { status: 201 })
     }
 
-    // Fallback: Create leaderboard entry without game validation (for backward compatibility)
-    // This should be removed in production
-    const entry: LeaderboardEntry = {
-      id: uuidv4(),
-      name: sanitizedName,
-      score,
-      timestamp: Date.now(),
-    }
-
-    // Add to leaderboard
-    const position = await addScoreToLeaderboard(entry)
-
-    // Get updated leaderboard
-    const leaderboard = await getLeaderboard()
-
-    const response: ScoreSubmissionResponse = {
-      success: true,
-      position,
-      leaderboard,
-      message: `Score submitted! You're ranked #${position}`,
-    }
-
-    return NextResponse.json(response, { status: 201 })
+    // Reject unvalidated submissions if session data is missing
+    return NextResponse.json(
+      { success: false, message: 'Missing session data. Score submissions must be validated.' },
+      { status: 400 },
+    )
   } catch (error) {
     console.error('Error submitting score:', error)
     return NextResponse.json({ success: false, message: 'Internal server error' }, { status: 500 })

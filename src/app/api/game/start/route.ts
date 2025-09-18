@@ -5,12 +5,13 @@ import { NextResponse } from 'next/server'
 // POST /api/game/start - Start a new game session
 export async function POST(_request: NextRequest) {
   try {
-    const { sessionId, secret } = createGameSession()
+    const { sessionId, secret, seed } = createGameSession()
 
     return NextResponse.json({
       success: true,
       sessionId,
       secret,
+      seed,
       message: 'Game session started',
     })
   } catch (error) {

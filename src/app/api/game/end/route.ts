@@ -5,18 +5,25 @@ import { NextResponse } from 'next/server'
 // POST /api/game/end - End a game session and validate the final score
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as { sessionId: string; secret: string; finalScore: number }
+    const body = (await request.json()) as {
+      sessionId: string
+      signature: string
+      finalScore: number
+      events: { t: number; k: 'UP' | 'DOWN' | 'LEFT' | 'RIGHT' }[]
+      foods: { t: number; g: boolean }[]
+      durationMs: number
+    }
 
-    const { sessionId, secret, finalScore } = body
+    const { sessionId, signature, finalScore, events, foods, durationMs } = body
 
-    if (!sessionId || !secret || typeof finalScore !== 'number') {
+    if (!sessionId || !signature || typeof finalScore !== 'number') {
       return NextResponse.json(
-        { success: false, message: 'Missing required fields: sessionId, secret, finalScore' },
+        { success: false, message: 'Missing required fields: sessionId, signature, finalScore' },
         { status: 400 },
       )
     }
 
-    const result = endGameSession(sessionId, secret, finalScore)
+    const result = endGameSession(sessionId, signature, finalScore, events ?? [], foods ?? [], durationMs ?? 0)
 
     if (!result.success) {
       return NextResponse.json({ success: false, message: result.message }, { status: 400 })

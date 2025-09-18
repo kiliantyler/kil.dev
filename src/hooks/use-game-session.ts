@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 interface GameSession {
   sessionId: string
   secret: string
+  seed: number
 }
 
 interface GameState {
@@ -20,6 +21,9 @@ export function useGameSession() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const lastMoveTimeRef = useRef<number>(0)
+  const startTimeRef = useRef<number>(0)
+  const eventsRef = useRef<{ t: number; k: 'UP' | 'DOWN' | 'LEFT' | 'RIGHT' }[]>([])
+  const foodsRef = useRef<{ t: number; g: boolean }[]>([])
 
   const startGame = useCallback(async () => {
     setIsLoading(true)
@@ -39,7 +43,11 @@ export function useGameSession() {
         setSession({
           sessionId: data.sessionId,
           secret: data.secret,
+          seed: data.seed,
         })
+        startTimeRef.current = Date.now()
+        eventsRef.current = []
+        foodsRef.current = []
       } else {
         setError(data.message || 'Failed to start game session')
       }
@@ -60,22 +68,9 @@ export function useGameSession() {
       if (now - lastMoveTimeRef.current < 100) return // Max 10 moves per second
       lastMoveTimeRef.current = now
 
-      try {
-        await fetch('/api/game/move', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            sessionId: session.sessionId,
-            secret: session.secret,
-            direction,
-            gameState,
-          }),
-        })
-      } catch (err) {
-        console.error('Error recording move:', err)
-      }
+      // Record locally for end-only validation
+      const t = Date.now() - startTimeRef.current
+      eventsRef.current.push({ t, k: direction })
     },
     [session],
   )
@@ -84,23 +79,9 @@ export function useGameSession() {
     async (position: { x: number; y: number }, isGolden: boolean, score: number) => {
       if (!session) return
 
-      try {
-        await fetch('/api/game/food', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            sessionId: session.sessionId,
-            secret: session.secret,
-            position,
-            isGolden,
-            score,
-          }),
-        })
-      } catch (err) {
-        console.error('Error recording food eaten:', err)
-      }
+      // Record locally
+      const t = Date.now() - startTimeRef.current
+      foodsRef.current.push({ t, g: isGolden })
     },
     [session],
   )
@@ -110,22 +91,37 @@ export function useGameSession() {
       if (!session) return { success: false, message: 'No active session' }
 
       try {
+        async function computeSha256Hex(input: string): Promise<string> {
+          const encoder = new TextEncoder()
+          const data = encoder.encode(input)
+          const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+          const bytes = Array.from(new Uint8Array(hashBuffer))
+          return bytes.map(b => b.toString(16).padStart(2, '0')).join('')
+        }
+
+        // Compute signature: sha256(secret + '.' + JSON.stringify(payload))
+        const payload = {
+          sessionId: session.sessionId,
+          finalScore,
+          events: eventsRef.current,
+          foods: foodsRef.current,
+          durationMs: Date.now() - startTimeRef.current,
+        }
+
+        const signature = await computeSha256Hex(`${session.secret}.${JSON.stringify(payload)}`)
+
         const response = await fetch('/api/game/end', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            sessionId: session.sessionId,
-            secret: session.secret,
-            finalScore,
-          }),
+          body: JSON.stringify({ ...payload, signature }),
         })
 
         const data = await response.json()
 
         if (data.success) {
-          setSession(null) // Clear session after ending
+          // Keep session until score submission completes
           return { success: true, validatedScore: data.validatedScore }
         } else {
           return { success: false, message: data.message }
@@ -140,19 +136,9 @@ export function useGameSession() {
 
   const submitScore = useCallback(
     async (name: string, score: number) => {
-      if (!session) {
-        // Fallback to old method if no session
-        const response = await fetch('/api/scores', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ name, score }),
-        })
-        return response.json()
-      }
+      if (!session) return { success: false, message: 'No active session' }
 
-      // Use validated score submission
+      // Validated score submission
       const response = await fetch('/api/scores', {
         method: 'POST',
         headers: {

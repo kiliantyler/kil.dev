@@ -41,14 +41,18 @@ export function useLeaderboard() {
   }, [])
 
   const submitScore = useCallback(
-    async (score: number) => {
+    async (score: number, sessionId?: string, secret?: string) => {
       if (isSubmittingScore) return
       setIsSubmittingScore(true)
       try {
         const response = await fetch('/api/scores', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: playerName.join(''), score }),
+          body: JSON.stringify(
+            sessionId && secret
+              ? { name: playerName.join(''), score, sessionId, secret }
+              : { name: playerName.join(''), score },
+          ),
         })
         const data = (await response.json()) as { success: boolean; message: string; leaderboard?: LeaderboardEntry[] }
         if (data.success) {

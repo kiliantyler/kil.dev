@@ -13,10 +13,16 @@ const GOLDEN_APPLE_CHANCE = 0.02
 type UseSnakeGameOptions = {
   isInputActive?: boolean
   onGameOver?: (score: number) => void
+  onGameStart?: () => void | Promise<void>
+  onMove?: (
+    direction: Direction,
+    gameState: { snake: Position[]; food: Position; isGoldenApple: boolean; score: number; direction: Direction },
+  ) => void | Promise<void>
+  onFoodEaten?: (position: Position, isGolden: boolean, newScore: number) => void | Promise<void>
 }
 
 export function useSnakeGame(options: UseSnakeGameOptions = {}) {
-  const { isInputActive = false, onGameOver } = options
+  const { isInputActive = false, onGameOver, onGameStart, onMove, onFoodEaten } = options
 
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 })
   const [snake, setSnake] = useState<Position[]>([{ x: 5, y: 5 }])
@@ -89,8 +95,9 @@ export function useSnakeGame(options: UseSnakeGameOptions = {}) {
     setGameOver(false)
     setScore(0)
     setIsPlaying(true)
+    if (onGameStart) onGameStart()
     lastFoodEatenRef.current = null
-  }, [generateFood, windowSize])
+  }, [generateFood, windowSize, onGameStart])
 
   const moveSnake = useCallback(() => {
     setSnake(prevSnake => {
@@ -147,11 +154,10 @@ export function useSnakeGame(options: UseSnakeGameOptions = {}) {
 
         lastFoodEatenRef.current = currentFood
         const points = isGoldenApple ? 50 : 10
-        setScore(prev => {
-          const newScore = prev + points
-          playScoreSound(newScore)
-          return newScore
-        })
+        const newScore = score + points
+        playScoreSound(newScore)
+        setScore(newScore)
+        if (onFoodEaten) onFoodEaten(currentFood, isGoldenApple, newScore)
 
         const foodData = generateFood()
         setFood(foodData.position)
@@ -161,9 +167,18 @@ export function useSnakeGame(options: UseSnakeGameOptions = {}) {
 
       lastFoodEatenRef.current = null
       newSnake.pop()
+
+      if (onMove)
+        onMove(direction, {
+          snake: newSnake,
+          food,
+          isGoldenApple,
+          score,
+          direction,
+        })
       return newSnake
     })
-  }, [direction, windowSize, isGoldenApple, food, onGameOver, score, generateFood])
+  }, [direction, windowSize, isGoldenApple, food, onGameOver, score, generateFood, onMove, onFoodEaten])
 
   // game loop
   useEffect(() => {

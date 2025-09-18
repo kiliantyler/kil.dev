@@ -4,12 +4,16 @@ import { GameOverlay } from '@/components/layout/home/game-overlay'
 import { SnakeCanvas } from '@/components/layout/home/snake-canvas'
 import { useTheme } from '@/components/providers/theme-provider'
 import { useCrtAnimation } from '@/hooks/use-crt-animation'
+import { useGameSession } from '@/hooks/use-game-session'
 import { useLeaderboard } from '@/hooks/use-leaderboard'
-import { useSnakeGame } from '@/hooks/use-snake-game'
+import { useSnakeGame, type Direction, type Position } from '@/hooks/use-snake-game'
 import { useCallback, useEffect, useMemo } from 'react'
 
 export function BackgroundSnakeGame() {
   const { resolvedTheme } = useTheme()
+
+  // Game session for validated submission
+  const { startGame, recordMove, recordFoodEaten, endGame, session } = useGameSession()
 
   // Leaderboard and name input flow
   const {
@@ -29,8 +33,23 @@ export function BackgroundSnakeGame() {
   const { snake, food, isGoldenApple, gameOver, score, isPlaying, initGame, setIsPlaying, getDimensions } =
     useSnakeGame({
       isInputActive: showNameInput,
+      onGameStart: () => startGame(),
+      onMove: (
+        dir: Direction,
+        gameState: { snake: Position[]; food: Position; isGoldenApple: boolean; score: number; direction: Direction },
+      ) => {
+        void recordMove(dir, gameState)
+      },
+      onFoodEaten: (position: Position, isGolden: boolean, newScore: number) => {
+        void recordFoodEaten(position, isGolden, newScore)
+      },
       onGameOver: (finalScore: number) => {
-        void handleGameOverFlow(finalScore)
+        void (async () => {
+          const result = await endGame(finalScore)
+          if (result.success) {
+            await handleGameOverFlow(finalScore)
+          }
+        })()
       },
     })
 
@@ -234,13 +253,22 @@ export function BackgroundSnakeGame() {
         if (nameInputPosition < 2) {
           setNameInputPosition(prev => Math.min(2, prev + 1))
         } else {
-          void submitScore(score)
+          void submitScore(score, session?.sessionId, session?.secret)
         }
         return
       }
       handleNameInputKey(e)
     },
-    [showNameInput, nameInputPosition, setNameInputPosition, submitScore, score, handleNameInputKey],
+    [
+      showNameInput,
+      nameInputPosition,
+      setNameInputPosition,
+      submitScore,
+      score,
+      handleNameInputKey,
+      session?.sessionId,
+      session?.secret,
+    ],
   )
 
   // Body class for grid lights
