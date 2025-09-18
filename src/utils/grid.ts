@@ -93,11 +93,9 @@ export function getSafeBoundaries(windowWidth: number, windowHeight: number): Sa
 }
 
 export function getGameBoxDimensions(windowWidth: number, windowHeight: number): GameBoxDimensions {
-  const { gridCellSize, gridOffset } = getGridDimensions(windowWidth, windowHeight)
+  const { gridCellSize, gridOffset, gridWidth } = getGridDimensions(windowWidth, windowHeight)
   const { safeYMin, safeYMax, safeXMin } = getSafeBoundaries(windowWidth, windowHeight)
-  const totalGridWidth = Math.floor(
-    (windowWidth || (typeof window !== 'undefined' ? window.innerWidth : 0)) / gridCellSize,
-  )
+  const totalGridWidth = gridWidth + 1
   const squareGridSize = safeYMax - safeYMin + 1
   const centerGridX = Math.floor((totalGridWidth - squareGridSize) / 2)
 
