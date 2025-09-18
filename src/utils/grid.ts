@@ -54,15 +54,18 @@ export function getHeaderHeight(windowWidth: number, windowHeight: number): numb
   return Math.floor(80 / gridCellSize) * gridCellSize + 20
 }
 
-export function getSafeBoundaries(windowWidth: number, windowHeight: number): SafeBoundaries {
-  const { gridCellSize, gridOffset } = getGridDimensions(windowWidth, windowHeight)
-  const headerHeight = getHeaderHeight(windowWidth, windowHeight)
-  const borderOffset = 40
-  const actualHeaderHeight = headerHeight + borderOffset
-  const footerHeight = Math.floor(60 / gridCellSize) * gridCellSize
-  const width = windowWidth || (typeof window !== 'undefined' ? window.innerWidth : 0)
-  const height = windowHeight || (typeof window !== 'undefined' ? window.innerHeight : 0)
+const BORDER_OFFSET = 40
+const FOOTER_BASE_HEIGHT = 60
 
+export function getSafeBoundaries(windowWidth: number, windowHeight: number): SafeBoundaries {
+  const dimensions = getGridDimensions(windowWidth, windowHeight)
+  const { gridCellSize, gridOffset, gridWidth, gridHeight } = dimensions
+  const headerHeight = getHeaderHeight(windowWidth, windowHeight)
+  const borderOffset = BORDER_OFFSET
+  const actualHeaderHeight = headerHeight + borderOffset
+  const footerHeight = Math.floor(FOOTER_BASE_HEIGHT / gridCellSize) * gridCellSize
+  const width = (gridWidth + 1) * gridCellSize // Reverse the gridWidth calculation
+  const height = gridHeight * gridCellSize
   const baseYMin = Math.floor((actualHeaderHeight - gridOffset) / gridCellSize)
   const baseYMax = Math.floor((height - footerHeight - gridOffset) / gridCellSize) - 1
 
