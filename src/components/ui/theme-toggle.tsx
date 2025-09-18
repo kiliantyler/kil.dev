@@ -1,5 +1,6 @@
 'use client'
 
+import { useAchievements } from '@/components/providers/achievements-provider'
 import { useTheme } from '@/components/providers/theme-provider'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -25,21 +26,43 @@ function SystemIcon({ className }: { className?: string }) {
 export function ThemeToggle() {
   const { theme, setTheme, resolvedTheme, systemTheme } = useTheme()
   const { startTransition } = useThemeTransition()
+  const { unlocked, has, unlock } = useAchievements()
 
   const currentPreference: Theme = theme ?? 'system'
 
   const [open, setOpen] = useState(false)
   const [openedViaKeyboard, setOpenedViaKeyboard] = useState(false)
   const [tooltipHold, setTooltipHold] = useState(false)
+  const [toggleCount, setToggleCount] = useState(0)
+  const [themeSelected, setThemeSelected] = useState(false)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([])
   const optionsRef = useRef<HTMLDivElement | null>(null)
 
   const [hydrated, setHydrated] = useState(false)
+  const [forceUpdate, setForceUpdate] = useState(0)
   useEffect(() => {
     setHydrated(true)
   }, [])
+
+  // Force re-render after achievement state changes to ensure localStorage sync
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setForceUpdate(prev => prev + 1)
+
+      // Check if current theme is still available after achievement reset
+      // Add additional delay to ensure CSS attribute is synchronized
+      setTimeout(() => {
+        const availableThemes = getAvailableThemes() as readonly Theme[]
+        if (currentPreference && !availableThemes.includes(currentPreference)) {
+          // Current theme is no longer available, switch to system
+          setTheme('system')
+        }
+      }, 50) // Additional delay for CSS attribute sync
+    }, 100) // Small delay to ensure localStorage is updated
+    return () => clearTimeout(timer)
+  }, [unlocked.THEME_TAPDANCE, currentPreference, setTheme])
 
   // Build CSS that shows exactly one icon based on <html> theme classes
   const themeIconCss = useMemo(() => {
@@ -103,6 +126,21 @@ export function ThemeToggle() {
 
   const handleThemeChange = useCallback(
     (nextPref: Theme, event?: ReactMouseEvent) => {
+      // Mark that a theme was selected (this will reset the counter)
+      setThemeSelected(true)
+
+      // Reset the counter immediately when a theme is selected
+      setToggleCount(0)
+
+      // Check if the theme is available
+      const availableThemes = getAvailableThemes() as readonly Theme[]
+
+      // Only proceed if the theme is available
+      if (!availableThemes.includes(nextPref)) {
+        setOpen(false)
+        return
+      }
+
       // Compute the visual (CSS) theme for current and next preferences,
       // treating the seasonal default as equivalent to explicitly selecting it.
       const seasonalDefault = getDefaultThemeForNow()
@@ -169,7 +207,8 @@ export function ThemeToggle() {
       const resolvedIcon: IconComponent = iconByTheme[t] ?? getThemeIcon(t, SystemIcon)
       return { label, value: t, Icon: resolvedIcon }
     })
-  }, [iconByTheme])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [iconByTheme, has, unlocked, forceUpdate])
 
   const optionsToShow = useMemo(() => {
     if (currentPreference === 'system') {
@@ -282,6 +321,29 @@ export function ThemeToggle() {
             onClick={() => {
               setOpen(o => {
                 const next = !o
+
+                // When opening the menu, reset theme selection tracking
+                if (!o && next) {
+                  setThemeSelected(false)
+                }
+
+                // When closing the menu, only increment if no theme was selected
+                if (o && !next && !themeSelected) {
+                  const newCount = toggleCount + 1
+                  setToggleCount(newCount)
+
+                  // Unlock achievement after 6 toggles
+                  if (newCount >= 6 && !has('THEME_TAPDANCE')) {
+                    unlock('THEME_TAPDANCE')
+                    setToggleCount(0) // Reset counter after unlocking
+                  }
+                }
+
+                // If a theme was selected, reset the counter
+                if (o && !next && themeSelected) {
+                  setToggleCount(0)
+                }
+
                 setOpenedViaKeyboard(false)
                 return next
               })
@@ -371,31 +433,27 @@ export function ThemeToggle() {
         )}>
         {hydrated &&
           optionsToShow.map((opt, idx) => (
-            <Tooltip key={opt.value}>
-              <TooltipTrigger asChild>
-                <Button
-                  ref={el => {
-                    optionRefs.current[idx] = el
-                  }}
-                  onClick={e => handleThemeChange(opt.value, e)}
-                  role="menuitem"
-                  aria-label={opt.label}
-                  title={opt.label}
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    'transition-all duration-200 ease-out hover:bg-accent/70 justify-start gap-2',
-                    open ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-2 scale-95',
-                  )}
-                  style={{ transitionDelay: `${idx * 60}ms` }}>
-                  <span className="grid size-8 place-items-center shrink-0">
-                    <opt.Icon className="size-4" />
-                  </span>
-                  <span className="text-xs font-medium text-foreground/90">{opt.label}</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{opt.label}</TooltipContent>
-            </Tooltip>
+            <Button
+              key={opt.value}
+              ref={el => {
+                optionRefs.current[idx] = el
+              }}
+              onClick={e => handleThemeChange(opt.value, e)}
+              role="menuitem"
+              aria-label={opt.label}
+              title={opt.label}
+              variant="ghost"
+              size="sm"
+              className={cn(
+                'transition-all duration-200 ease-out hover:bg-accent/70 justify-start gap-2',
+                open ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-2 scale-95',
+              )}
+              style={{ transitionDelay: `${idx * 60}ms` }}>
+              <span className="grid size-8 place-items-center shrink-0">
+                <opt.Icon className="size-4" />
+              </span>
+              <span className="text-xs font-medium text-foreground/90">{opt.label}</span>
+            </Button>
           ))}
       </div>
     </div>

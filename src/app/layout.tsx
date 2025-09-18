@@ -50,6 +50,15 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             }),
           }}
         />
+        <script
+          id="pre-theme-tapdance"
+          dangerouslySetInnerHTML={{
+            __html: buildPresenceScript({
+              key: 'THEME_TAPDANCE',
+              attribute: 'data-has-theme-tapdance',
+            }),
+          }}
+        />
       </head>
       <body className="font-sans flex min-h-screen flex-col bg-background text-foreground">
         <Providers>

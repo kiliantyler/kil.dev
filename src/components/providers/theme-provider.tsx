@@ -1,7 +1,12 @@
 'use client'
 
 import { themes, type Theme, type ThemeName } from '@/lib/themes'
-import { getAvailableThemes, getDefaultThemeForNow, SEASONAL_THEMES } from '@/utils/theme-runtime'
+import {
+  getActiveSeasonalThemes,
+  getAvailableThemes,
+  getDefaultThemeForNow,
+  SEASONAL_THEMES,
+} from '@/utils/theme-runtime'
 import * as React from 'react'
 
 type SystemTheme = 'light' | 'dark'
@@ -29,6 +34,20 @@ function storageKey(base: string): string {
 
 function coerceToValidTheme(value: Theme | undefined): Theme {
   const pref = value ?? 'system'
+
+  // Check if user has theme tapdance achievement before validating theme availability
+  const hasThemeTapdance =
+    typeof document !== 'undefined' && document.documentElement.hasAttribute('data-has-theme-tapdance')
+
+  // If user has achievement, all themes are valid except expired seasonal themes for system
+  if (hasThemeTapdance) {
+    // For system theme, we need to ensure no expired seasonal themes are applied
+    if (pref === 'system') return pref
+
+    // For explicit themes, all are valid when unlocked
+    return pref
+  }
+
   const allowed = getAvailableThemes()
   if (pref !== 'system' && !allowed.includes(pref)) return 'system'
   return pref
@@ -136,13 +155,28 @@ function applyClasses(preference: Theme, system: SystemTheme | undefined) {
     if (!root.classList.contains(effective)) add(effective)
     const other = effective === 'dark' ? 'light' : 'dark'
     if (root.classList.contains(other)) remove(other)
-    // Seasonal overlay when active; otherwise ensure non-system theme classes are removed
-    const overlay = seasonalDefault !== 'system' ? seasonalDefault : undefined
+
+    // Check if user has theme tapdance achievement
+    const hasThemeTapdance =
+      typeof document !== 'undefined' && document.documentElement.hasAttribute('data-has-theme-tapdance')
+
+    // Handle seasonal themes based on requirements
+    const activeSeasonalThemes = getActiveSeasonalThemes()
+    const hasActiveSeasonalTheme = activeSeasonalThemes.length > 0
+
     for (const cls of allThemeClassNames) {
       if (cls === 'light' || cls === 'dark') continue
-      if (overlay && cls === overlay) {
-        if (!root.classList.contains(cls)) add(cls)
+
+      if (hasActiveSeasonalTheme) {
+        // During seasonal periods, apply seasonal theme regardless of unlock status
+        if (cls === seasonalDefault) {
+          if (!root.classList.contains(cls)) add(cls)
+        } else {
+          if (root.classList.contains(cls)) remove(cls)
+        }
       } else {
+        // When no seasonal theme is active
+        // Always remove all seasonal themes from system mode
         if (root.classList.contains(cls)) remove(cls)
       }
     }
@@ -287,6 +321,17 @@ export function ThemeProvider({
     }
 
     const id = window.setTimeout(() => {
+      // Check if user has theme tapdance achievement before checking availability
+      const hasThemeTapdance =
+        typeof document !== 'undefined' && document.documentElement.hasAttribute('data-has-theme-tapdance')
+
+      // Skip auto-revert if user has theme tapdance achievement
+      if (hasThemeTapdance) {
+        // User has achievement, re-apply classes to ensure they persist
+        applyClasses(currentPref, getSystemTheme())
+        return
+      }
+
       const allowed = getAvailableThemes()
       if (currentPref !== 'system' && !allowed.includes(currentPref)) {
         setTheme('system')

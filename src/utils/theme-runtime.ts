@@ -2,6 +2,28 @@ import { themes, type Theme, type ThemeEntry, type ThemeName } from '@/lib/theme
 import type { MonthDay } from '@/types/themes'
 import { THEME_RUNTIME_BUNDLE } from './theme-bundle'
 
+// Helper function to check if achievement is unlocked
+// Checks CSS data attribute first (SSR/hydration safe), then localStorage
+function hasThemeTapdanceAchievement(): boolean {
+  if (typeof document !== 'undefined') {
+    // Check for SSR-hydrated CSS data attribute
+    const root = document.documentElement
+    if (root.hasAttribute('data-has-theme-tapdance')) {
+      return true
+    }
+  }
+
+  if (typeof window === 'undefined') return false
+  try {
+    const stored = localStorage.getItem('kil.dev/achievements/v1')
+    if (!stored) return false
+    const unlocked = JSON.parse(stored) as Record<string, unknown>
+    return Boolean(unlocked.THEME_TAPDANCE)
+  } catch {
+    return false
+  }
+}
+
 export type SeasonalThemeConfig = {
   theme: ThemeName
   start: MonthDay // inclusive
@@ -54,7 +76,14 @@ export function getActiveSeasonalThemes(date: Date = new Date()): SeasonalThemeC
   return SEASONAL_THEMES.filter(cfg => isDateInRecurringRange(date, cfg.start, cfg.end))
 }
 
-export function getAvailableThemes(date: Date = new Date()): Theme[] {
+export function getAvailableThemes(date: Date = new Date(), overrideDateRestrictions = false): Theme[] {
+  // Check if we should bypass date restrictions
+  if (overrideDateRestrictions || hasThemeTapdanceAchievement()) {
+    // Return all themes when achievement is unlocked
+    return ['system', ...BASE_CSS_THEMES, ...SEASONAL_THEMES.map(st => st.theme)]
+  }
+
+  // Normal date-based filtering
   const active = getActiveSeasonalThemes(date)
   const seasonalNames = active.map(a => a.theme)
   return ['system', ...BASE_CSS_THEMES, ...seasonalNames]
