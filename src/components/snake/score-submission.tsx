@@ -74,9 +74,5 @@ export function ScoreSubmission({ score, onComplete }: ScoreSubmissionProps) {
     onComplete()
   }
 
-  return (
-    <>
-      <NameInputModal isOpen={showNameInput} score={score} onSubmit={handleNameSubmit} onClose={handleClose} />
-    </>
-  )
+  return <NameInputModal isOpen={showNameInput} score={score} onSubmit={handleNameSubmit} onClose={handleClose} />
 }
