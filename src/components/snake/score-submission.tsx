@@ -76,11 +76,22 @@ export function ScoreSubmission({ score, onComplete }: ScoreSubmissionProps) {
         body: JSON.stringify({ name, score }),
       })
 
-      const data = (await response.json()) as ScoreSubmissionResponse
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const rawData = (await response.json()) as unknown
+      const data = ScoreSubmissionResponseSchema.parse(rawData)
 
       if (data.success) {
         // Score submitted successfully
-        // Close name input and show success
+        toast.success('Score submitted successfully!', {
+          description: data.position
+            ? `You're ranked #${data.position} on the leaderboard!`
+            : 'Your score has been recorded.',
+        })
+
+        // Close name input after showing success
         setShowNameInput(false)
 
         // Wait a moment then complete
