@@ -890,10 +890,14 @@ export function BackgroundSnakeGame() {
         ctx.font = 'bold 18px monospace'
         ctx.fillText('LEADERBOARD', borderLeft + borderWidth / 2, borderTop + 140)
 
-        // Draw leaderboard entries
+        // Draw leaderboard entries - compact and centered
         const startY = borderTop + 170
-        const lineHeight = 25
+        const lineHeight = 20
         const maxEntries = Math.min(leaderboard.length, 10) // Show max 10 entries
+
+        // Calculate compact leaderboard width and position
+        const leaderboardWidth = 200
+        const leaderboardLeft = borderLeft + (borderWidth - leaderboardWidth) / 2
 
         for (let i = 0; i < maxEntries; i++) {
           const entry = leaderboard[i]
@@ -904,25 +908,25 @@ export function BackgroundSnakeGame() {
           // Highlight current score if it matches
           if (entry.score === score) {
             ctx.fillStyle = 'rgba(16, 185, 129, 0.2)'
-            ctx.fillRect(borderLeft + 20, y - 15, borderWidth - 40, lineHeight)
+            ctx.fillRect(leaderboardLeft, y - 12, leaderboardWidth, lineHeight)
           }
 
           // Rank
           ctx.fillStyle = '#10b981'
           ctx.font = '14px monospace'
           ctx.textAlign = 'left'
-          ctx.fillText(`#${i + 1}`, borderLeft + 30, y)
+          ctx.fillText(`#${i + 1}`, leaderboardLeft + 10, y)
 
           // Name
           ctx.fillStyle = entry.score === score ? '#ffffff' : '#10b981'
           ctx.font = 'bold 14px monospace'
-          ctx.fillText(entry.name, borderLeft + 80, y)
+          ctx.fillText(entry.name, leaderboardLeft + 40, y)
 
           // Score
           ctx.fillStyle = entry.score === score ? '#ffffff' : '#10b981'
           ctx.font = '14px monospace'
           ctx.textAlign = 'right'
-          ctx.fillText(entry.score.toString().padStart(4, '0'), borderLeft + borderWidth - 30, y)
+          ctx.fillText(entry.score.toString().padStart(4, '0'), leaderboardLeft + leaderboardWidth - 10, y)
         }
       }
 
