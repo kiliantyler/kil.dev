@@ -48,7 +48,15 @@ export function useLeaderboard() {
     setIsLoadingLeaderboard(true)
     try {
       const response = await fetch('/api/scores')
-      const data = (await response.json()) as { success: boolean; leaderboard: LeaderboardEntry[] }
+      const jsonData: unknown = await response.json()
+      const parseResult = leaderboardResponseSchema.safeParse(jsonData)
+
+      if (!parseResult.success) {
+        console.error('Failed to parse leaderboard response:', parseResult.error)
+        return
+      }
+
+      const data = parseResult.data
       if (data.success) setLeaderboard(data.leaderboard)
     } catch (error) {
       console.error('Error fetching leaderboard:', error)
@@ -60,8 +68,12 @@ export function useLeaderboard() {
   const checkScoreQualification = useCallback(async (currentScore: number) => {
     try {
       const response = await fetch(`/api/scores/check?score=${currentScore}`)
-      const parsed = checkScoreResponseSchema.safeParse(await response.json())
-      if (!parsed.success) return false
+      const jsonData: unknown = await response.json()
+      const parsed = checkScoreResponseSchema.safeParse(jsonData)
+      if (!parsed.success) {
+        console.error('Failed to parse score qualification response:', parsed.error)
+        return false
+      }
       return parsed.data.qualifies
     } catch (error) {
       console.error('Error checking score qualification:', error)
@@ -83,10 +95,19 @@ export function useLeaderboard() {
               : { name: playerName.join(''), score },
           ),
         })
-        const data = (await response.json()) as { success: boolean; message: string; leaderboard?: LeaderboardEntry[] }
+        const jsonData: unknown = await response.json()
+        const parseResult = submitScoreResponseSchema.safeParse(jsonData)
+
+        if (!parseResult.success) {
+          console.error('Failed to parse score submission response:', parseResult.error)
+          setShowNameInput(false)
+          return
+        }
+
+        const data = parseResult.data
         if (data.success) {
           if (data.leaderboard) setLeaderboard(data.leaderboard)
-          setTimeout(() => setShowNameInput(false), 1000)
+          setTimeout(() => setShowNameInput(false), SUBMIT_HIDE_NAME_TIMEOUT_MS)
         } else {
           console.error('Failed to submit score:', data.message)
           setShowNameInput(false)
