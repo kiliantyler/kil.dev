@@ -1000,23 +1000,23 @@ export function BackgroundSnakeGame() {
 
       // Draw game over text
       ctx.fillStyle = '#ffffff'
-      ctx.font = 'bold 36px monospace'
+      ctx.font = 'bold 100px VT323, monospace'
       ctx.textAlign = 'center'
       ctx.fillText('GAME OVER', borderLeft + borderWidth / 2, borderTop + 60)
 
       // Draw score
-      ctx.font = '20px monospace'
+      ctx.font = '40px VT323, monospace'
       ctx.fillText(`Score: ${score}`, borderLeft + borderWidth / 2, borderTop + 100)
 
       // Always draw leaderboard first
       if (isLoadingLeaderboard) {
         ctx.fillStyle = '#10b981'
-        ctx.font = '16px monospace'
+        ctx.font = '36px VT323, monospace'
         ctx.fillText('Loading leaderboard...', borderLeft + borderWidth / 2, borderTop + 140)
       } else if (leaderboard.length > 0) {
         // Draw leaderboard title
         ctx.fillStyle = '#10b981'
-        ctx.font = 'bold 18px monospace'
+        ctx.font = 'bold 40px VT323, monospace'
         ctx.fillText('LEADERBOARD', borderLeft + borderWidth / 2, borderTop + 140)
 
         // Draw leaderboard entries - compact and centered
@@ -1042,18 +1042,18 @@ export function BackgroundSnakeGame() {
 
           // Rank
           ctx.fillStyle = '#10b981'
-          ctx.font = '14px monospace'
+          ctx.font = '20px VT323, monospace'
           ctx.textAlign = 'left'
           ctx.fillText(`#${i + 1}`, leaderboardLeft + 10, y)
 
           // Name
           ctx.fillStyle = entry.score === score ? '#ffffff' : '#10b981'
-          ctx.font = 'bold 14px monospace'
+          ctx.font = 'bold 20px VT323, monospace'
           ctx.fillText(entry.name, leaderboardLeft + 40, y)
 
           // Score
           ctx.fillStyle = entry.score === score ? '#ffffff' : '#10b981'
-          ctx.font = '14px monospace'
+          ctx.font = '20px VT323, monospace'
           ctx.textAlign = 'right'
           ctx.fillText(entry.score.toString().padStart(4, '0'), leaderboardLeft + leaderboardWidth - 10, y)
         }
@@ -1067,11 +1067,11 @@ export function BackgroundSnakeGame() {
 
         // Draw name input title
         ctx.fillStyle = '#10b981'
-        ctx.font = 'bold 18px monospace'
+        ctx.font = 'bold 32px VT323, monospace'
         ctx.textAlign = 'center'
         ctx.fillText('NEW HIGH SCORE!', borderLeft + borderWidth / 2, nameInputY)
 
-        ctx.font = '16px monospace'
+        ctx.font = '24px VT323, monospace'
         ctx.fillText('Enter your initials:', borderLeft + borderWidth / 2, nameInputY + 30)
 
         // Draw name input boxes - properly centered
@@ -1091,20 +1091,20 @@ export function BackgroundSnakeGame() {
 
           // Draw letter
           ctx.fillStyle = '#10b981'
-          ctx.font = 'bold 20px monospace'
+          ctx.font = 'bold 32px VT323, monospace'
           ctx.textAlign = 'center'
           ctx.fillText(playerName[i] ?? 'A', x + boxWidth / 2, nameY)
         }
 
         // Draw instructions
         ctx.fillStyle = '#10b981'
-        ctx.font = '14px monospace'
+        ctx.font = '20px VT323, monospace'
         ctx.textAlign = 'center'
         ctx.fillText('↑↓ Change letter  ←→ Move  SPACE Next/Submit', borderLeft + borderWidth / 2, nameInputY + 110)
 
         if (isSubmittingScore) {
           ctx.fillStyle = '#ffffff'
-          ctx.font = '16px monospace'
+          ctx.font = '24px VT323, monospace'
           ctx.textAlign = 'center'
           ctx.fillText('Submitting...', borderLeft + borderWidth / 2, nameInputY + 140)
         }
@@ -1112,13 +1112,13 @@ export function BackgroundSnakeGame() {
 
       // Draw restart instruction
       ctx.fillStyle = '#ffffff'
-      ctx.font = '16px monospace'
+      ctx.font = '24px VT323, monospace'
       ctx.textAlign = 'center'
       ctx.fillText('Press SPACE to restart', borderLeft + borderWidth / 2, borderTop + borderHeight - 30)
 
       // Draw quit instruction
       ctx.fillStyle = '#ffffff'
-      ctx.font = '14px monospace'
+      ctx.font = '18px VT323, monospace'
       ctx.textAlign = 'center'
       ctx.fillText('ESC to quit', borderLeft + borderWidth / 2, borderTop + borderHeight - 10)
     }
@@ -1173,21 +1173,20 @@ export function BackgroundSnakeGame() {
         }
       }
 
-      // Draw instructions below the glyph title to avoid overlap
+      // Draw instructions near the bottom (similar to game over screen)
       const centerXPx = borderLeft + borderWidth / 2
-      const glyphBottomPx = (yStartGrid + letterH) * gridCellSize + gridOffset
 
       ctx.fillStyle = '#ffffff'
-      ctx.font = '24px monospace'
+      ctx.font = '28px VT323, monospace'
       ctx.textAlign = 'center'
-      ctx.fillText('Use arrow keys to move', centerXPx, glyphBottomPx + 24)
-      ctx.fillText('Press SPACE to start', centerXPx, glyphBottomPx + 56)
+      ctx.fillText('Use arrow keys to move', centerXPx, borderTop + borderHeight - 60)
+      ctx.fillText('Press SPACE to start', centerXPx, borderTop + borderHeight - 30)
 
       // Draw quit instruction on start screen
       ctx.fillStyle = '#ffffff'
-      ctx.font = '16px monospace'
+      ctx.font = '20px VT323, monospace'
       ctx.textAlign = 'center'
-      ctx.fillText('ESC to quit', centerXPx, glyphBottomPx + 84)
+      ctx.fillText('ESC to quit', centerXPx, borderTop + borderHeight - 10)
     }
 
     // Restore context after CRT effects
@@ -1294,7 +1293,7 @@ export function BackgroundSnakeGame() {
               }}>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="font-mono text-lg font-bold text-green-400">
+                <span className="text-lg font-bold text-green-400" style={{ fontFamily: 'VT323, monospace' }}>
                   SCORE: <span className="text-white">{score}</span>
                 </span>
               </div>
