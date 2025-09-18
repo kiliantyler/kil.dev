@@ -70,7 +70,7 @@ export function useGameSession() {
   }, [])
 
   const recordMove = useCallback(
-    async (direction: 'UP' | 'DOWN' | 'LEFT' | 'RIGHT', gameState: GameState) => {
+    async (direction: 'UP' | 'DOWN' | 'LEFT' | 'RIGHT', _gameState: GameState) => {
       if (!session) return
 
       // Throttle moves to avoid too many API calls
@@ -86,7 +86,7 @@ export function useGameSession() {
   )
 
   const recordFoodEaten = useCallback(
-    async (position: { x: number; y: number }, isGolden: boolean, score: number) => {
+    async (_position: { x: number; y: number }, isGolden: boolean, _score: number) => {
       if (!session) return
 
       // Record locally
