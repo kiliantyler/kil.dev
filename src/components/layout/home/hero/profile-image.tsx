@@ -3,9 +3,7 @@
 import { useAchievements } from '@/components/providers/achievements-provider'
 import { captureLadybirdDetected, captureProfileImageClicked } from '@/hooks/posthog'
 import { useHash } from '@/hooks/use-hash'
-import Confused from '@/images/headshot/cartoon-confused.webp'
-import Grumpy from '@/images/headshot/cartoon-grumpy.webp'
-import Ladybird from '@/images/headshot/cartoon-ladybird.webp'
+import * as Headshots from '@/images/headshot'
 import { type AchievementId } from '@/lib/achievements'
 import { HOME_CONTENT } from '@/lib/content'
 import { themes } from '@/lib/themes'
@@ -28,9 +26,9 @@ export function ProfileImage() {
   type NonThemeVariant = Exclude<ProfileVariant, 'default'>
 
   const VARIANT_TO_IMAGE: Record<NonThemeVariant, StaticImageData> = {
-    grumpy: Grumpy,
-    ladybird: Ladybird,
-    confused: Confused,
+    grumpy: Headshots.Grumpy,
+    ladybird: Headshots.Ladybird,
+    confused: Headshots.Confused,
   }
 
   function computeVariant(isGrumpyFlag: boolean, isLadybirdFlag: boolean, useConfusedFlag: boolean): ProfileVariant {

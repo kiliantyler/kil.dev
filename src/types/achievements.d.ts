@@ -9,4 +9,5 @@ export interface AchievementDefinition {
   imageAlt: string
   cardDescription: string
   unlockHint: string
+  confetti: boolean
 }

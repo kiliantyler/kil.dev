@@ -1,9 +1,4 @@
-import azazelPhoto from '@/images/pets/azazel.webp'
-import gozerPhoto from '@/images/pets/gozer.webp'
-import lilithPhoto from '@/images/pets/lilith.webp'
-import luxPhoto from '@/images/pets/lux.webp'
-import milimPhoto from '@/images/pets/milim.webp'
-import taliPhoto from '@/images/pets/tali.webp'
+import * as Pets from '@/images/pets'
 import type { Pet } from '@/types/pets'
 
 export const PETS: Pet[] = [
@@ -14,7 +9,7 @@ export const PETS: Pet[] = [
     birthday: '2022-06-09',
     gender: 'Female',
     description: 'Lux is a sweet and playful girl who loves to cuddle and sit like a human.',
-    image: luxPhoto,
+    image: Pets.Lux,
     imageAlt: 'Lux the Golden Retriever',
   },
   {
@@ -25,7 +20,7 @@ export const PETS: Pet[] = [
     gender: 'Female',
     description:
       "Milim is a crazy girl who can't sit still. She runs around like a maniac and loves to play with her sisters.",
-    image: milimPhoto,
+    image: Pets.Milim,
     imageAlt: 'Milim the Golden Retriever',
   },
   {
@@ -36,7 +31,7 @@ export const PETS: Pet[] = [
     gender: 'Female',
     description:
       "Tali has a spinal cord injury but she doesn't let it slow her down. She loves to chase her sisters around the back yard and bark when they go too fast for her. She also loves to sleep on the couch.",
-    image: taliPhoto,
+    image: Pets.Tali,
     imageAlt: 'Tali the Mixed Breed (Basenji/Australian Shepherd)',
   },
   {
@@ -46,7 +41,7 @@ export const PETS: Pet[] = [
     birthday: '2016-04-15',
     gender: 'Female',
     description: "When she isn't fighting the Ghostbusters, she loves to lay on laps and yell at anyone who walks by.",
-    image: gozerPhoto,
+    image: Pets.Gozer,
     imageAlt: 'Gozer the Gozarian',
   },
   {
@@ -57,7 +52,7 @@ export const PETS: Pet[] = [
     gender: 'Female',
     description:
       "There is nothing that Lilith wants more than to lay on my wife's lap and touch her face. When she can't do that she is laying with her brother.",
-    image: lilithPhoto,
+    image: Pets.Lilith,
     imageAlt: 'Lilith the Witch Familiar',
   },
   {
@@ -68,7 +63,7 @@ export const PETS: Pet[] = [
     gender: 'Male',
     description:
       'Azazel is a very regal man who loves to sleep on the back of the couch. He regularly gets cleaned by his sister and hates it.',
-    image: azazelPhoto,
+    image: Pets.Azazel,
     imageAlt: 'Azazel the Chonk',
   },
 ]

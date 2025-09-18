@@ -1,0 +1,6 @@
+export { default as Azazel } from './azazel.webp'
+export { default as Gozer } from './gozer.webp'
+export { default as Lilith } from './lilith.webp'
+export { default as Lux } from './lux.webp'
+export { default as Milim } from './milim.webp'
+export { default as Tali } from './tali.webp'
