@@ -842,9 +842,13 @@ export function BackgroundSnakeGame() {
     try {
       console.log('Checking score qualification for score:', currentScore)
       const response = await fetch(`/api/scores/check?score=${currentScore}`)
-      const data = (await response.json()) as { qualifies: boolean; currentThreshold?: number }
-      console.log('Qualification response:', data)
-      return data.qualifies
+      const parsed = checkScoreResponseSchema.safeParse(await response.json())
+      if (!parsed.success) {
+        console.error('Invalid qualification response:', parsed.error)
+        return false
+      }
+      console.log('Qualification response:', parsed.data)
+      return parsed.data.qualifies
     } catch (error) {
       console.error('Error checking score qualification:', error)
       return false
