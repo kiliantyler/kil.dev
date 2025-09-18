@@ -16,7 +16,7 @@ const SPEED_REDUCTION_PER_SEGMENT = 2
 const GOLDEN_APPLE_CHANCE = 0.02
 
 export function BackgroundSnakeGame() {
-  const { showSnake } = useKonamiAnimation()
+  const { showSnake, closeAnimation, finishCloseAnimation, isReturning } = useKonamiAnimation()
   const { resolvedTheme } = useTheme()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [snake, setSnake] = useState<Position[]>([{ x: 5, y: 5 }])
@@ -44,6 +44,9 @@ export function BackgroundSnakeGame() {
     glowIntensity: 0,
   })
   const gameLoopRef = useRef<number | null>(null)
+  const crtCloseRef = useRef<{ isClosing: boolean; rafId: number | null }>({ isClosing: false, rafId: null })
+  const [isCrtClosing, setIsCrtClosing] = useState(false)
+  const [isCrtOff, setIsCrtOff] = useState(false)
 
   // Use refs to track current food state to avoid stale closures
   const foodRef = useRef<Position>({ x: 10, y: 10 })
@@ -180,6 +183,8 @@ export function BackgroundSnakeGame() {
 
   // Start CRT turn-on animation
   const startCrtAnimation = useCallback(() => {
+    // Ensure CRT is on for opening animation
+    setIsCrtOff(false)
     // Get all dimensions from centralized calculation
     const { centerX, centerY, borderWidth, borderHeight } = getGameBoxDimensions()
 
@@ -277,6 +282,111 @@ export function BackgroundSnakeGame() {
 
     return () => clearTimeout(fallbackTimeout)
   }, [getGameBoxDimensions])
+
+  // Start CRT turn-off animation (reverse)
+  const startCrtCloseAnimation = useCallback(() => {
+    if (crtCloseRef.current.isClosing) return
+
+    const { centerX, centerY, borderWidth, borderHeight } = getGameBoxDimensions()
+
+    // Initialize to full open state
+    setCrtAnimation({
+      isAnimating: true,
+      centerX,
+      centerY,
+      horizontalWidth: borderWidth,
+      verticalHeight: borderHeight,
+      opacity: 1,
+      glowIntensity: 0.3,
+    })
+
+    // Close timeline tuned to read as CRT-off:
+    // 1) Vertical collapse to a horizontal line (fast)
+    // 2) Horizontal collapse to a bright center point (medium)
+    // 3) Point flickers and fades out (short)
+    const verticalDuration = 500
+    const horizontalDuration = 700
+    const pointDuration = 300
+
+    const startTime = Date.now()
+    crtCloseRef.current.isClosing = true
+    setIsCrtClosing(true)
+    // Reset signal
+    let hasSignaledReturn = false
+
+    const animate = () => {
+      const elapsed = Date.now() - startTime
+      const total = verticalDuration + horizontalDuration + pointDuration
+
+      // Phase 1: Vertical collapse
+      const verticalProgress = Math.min(elapsed / verticalDuration, 1)
+      const verticalEased = 1 - Math.pow(1 - verticalProgress, 2)
+      const currentVerticalHeight = (1 - verticalEased) * borderHeight
+
+      // Phase 2: Horizontal collapse
+      const horizontalElapsed = Math.max(0, elapsed - verticalDuration)
+      const horizontalProgress = Math.min(horizontalElapsed / horizontalDuration, 1)
+      const horizontalEased = 1 - Math.pow(1 - horizontalProgress, 3)
+      const currentHorizontalWidth = (1 - horizontalEased) * borderWidth
+
+      // Phase 3: Point flicker/fade
+      const pointElapsed = Math.max(0, elapsed - verticalDuration - horizontalDuration)
+      const pointProgress = Math.min(pointElapsed / pointDuration, 1)
+      const pointSize = (1 - pointProgress) * 8
+
+      // Trigger content return late in the horizontal collapse (>=70%), before the line disappears
+      const signalDuringLine = verticalProgress >= 1 && horizontalProgress >= 0.7 && pointElapsed === 0
+      if (!hasSignaledReturn && signalDuringLine) {
+        closeAnimation()
+        hasSignaledReturn = true
+      }
+
+      // Opacity: keep solid until point phase, then fade
+      const opacityProgress = Math.min(elapsed / total, 1)
+      const opacity =
+        opacityProgress < (verticalDuration + horizontalDuration) / total
+          ? 1
+          : 1 - (opacityProgress - (verticalDuration + horizontalDuration) / total) / (pointDuration / total)
+
+      // Glow: strong throughout, brief peak at the start of point phase, then decay
+      let glowIntensity = 0.6
+      if (pointElapsed > 0 && pointElapsed < 120) {
+        glowIntensity = 1
+      } else if (pointElapsed >= 120) {
+        glowIntensity = Math.max(0, 1 - (pointElapsed - 120) / (pointDuration - 120))
+      }
+
+      setCrtAnimation(prev => ({
+        ...prev,
+        isAnimating: elapsed < total,
+        centerX,
+        centerY,
+        horizontalWidth: Math.max(currentHorizontalWidth, pointSize),
+        verticalHeight: Math.max(currentVerticalHeight, pointSize),
+        opacity: Math.max(0, Math.min(1, opacity)),
+        glowIntensity,
+      }))
+
+      if (elapsed < total) {
+        crtCloseRef.current.rafId = requestAnimationFrame(animate)
+      } else {
+        crtCloseRef.current.isClosing = false
+        crtCloseRef.current.rafId = null
+        setIsCrtClosing(false)
+        setIsCrtOff(true)
+        finishCloseAnimation()
+      }
+    }
+
+    crtCloseRef.current.rafId = requestAnimationFrame(animate)
+  }, [getGameBoxDimensions, finishCloseAnimation, closeAnimation])
+
+  // If the provider enters returning state for any reason, ensure CRT close runs
+  useEffect(() => {
+    if (isReturning) {
+      startCrtCloseAnimation()
+    }
+  }, [isReturning, startCrtCloseAnimation])
 
   // Start CRT animation immediately when component mounts (simultaneous with Konami)
   useEffect(() => {
