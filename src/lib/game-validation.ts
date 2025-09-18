@@ -28,6 +28,13 @@ function computeSignatureHex(secret: string, payloadString: string): string {
   return createHash('sha256').update(`${secret}.${payloadString}`).digest('hex')
 }
 
+// Tunable validation thresholds (relaxed in development)
+const IS_DEV = process.env.NODE_ENV !== 'production'
+const MIN_DURATION_MS = IS_DEV ? 500 : 2000
+const MIN_MOVE_EVENTS = IS_DEV ? 3 : 5
+const MIN_MOVE_INTERVAL_MS = IS_DEV ? 30 : 50
+const MAX_FOOD_RATE_MS = IS_DEV ? 80 : 200
+
 export function createGameSession(): { sessionId: string; secret: string; seed: number } {
   const sessionId = randomBytes(16).toString('hex')
   const secret = randomBytes(32).toString('hex')
@@ -80,11 +87,11 @@ export function endGameSession(
   }
 
   // Basic validations
-  if (durationMs < 5000) {
+  if (durationMs < MIN_DURATION_MS) {
     return { success: false, message: 'Game too short to be valid' }
   }
 
-  if (events.length < 10) {
+  if (events.length < MIN_MOVE_EVENTS) {
     return { success: false, message: 'Too few moves recorded' }
   }
 
@@ -96,7 +103,7 @@ export function endGameSession(
     if (curr.t <= prev.t) {
       return { success: false, message: 'Invalid event ordering' }
     }
-    if (curr.t - prev.t < 50) {
+    if (curr.t - prev.t < MIN_MOVE_INTERVAL_MS) {
       return { success: false, message: 'Move too fast' }
     }
   }
@@ -107,8 +114,8 @@ export function endGameSession(
     return { success: false, message: 'Score does not match food events' }
   }
 
-  // Upper bound food rate: at most 1 food per 200ms average
-  if (foods.length > Math.floor(durationMs / 200)) {
+  // Upper bound food rate: at most 1 food per interval (disabled in dev)
+  if (!IS_DEV && foods.length > Math.floor(durationMs / MAX_FOOD_RATE_MS)) {
     return { success: false, message: 'Unrealistic food consumption rate' }
   }
 
