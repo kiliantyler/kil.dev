@@ -1,40 +1,8 @@
+import { CheckScoreResponseSchema, LeaderboardResponseSchema, SubmitScoreResponseSchema } from '@/lib/api-schemas'
 import type { LeaderboardEntry } from '@/types/leaderboard'
 import { useCallback, useState } from 'react'
-import { z } from 'zod'
 
 const SUBMIT_HIDE_NAME_TIMEOUT_MS = 1000
-
-const checkScoreResponseSchema = z.object({
-  qualifies: z.boolean(),
-  currentThreshold: z.number().optional(),
-})
-
-const leaderboardResponseSchema = z.object({
-  success: z.boolean(),
-  leaderboard: z.array(
-    z.object({
-      name: z.string(),
-      score: z.number(),
-      timestamp: z.number(),
-      id: z.string(),
-    }),
-  ),
-})
-
-const submitScoreResponseSchema = z.object({
-  success: z.boolean(),
-  message: z.string(),
-  leaderboard: z
-    .array(
-      z.object({
-        name: z.string(),
-        score: z.number(),
-        timestamp: z.number(),
-        id: z.string(),
-      }),
-    )
-    .optional(),
-})
 
 export function useLeaderboard() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
@@ -49,7 +17,7 @@ export function useLeaderboard() {
     try {
       const response = await fetch('/api/scores')
       const jsonData: unknown = await response.json()
-      const parseResult = leaderboardResponseSchema.safeParse(jsonData)
+      const parseResult = LeaderboardResponseSchema.safeParse(jsonData)
 
       if (!parseResult.success) {
         console.error('Failed to parse leaderboard response:', parseResult.error)
@@ -69,7 +37,7 @@ export function useLeaderboard() {
     try {
       const response = await fetch(`/api/scores/check?score=${currentScore}`)
       const jsonData: unknown = await response.json()
-      const parsed = checkScoreResponseSchema.safeParse(jsonData)
+      const parsed = CheckScoreResponseSchema.safeParse(jsonData)
       if (!parsed.success) {
         console.error('Failed to parse score qualification response:', parsed.error)
         return false
@@ -96,7 +64,7 @@ export function useLeaderboard() {
           ),
         })
         const jsonData: unknown = await response.json()
-        const parseResult = submitScoreResponseSchema.safeParse(jsonData)
+        const parseResult = SubmitScoreResponseSchema.safeParse(jsonData)
 
         if (!parseResult.success) {
           console.error('Failed to parse score submission response:', parseResult.error)
