@@ -6,7 +6,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT'
 type Position = { x: number; y: number }
 
-const GAME_SPEED = 150
+const BASE_GAME_SPEED = 150
+const MIN_GAME_SPEED = 80
+const SPEED_REDUCTION_PER_SEGMENT = 2
+const GOLDEN_APPLE_CHANCE = 0.02
 
 export function BackgroundSnakeGame() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -23,6 +26,13 @@ export function BackgroundSnakeGame() {
   const foodRef = useRef<Position>({ x: 10, y: 10 })
   const isGoldenAppleRef = useRef<boolean>(false)
   const lastFoodEatenRef = useRef<Position | null>(null)
+
+  // Calculate current game speed based on snake length
+  const getCurrentGameSpeed = useCallback((snakeLength: number) => {
+    const speedReduction = (snakeLength - 1) * SPEED_REDUCTION_PER_SEGMENT
+    const newSpeed = BASE_GAME_SPEED - speedReduction
+    return Math.max(newSpeed, MIN_GAME_SPEED)
+  }, [])
 
   // Calculate grid dimensions based on window size
   const getGridDimensions = useCallback(() => {
@@ -76,8 +86,8 @@ export function BackgroundSnakeGame() {
     (gridWidth: number, gridHeight: number): { position: Position; isGolden: boolean } => {
       const { safeYMin, safeYMax, safeXMin, safeXMax } = getSafeBoundaries()
 
-      // 15% chance for golden apple
-      const isGolden = Math.random() < 0.15
+      // Golden apple chance
+      const isGolden = Math.random() < GOLDEN_APPLE_CHANCE
 
       // Ensure we have valid safe range
       if (safeYMin >= safeYMax || safeXMin >= safeXMax) {
@@ -247,13 +257,26 @@ export function BackgroundSnakeGame() {
       clearInterval(gameLoopRef.current)
     }
 
-    gameLoopRef.current = window.setInterval(moveSnake, GAME_SPEED)
+    // Calculate current speed based on snake length
+    const currentSpeed = getCurrentGameSpeed(snake.length)
+    gameLoopRef.current = window.setInterval(moveSnake, currentSpeed)
     return () => {
       if (gameLoopRef.current) {
         clearInterval(gameLoopRef.current)
       }
     }
-  }, [direction, gameOver, isPlaying, generateFood, getGridDimensions, getSafeBoundaries, food, isGoldenApple])
+  }, [
+    direction,
+    gameOver,
+    isPlaying,
+    generateFood,
+    getGridDimensions,
+    getSafeBoundaries,
+    food,
+    isGoldenApple,
+    snake.length,
+    getCurrentGameSpeed,
+  ])
 
   // Draw game
   useEffect(() => {
