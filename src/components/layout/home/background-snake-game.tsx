@@ -1230,6 +1230,12 @@ export function BackgroundSnakeGame() {
     isSubmittingScore,
     isCrtClosing,
     isCrtOff,
+    drawGameBorder,
+    drawSnake,
+    drawFood,
+    drawCRTEffects,
+    drawGameOverOverlay,
+    drawStartScreen,
   ])
 
   // Handle restart and resize
