@@ -29,6 +29,14 @@ function storageKey(base: string): string {
 
 function coerceToValidTheme(value: Theme | undefined): Theme {
   const pref = value ?? 'system'
+
+  // Check if user has theme tapdance achievement before validating theme availability
+  const hasThemeTapdance = typeof document !== 'undefined' &&
+    document.documentElement.hasAttribute('data-has-theme-tapdance')
+
+  // If user has achievement, all themes are valid
+  if (hasThemeTapdance) return pref
+
   const allowed = getAvailableThemes()
   if (pref !== 'system' && !allowed.includes(pref)) return 'system'
   return pref
@@ -287,6 +295,17 @@ export function ThemeProvider({
     }
 
     const id = window.setTimeout(() => {
+      // Check if user has theme tapdance achievement before checking availability
+      const hasThemeTapdance = typeof document !== 'undefined' &&
+        document.documentElement.hasAttribute('data-has-theme-tapdance')
+
+      // Skip auto-revert if user has theme tapdance achievement
+      if (hasThemeTapdance) {
+        // User has achievement, re-apply classes to ensure they persist
+        applyClasses(currentPref, getSystemTheme())
+        return
+      }
+
       const allowed = getAvailableThemes()
       if (currentPref !== 'system' && !allowed.includes(currentPref)) {
         setTheme('system')
