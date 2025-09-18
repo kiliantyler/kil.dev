@@ -1,3 +1,4 @@
+import { KonamiCodeListener } from '@/components/layout/achievements/konami-code-listener'
 import { HomeContent } from '@/components/layout/home/_content'
 import type { Metadata } from 'next'
 
@@ -6,5 +7,10 @@ export const metadata: Metadata = {
 }
 
 export default function Homepage() {
-  return <HomeContent />
+  return (
+    <>
+      <HomeContent />
+      <KonamiCodeListener />
+    </>
+  )
 }

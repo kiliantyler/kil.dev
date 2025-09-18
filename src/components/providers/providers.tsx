@@ -1,6 +1,5 @@
 'use client'
 
-import { KonamiCodeListener } from '@/components/layout/achievements/konami-code-listener'
 import type { ThemeName } from '@/lib/themes'
 import type { UnlockedMap } from '@/utils/achievements'
 import { AchievementsProvider } from './achievements-provider'
@@ -21,10 +20,7 @@ export function Providers({
     <PostHogProvider>
       <ThemeProvider initialAppliedTheme={initialAppliedTheme}>
         <ConfettiProvider>
-          <AchievementsProvider initialUnlocked={initialUnlocked}>
-            <KonamiCodeListener />
-            {children}
-          </AchievementsProvider>
+          <AchievementsProvider initialUnlocked={initialUnlocked}>{children}</AchievementsProvider>
         </ConfettiProvider>
       </ThemeProvider>
     </PostHogProvider>
