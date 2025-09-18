@@ -24,6 +24,13 @@ export function BackgroundSnakeGame() {
   const [gameOver, setGameOver] = useState(false)
   const [score, setScore] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
+  const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(false)
+  const [showNameInput, setShowNameInput] = useState(false)
+  const [playerName, setPlayerName] = useState(['A', 'A', 'A'])
+  const [nameInputPosition, setNameInputPosition] = useState(0)
+  const [isSubmittingScore, setIsSubmittingScore] = useState(false)
+  const [shouldSubmitScore, setShouldSubmitScore] = useState(false)
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 })
   const [crtAnimation, setCrtAnimation] = useState({
     isAnimating: true, // Start animating immediately
@@ -333,12 +340,167 @@ export function BackgroundSnakeGame() {
     setGameOver(false)
     setScore(0)
     setIsPlaying(true)
+    setLeaderboard([])
+    setIsLoadingLeaderboard(false)
+    setShowNameInput(false)
+    setPlayerName(['A', 'A', 'A'])
+    setNameInputPosition(0)
+    setIsSubmittingScore(false)
+    setShouldSubmitScore(false)
     lastFoodEatenRef.current = null
   }, [generateFood, getGridDimensions, getSafeBoundaries])
+
+  // Check if score qualifies for leaderboard
+  const checkScoreQualification = useCallback(async (currentScore: number) => {
+    try {
+      console.log('Checking score qualification for score:', currentScore)
+      const response = await fetch(`/api/scores/check?score=${currentScore}`)
+      const data = (await response.json()) as { qualifies: boolean; currentThreshold?: number }
+      console.log('Qualification response:', data)
+      return data.qualifies
+    } catch (error) {
+      console.error('Error checking score qualification:', error)
+      return false
+    }
+  }, [])
+
+  // Fetch leaderboard data
+  const fetchLeaderboard = useCallback(async () => {
+    setIsLoadingLeaderboard(true)
+    try {
+      const response = await fetch('/api/scores')
+      const data = (await response.json()) as { success: boolean; leaderboard: LeaderboardEntry[] }
+      if (data.success) {
+        setLeaderboard(data.leaderboard)
+      }
+    } catch (error) {
+      console.error('Error fetching leaderboard:', error)
+    } finally {
+      setIsLoadingLeaderboard(false)
+    }
+  }, [])
+
+  // Handle name input navigation
+  const handleNameInputKey = useCallback(
+    (e: KeyboardEvent) => {
+      if (!showNameInput) return
+
+      switch (e.key) {
+        case 'ArrowUp':
+          e.preventDefault()
+          setPlayerName(prev => {
+            const newName = [...prev]
+            const currentChar = newName[nameInputPosition]
+            if (!currentChar) return newName
+            const newChar = currentChar === 'Z' ? 'A' : String.fromCharCode(currentChar.charCodeAt(0) + 1)
+            newName[nameInputPosition] = newChar
+            return newName
+          })
+          break
+        case 'ArrowDown':
+          e.preventDefault()
+          setPlayerName(prev => {
+            const newName = [...prev]
+            const currentChar = newName[nameInputPosition]
+            if (!currentChar) return newName
+            const newChar = currentChar === 'A' ? 'Z' : String.fromCharCode(currentChar.charCodeAt(0) - 1)
+            newName[nameInputPosition] = newChar
+            return newName
+          })
+          break
+        case 'ArrowLeft':
+          e.preventDefault()
+          setNameInputPosition(prev => Math.max(0, prev - 1))
+          break
+        case 'ArrowRight':
+          e.preventDefault()
+          setNameInputPosition(prev => Math.min(2, prev + 1))
+          break
+        case ' ':
+          e.preventDefault()
+          if (nameInputPosition < 2) {
+            setNameInputPosition(prev => prev + 1)
+          } else {
+            // Set flag to submit score after state updates are processed
+            setShouldSubmitScore(true)
+          }
+          break
+      }
+    },
+    [showNameInput, nameInputPosition],
+  )
+
+  // Submit score to leaderboard
+  const handleScoreSubmit = useCallback(async () => {
+    if (isSubmittingScore) return
+
+    setIsSubmittingScore(true)
+    try {
+      const response = await fetch('/api/scores', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: playerName.join(''),
+          score,
+        }),
+      })
+
+      const data = (await response.json()) as { success: boolean; message: string; leaderboard?: LeaderboardEntry[] }
+
+      if (data.success) {
+        // Update leaderboard with new data
+        if (data.leaderboard) {
+          setLeaderboard(data.leaderboard)
+        }
+        // Keep name input visible briefly to show the updated leaderboard
+        setTimeout(() => {
+          setShowNameInput(false)
+        }, 1000)
+      } else {
+        console.error('Failed to submit score:', data.message)
+        setShowNameInput(false)
+      }
+    } catch (error) {
+      console.error('Error submitting score:', error)
+      setShowNameInput(false)
+    } finally {
+      setIsSubmittingScore(false)
+    }
+  }, [playerName, score, isSubmittingScore])
+
+  // Handle game over logic
+  const handleGameOver = useCallback(async () => {
+    // Fetch leaderboard first
+    await fetchLeaderboard()
+
+    // Check if score qualifies
+    const qualifies = await checkScoreQualification(score)
+
+    if (qualifies) {
+      setShowNameInput(true)
+      setPlayerName(['A', 'A', 'A'])
+      setNameInputPosition(0)
+    }
+  }, [score, fetchLeaderboard, checkScoreQualification])
+
+  // Handle score submission when flag is set
+  useEffect(() => {
+    if (shouldSubmitScore && !isSubmittingScore) {
+      setShouldSubmitScore(false)
+      void handleScoreSubmit()
+    }
+  }, [shouldSubmitScore, isSubmittingScore, handleScoreSubmit])
 
   // Handle keyboard input
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
+      if (showNameInput) {
+        handleNameInputKey(e)
+        return
+      }
+
       if (!isPlaying) return
 
       switch (e.key) {
