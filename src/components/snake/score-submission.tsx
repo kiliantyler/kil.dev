@@ -1,8 +1,34 @@
 'use client'
 
-import type { ScoreQualificationResponse, ScoreSubmissionResponse } from '@/types/leaderboard'
+// Types are now defined via Zod schemas below
 import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
+import { z } from 'zod'
 import { NameInputModal } from './name-input-modal'
+
+// Zod schemas for API response validation
+const ScoreQualificationResponseSchema = z.object({
+  success: z.boolean(),
+  qualifies: z.boolean(),
+  currentThreshold: z.number().optional(),
+  message: z.string().optional(),
+})
+
+const ScoreSubmissionResponseSchema = z.object({
+  success: z.boolean(),
+  position: z.number().optional(),
+  leaderboard: z
+    .array(
+      z.object({
+        name: z.string(),
+        score: z.number(),
+        timestamp: z.number(),
+        id: z.string(),
+      }),
+    )
+    .optional(),
+  message: z.string().optional(),
+})
 
 interface ScoreSubmissionProps {
   score: number
