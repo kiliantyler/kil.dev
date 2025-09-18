@@ -7,7 +7,7 @@ import { useCrtAnimation } from '@/hooks/use-crt-animation'
 import { useGameSession } from '@/hooks/use-game-session'
 import { useLeaderboard } from '@/hooks/use-leaderboard'
 import { useSnakeGame, type Direction, type Position } from '@/hooks/use-snake-game'
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 
 export function BackgroundSnakeGame() {
   const { resolvedTheme } = useTheme()
@@ -45,10 +45,10 @@ export function BackgroundSnakeGame() {
       },
       onGameOver: (finalScore: number) => {
         void (async () => {
-          const result = await endGame(finalScore)
-          if (result.success) {
-            await handleGameOverFlow(finalScore)
-          }
+          if (hasEndedRef.current) return
+          hasEndedRef.current = true
+          await endGame(finalScore)
+          await handleGameOverFlow(finalScore)
         })()
       },
     })
@@ -59,6 +59,12 @@ export function BackgroundSnakeGame() {
   })
 
   const gameBox = useMemo(() => getDimensions(), [getDimensions])
+
+  // Prevent duplicate end-game submissions
+  const hasEndedRef = useRef(false)
+  useEffect(() => {
+    if (isPlaying) hasEndedRef.current = false
+  }, [isPlaying])
 
   // Drawing callbacks
   const drawGameOverOverlay = useCallback(
