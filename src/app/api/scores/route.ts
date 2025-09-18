@@ -1,4 +1,5 @@
 import { env } from '@/env'
+import { validateScoreSubmission as validateGameScore } from '@/lib/game-validation'
 import { addScoreToLeaderboard, getLeaderboard } from '@/lib/leaderboard'
 import { redis } from '@/lib/redis'
 import { sanitizeName, validateScoreSubmission } from '@/lib/score-validation'
@@ -104,10 +105,47 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { name, score } = validation.data
+    const { name, score, sessionId, secret } = validation.data
     const sanitizedName = sanitizeName(name)
 
-    // Create leaderboard entry
+    // If session data is provided, validate the score through game validation
+    if (sessionId && secret) {
+      const gameValidation = validateGameScore(sessionId, secret, score)
+      if (!gameValidation.success) {
+        return NextResponse.json(
+          { success: false, message: 'Score validation failed', details: gameValidation.message },
+          { status: 400 },
+        )
+      }
+      // Use the validated score
+      const validatedScore = gameValidation.validatedScore!
+
+      // Create leaderboard entry with validated score
+      const entry: LeaderboardEntry = {
+        id: uuidv4(),
+        name: sanitizedName,
+        score: validatedScore,
+        timestamp: Date.now(),
+      }
+
+      // Add to leaderboard
+      const position = await addScoreToLeaderboard(entry)
+
+      // Get updated leaderboard
+      const leaderboard = await getLeaderboard()
+
+      const response: ScoreSubmissionResponse = {
+        success: true,
+        position,
+        leaderboard,
+        message: `Score submitted! You're ranked #${position}`,
+      }
+
+      return NextResponse.json(response, { status: 201 })
+    }
+
+    // Fallback: Create leaderboard entry without game validation (for backward compatibility)
+    // This should be removed in production
     const entry: LeaderboardEntry = {
       id: uuidv4(),
       name: sanitizedName,

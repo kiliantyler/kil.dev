@@ -11,6 +11,8 @@ export const scoreSubmissionSchema = z.object({
     .int('Score must be an integer')
     .min(0, 'Score must be non-negative')
     .max(9999, 'Score must be less than 10,000'),
+  sessionId: z.string().optional(),
+  secret: z.string().optional(),
 })
 
 export function validateScoreSubmission(data: unknown) {
