@@ -68,9 +68,13 @@ export function KonamiCodeListener() {
         if (isMatch) {
           sequenceRef.current = []
           const id = 'KONAMI_CODE' as AchievementId
+
+          // Always trigger the animation
+          triggerAnimation()
+
+          // Only award the achievement on the first time
           if (!has(id)) {
             unlock(id)
-            triggerAnimation()
           }
         }
       }
