@@ -151,7 +151,11 @@ export async function POST(request: NextRequest) {
     )
   } catch (error) {
     console.error('Error submitting score:', error)
-    return NextResponse.json({ success: false, message: 'Internal server error' }, { status: 500 })
+    const payload = { success: false as const, message: 'Internal server error' as const }
+    if (env.NODE_ENV !== 'production') {
+      return NextResponse.json({ ...payload, details: (error as Error)?.message }, { status: 500 })
+    }
+    return NextResponse.json(payload, { status: 500 })
   }
 }
 
