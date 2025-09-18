@@ -3,6 +3,7 @@
 import type { ThemeName } from '@/lib/themes'
 import type { UnlockedMap } from '@/utils/achievements'
 import { AchievementsProvider } from './achievements-provider'
+import { ConfettiProvider } from './confetti-provider'
 import { PostHogProvider } from './posthog-provider'
 import { ThemeProvider } from './theme-provider'
 
@@ -18,7 +19,9 @@ export function Providers({
   return (
     <PostHogProvider>
       <ThemeProvider initialAppliedTheme={initialAppliedTheme}>
-        <AchievementsProvider initialUnlocked={initialUnlocked}>{children}</AchievementsProvider>
+        <ConfettiProvider>
+          <AchievementsProvider initialUnlocked={initialUnlocked}>{children}</AchievementsProvider>
+        </ConfettiProvider>
       </ThemeProvider>
     </PostHogProvider>
   )
