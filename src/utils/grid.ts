@@ -42,7 +42,7 @@ export function getGridDimensions(windowWidth: number, windowHeight: number): Gr
   const height = windowHeight || (typeof window !== 'undefined' ? window.innerHeight : 0)
 
   return {
-    gridWidth: Math.floor(width / gridCellSize) - 1,
+    gridWidth: Math.floor(width / gridCellSize),
     gridHeight: Math.floor(height / gridCellSize),
     gridCellSize,
     gridOffset,
@@ -64,17 +64,17 @@ export function getSafeBoundaries(windowWidth: number, windowHeight: number): Sa
   const borderOffset = BORDER_OFFSET
   const actualHeaderHeight = headerHeight + borderOffset
   const footerHeight = Math.floor(FOOTER_BASE_HEIGHT / gridCellSize) * gridCellSize
-  const width = (gridWidth + 1) * gridCellSize // Reverse the gridWidth calculation
+  const width = gridWidth * gridCellSize
   const height = gridHeight * gridCellSize
   const baseYMin = Math.floor((actualHeaderHeight - gridOffset) / gridCellSize)
   const baseYMax = Math.floor((height - footerHeight - gridOffset) / gridCellSize) - 1
 
   const safeYMin = baseYMin + 1
-  const safeYMax = baseYMax - 1
+  const safeYMax = baseYMax
   const safeXMin = 1
 
   const availableHeight = safeYMax - safeYMin + 1
-  const maxWidth = Math.floor(width / gridCellSize) - 2
+  const maxWidth = Math.floor(width / gridCellSize) - 1
   const availableWidth = maxWidth - safeXMin + 1
 
   const squareSize = Math.min(availableWidth, availableHeight)
@@ -95,7 +95,7 @@ export function getSafeBoundaries(windowWidth: number, windowHeight: number): Sa
 export function getGameBoxDimensions(windowWidth: number, windowHeight: number): GameBoxDimensions {
   const { gridCellSize, gridOffset, gridWidth } = getGridDimensions(windowWidth, windowHeight)
   const { safeYMin, safeYMax, safeXMin } = getSafeBoundaries(windowWidth, windowHeight)
-  const totalGridWidth = gridWidth + 1
+  const totalGridWidth = gridWidth
   const squareGridSize = safeYMax - safeYMin + 1
   const centerGridX = Math.floor((totalGridWidth - squareGridSize) / 2)
 
