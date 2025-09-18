@@ -8,24 +8,44 @@ export const MAX_LEADERBOARD_SIZE = 10
 
 export async function addScoreToLeaderboard(entry: LeaderboardEntry): Promise<number> {
   try {
+    type RedisPipelineResult<T> = [Error | null, T]
     // Store the full entry data as JSON in the member field
     const entryData = JSON.stringify(entry)
 
-    // Use Redis pipeline to atomically execute zadd, zcard, and zrank
+    // Use Redis pipeline to atomically execute zadd, zcard, and zrevrank
     const pipeline = redis.pipeline()
     pipeline.zadd(LEADERBOARD_KEY, { score: entry.score, member: entryData })
     pipeline.zcard(LEADERBOARD_KEY)
-    pipeline.zrank(LEADERBOARD_KEY, entryData)
+    pipeline.zrevrank(LEADERBOARD_KEY, entryData)
 
     // Execute the pipeline and get the results
     const results = await pipeline.exec()
 
-    // Parse the pipeline results
-    // results[0] = zadd result (number of elements added)
-    // results[1] = zcard result (current size)
-    // results[2] = zrank result (rank or null)
-    const currentSize = Number(results[1])
-    const rank = results[2] !== null ? Number(results[2]) : null
+    // Unpack and validate pipeline results: each item is [error, value]
+    if (!Array.isArray(results) || results.length < 3) {
+      throw new Error('Unexpected Redis pipeline results shape')
+    }
+
+    const [zaddErr] = results[0] as RedisPipelineResult<number | string>
+    if (zaddErr) {
+      console.error('Redis pipeline zadd error:', zaddErr)
+      throw new Error('Failed to add score to leaderboard (zadd)')
+    }
+
+    const [zcardErr, zcardResult] = results[1] as RedisPipelineResult<number | string>
+    if (zcardErr) {
+      console.error('Redis pipeline zcard error:', zcardErr)
+      throw new Error('Failed to read leaderboard size (zcard)')
+    }
+
+    const [zrevrankErr, zrevrankResult] = results[2] as RedisPipelineResult<number | null>
+    if (zrevrankErr) {
+      console.error('Redis pipeline zrevrank error:', zrevrankErr)
+      throw new Error('Failed to read leaderboard rank (zrevrank)')
+    }
+
+    const currentSize = Number(zcardResult)
+    const rank = zrevrankResult !== null ? Number(zrevrankResult) : null
 
     // Remove excess entries if we have more than MAX_LEADERBOARD_SIZE
     if (currentSize > MAX_LEADERBOARD_SIZE) {
