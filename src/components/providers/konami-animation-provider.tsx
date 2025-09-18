@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { toast } from 'sonner'
 
 export type KonamiAnimationContextType = {
   isAnimating: boolean
@@ -31,6 +32,17 @@ export function KonamiAnimationProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const triggerAnimation = () => {
+    if (typeof window !== 'undefined' && window.innerWidth < 840) {
+      // Do not start the Konami animation or load the snake game on small screens
+      try {
+        toast.info('Viewport too small', {
+          description: 'Snake needs at least 840px width. Try a larger screen.',
+          position: 'bottom-right',
+          duration: 6000,
+        })
+      } catch {}
+      return
+    }
     setIsAnimating(true)
     setHasAnimated(true)
     // Store in session storage so it persists until refresh
