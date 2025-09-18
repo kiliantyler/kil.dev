@@ -189,6 +189,18 @@ export function AchievementsProvider({
     root.removeAttribute('data-has-pet-gallery')
   }, [hasPetParade])
 
+  // Reflect presence of THEME_TAPDANCE to the DOM for CSS-gated UI (e.g., theme availability)
+  const hasThemeTapdance = Boolean(unlocked.THEME_TAPDANCE)
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    const root = document.documentElement
+    if (hasThemeTapdance) {
+      root.setAttribute('data-has-theme-tapdance', 'true')
+      return
+    }
+    root.removeAttribute('data-has-theme-tapdance')
+  }, [hasThemeTapdance])
+
   // One-time sparkle on first reveal in this session for pet gallery
   const prevHasPetParadeRef = useRef<boolean | null>(null)
   useEffect(() => {
