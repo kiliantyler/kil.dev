@@ -44,13 +44,20 @@ export function ScoreSubmission({ score, onComplete }: ScoreSubmissionProps) {
     const checkQualification = async () => {
       try {
         const response = await fetch(`/api/scores/check?score=${score}`)
-        const data = (await response.json()) as ScoreQualificationResponse
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        const rawData = (await response.json()) as unknown
+        const data = ScoreQualificationResponseSchema.parse(rawData)
 
         if (data.qualifies) {
           setShowNameInput(true)
         }
       } catch (error) {
         console.error('Error checking score qualification:', error)
+        // Don't show toast for qualification check failures as it's not user-initiated
       }
     }
 
