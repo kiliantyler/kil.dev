@@ -2,13 +2,28 @@
 
 import { useAchievements } from '@/components/providers/achievements-provider'
 import { type AchievementId } from '@/lib/achievements'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 export function KonamiCodeListener() {
   const { has, unlock } = useAchievements()
   const sequenceRef = useRef<string[]>([])
+  const [isHomepage, setIsHomepage] = useState(false)
 
   useEffect(() => {
+    // Check if we're on the homepage
+    const checkHomepage = () => {
+      setIsHomepage(window.location.pathname === '/')
+    }
+
+    checkHomepage()
+    window.addEventListener('popstate', checkHomepage)
+
+    return () => window.removeEventListener('popstate', checkHomepage)
+  }, [])
+
+  useEffect(() => {
+    if (!isHomepage) return
+
     const konamiSequence = [
       'ArrowUp',
       'ArrowUp',
@@ -60,7 +75,7 @@ export function KonamiCodeListener() {
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [has, unlock])
+  }, [has, unlock, isHomepage])
 
   return null
 }
