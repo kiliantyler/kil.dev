@@ -1105,6 +1105,12 @@ export function BackgroundSnakeGame() {
       ctx.font = '16px monospace'
       ctx.textAlign = 'center'
       ctx.fillText('Press SPACE to restart', borderLeft + borderWidth / 2, borderTop + borderHeight - 30)
+
+      // Draw quit instruction
+      ctx.fillStyle = '#ffffff'
+      ctx.font = '14px monospace'
+      ctx.textAlign = 'center'
+      ctx.fillText('ESC to quit', borderLeft + borderWidth / 2, borderTop + borderHeight - 10)
     }
 
     // Draw start screen (only when snake game is ready)
@@ -1124,6 +1130,12 @@ export function BackgroundSnakeGame() {
       ctx.font = '24px monospace'
       ctx.fillText('Use arrow keys to move', borderLeft + borderWidth / 2, borderTop + borderHeight / 2)
       ctx.fillText('Press SPACE to start', borderLeft + borderWidth / 2, borderTop + borderHeight / 2 + 40)
+
+      // Draw quit instruction on start screen
+      ctx.fillStyle = '#ffffff'
+      ctx.font = '16px monospace'
+      ctx.textAlign = 'center'
+      ctx.fillText('ESC to quit', borderLeft + borderWidth / 2, borderTop + borderHeight / 2 + 80)
     }
 
     // Restore context after CRT effects
