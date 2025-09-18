@@ -39,12 +39,13 @@ export function KonamiAnimationProvider({ children }: { children: ReactNode }) {
     // Start CRT animation after a delay to let content start moving
     setTimeout(() => {
       setStartCrtAnimation(true)
+      // Make the game visible while the CRT powers on so it reveals through the mask
+      setShowSnake(true)
     }, 600) // 0.6s delay to let content clear the area first
 
     // Stop animating after 1.5s but keep hasAnimated true
     setTimeout(() => {
       setIsAnimating(false)
-      setShowSnake(true)
     }, 1500)
   }
 
