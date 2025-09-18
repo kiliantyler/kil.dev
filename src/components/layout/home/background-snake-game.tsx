@@ -1,6 +1,7 @@
 'use client'
 
 import { useKonamiAnimation } from '@/components/providers/konami-animation-provider'
+import { useTheme } from '@/components/providers/theme-provider'
 import { LIGHT_GRID } from '@/lib/light-grid'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
@@ -14,6 +15,7 @@ const GOLDEN_APPLE_CHANCE = 0.02
 
 export function BackgroundSnakeGame() {
   const { showSnake } = useKonamiAnimation()
+  const { resolvedTheme } = useTheme()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [snake, setSnake] = useState<Position[]>([{ x: 5, y: 5 }])
   const [food, setFood] = useState<Position>({ x: 10, y: 10 })
@@ -567,6 +569,59 @@ export function BackgroundSnakeGame() {
       ctx.fillRect(foodX + 2, foodY + 2, gridCellSize - 4, gridCellSize - 4)
     }
 
+    // Add CRT scan lines effect
+    if (showSnake) {
+      ctx.save()
+
+      // Create scan lines pattern - adaptive to theme
+      const scanLineHeight = 2
+      const scanLineSpacing = 4
+      const isDarkMode = resolvedTheme === 'dark'
+      const scanLineOpacity = isDarkMode ? 0.15 : 0.04 // Very light in light mode
+      const scanLineColor = isDarkMode ? '0, 0, 0' : '0, 0, 0' // Black lines for both modes
+
+      // Draw horizontal scan lines across the game area
+      ctx.fillStyle = `rgba(${scanLineColor}, ${scanLineOpacity})`
+      for (let y = borderTop; y < borderTop + borderHeight; y += scanLineHeight + scanLineSpacing) {
+        ctx.fillRect(borderLeft, y, borderWidth, scanLineHeight)
+      }
+
+      // Add subtle vertical scan lines for more authentic CRT look
+      const verticalScanLineWidth = 1
+      const verticalScanLineSpacing = 8
+      const verticalScanLineOpacity = isDarkMode ? 0.08 : 0.02 // Very light in light mode
+
+      ctx.fillStyle = `rgba(${scanLineColor}, ${verticalScanLineOpacity})`
+      for (let x = borderLeft; x < borderLeft + borderWidth; x += verticalScanLineWidth + verticalScanLineSpacing) {
+        ctx.fillRect(x, borderTop, verticalScanLineWidth, borderHeight)
+      }
+
+      // Add subtle screen curvature effect - adaptive to theme
+      ctx.save()
+      ctx.globalCompositeOperation = 'multiply'
+      const curvatureOpacity = isDarkMode ? 0.05 : 0.01 // Very light in light mode
+      ctx.fillStyle = `rgba(0, 0, 0, ${curvatureOpacity})`
+
+      // Create a subtle vignette effect to simulate CRT screen curvature
+      const gradient = ctx.createRadialGradient(
+        borderLeft + borderWidth / 2,
+        borderTop + borderHeight / 2,
+        0,
+        borderLeft + borderWidth / 2,
+        borderTop + borderHeight / 2,
+        Math.max(borderWidth, borderHeight) / 2,
+      )
+      gradient.addColorStop(0, 'rgba(0, 0, 0, 0)')
+      gradient.addColorStop(0.7, 'rgba(0, 0, 0, 0)')
+      gradient.addColorStop(1, `rgba(0, 0, 0, ${isDarkMode ? 0.1 : 0.02})`)
+
+      ctx.fillStyle = gradient
+      ctx.fillRect(borderLeft, borderTop, borderWidth, borderHeight)
+
+      ctx.restore()
+      ctx.restore()
+    }
+
     // Add bright CRT glow effect after clipping
     if (crtAnimation.isAnimating) {
       const { centerX, centerY, horizontalWidth, verticalHeight } = crtAnimation
@@ -683,6 +738,7 @@ export function BackgroundSnakeGame() {
     isGoldenApple,
     crtAnimation,
     showSnake,
+    resolvedTheme,
   ])
 
   // Handle restart and resize
