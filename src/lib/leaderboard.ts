@@ -128,13 +128,3 @@ export async function getQualificationThresholdSafe(): Promise<number> {
   console.log('Final safe threshold:', safeThreshold)
   return safeThreshold
 }
-
-export async function clearLeaderboard(): Promise<void> {
-  try {
-    await redis.del(LEADERBOARD_KEY)
-    console.log('Leaderboard cleared successfully')
-  } catch (error) {
-    console.error('Error clearing leaderboard:', error)
-    throw new Error('Failed to clear leaderboard')
-  }
-}
