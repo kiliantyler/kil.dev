@@ -181,7 +181,7 @@ export function BackgroundSnakeGame() {
     }
   }, [getGridDimensions, getSafeBoundaries, windowSize])
 
-  // Start CRT turn-on animation
+  // Start CRT turn-on animation (mirror of power-down: point → horizontal line → full frame)
   const startCrtAnimation = useCallback(() => {
     // Ensure CRT is on for opening animation
     setIsCrtOff(false)
@@ -198,12 +198,12 @@ export function BackgroundSnakeGame() {
       glowIntensity: 0,
     })
 
-    // Animation timeline - synchronized with Konami animation (starts 0.6s after Konami)
-    const duration = 800 // 0.8 seconds total to complete with Konami
-    const pointDuration = 80 // Point appears for 0.08 seconds
-    const horizontalDuration = 500 // Horizontal line grows for 0.5 seconds (much slower)
-    const verticalDuration = 200 // Vertical expansion for 0.2 seconds (faster to compensate)
-    const glowDuration = 600 // Glow effect for 0.6 seconds
+    // Animation timeline - mirror the power-down feel
+    const pointDuration = 300 // Hold a single point briefly
+    const horizontalDuration = 700 // Expand to a horizontal line
+    const verticalDuration = 500 // Then expand vertically to full frame
+    const duration = pointDuration + horizontalDuration + verticalDuration // 1500ms total
+    const glowDuration = 1200 // Strong glow early, then soften
 
     const startTime = Date.now()
 
@@ -211,35 +211,34 @@ export function BackgroundSnakeGame() {
       const elapsed = Date.now() - startTime
       const progress = Math.min(elapsed / duration, 1)
 
-      // Phase 1: Single point in center (0-0.2s)
+      // Phase 1: Single point in center (0-0.3s)
       const pointProgress = Math.min(elapsed / pointDuration, 1)
       const pointSize = pointProgress * 8 // Larger, more visible point
 
-      // Phase 2: Horizontal line grows (0.2-0.6s)
+      // Phase 2: Horizontal line grows (0.3-1.0s)
       const horizontalStart = pointDuration
       const horizontalProgress = Math.max(0, Math.min((elapsed - horizontalStart) / horizontalDuration, 1))
       // Ease-out for smoother horizontal expansion
       const horizontalEased = 1 - Math.pow(1 - horizontalProgress, 3)
       const horizontalWidth = horizontalEased * borderWidth
 
-      // Phase 3: Vertical expansion (0.6-1.6s)
+      // Phase 3: Vertical expansion (1.0-1.5s)
       const verticalStart = pointDuration + horizontalDuration
       const verticalProgress = Math.max(0, Math.min((elapsed - verticalStart) / verticalDuration, 1))
       // Ease-out for smoother vertical expansion
       const verticalEased = 1 - Math.pow(1 - verticalProgress, 2)
       const verticalHeight = verticalEased * borderHeight
 
-      // Opacity animation (starts at 0.1s, reaches 1 at 1.2s)
+      // Opacity animation: ramp in smoothly across most of timeline
       const opacityStart = 100
-      const opacityProgress = Math.max(0, Math.min((elapsed - opacityStart) / 1100, 1))
+      const opacityProgress = Math.max(0, Math.min((elapsed - opacityStart) / (duration - 200), 1))
       // Ease-out for smoother opacity transition
       const opacityEased = 1 - Math.pow(1 - opacityProgress, 2)
       const opacity = Math.min(opacityEased, 1)
 
-      // Glow intensity animation - more consistent throughout
+      // Glow intensity: strong early (point/line), then soften
       const glowProgress = Math.min(elapsed / glowDuration, 1)
-      // Start with strong glow, maintain it, then fade out smoothly
-      const glowIntensity = glowProgress < 0.8 ? 0.8 : 0.8 * (1 - (glowProgress - 0.8) / 0.2)
+      const glowIntensity = glowProgress < 0.5 ? 0.9 : 0.9 * (1 - (glowProgress - 0.5) / 0.5)
 
       setCrtAnimation({
         isAnimating: progress < 1,
@@ -278,7 +277,7 @@ export function BackgroundSnakeGame() {
         opacity: 1,
         glowIntensity: 0.3, // Maintain subtle glow for consistency
       }))
-    }, 1400) // 1.4 seconds fallback (0.6s delay + 0.8s animation)
+    }, 1600) // 1.6s fallback (0.6s delay + 1.5s animation)
 
     return () => clearTimeout(fallbackTimeout)
   }, [getGameBoxDimensions])
