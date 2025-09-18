@@ -24,6 +24,7 @@ export interface LeaderboardResponse {
 }
 
 export interface ScoreQualificationResponse {
+  success: boolean
   qualifies: boolean
   currentThreshold?: number
   message?: string

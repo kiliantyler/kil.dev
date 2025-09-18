@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
     const qualifies = score >= threshold
 
     const response: ScoreQualificationResponse = {
+      success: true,
       qualifies,
       currentThreshold: threshold,
       message: qualifies

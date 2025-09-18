@@ -1,6 +1,6 @@
 'use client'
 
-import type { ScoreSubmissionResponse } from '@/types/leaderboard'
+import type { ScoreQualificationResponse, ScoreSubmissionResponse } from '@/types/leaderboard'
 import { useEffect, useState } from 'react'
 import { NameInputModal } from './name-input-modal'
 
@@ -18,7 +18,7 @@ export function ScoreSubmission({ score, onComplete }: ScoreSubmissionProps) {
     const checkQualification = async () => {
       try {
         const response = await fetch(`/api/scores/check?score=${score}`)
-        const data = (await response.json()) as { qualifies: boolean; currentThreshold?: number }
+        const data = (await response.json()) as ScoreQualificationResponse
 
         if (data.qualifies) {
           setShowNameInput(true)
