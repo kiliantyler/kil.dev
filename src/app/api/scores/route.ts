@@ -1,5 +1,5 @@
 import { env } from '@/env'
-import { validateScoreSubmission as validateGameScore } from '@/lib/game-validation'
+import { validateScoreSubmissionBySession } from '@/lib/game-validation'
 import { addScoreToLeaderboard, getLeaderboard } from '@/lib/leaderboard'
 import { redis } from '@/lib/redis'
 import { sanitizeName, validateScoreSubmission } from '@/lib/score-validation'
@@ -108,10 +108,9 @@ export async function POST(request: NextRequest) {
     const { name, score, sessionId, secret } = validation.data
     const sanitizedName = sanitizeName(name)
 
-    // If session data is provided, validate the score through game validation (secret no longer required post end-only validation)
+    // If session data is provided, validate against session's stored validated score (no secret needed)
     if (typeof sessionId === 'string') {
-      const safeSecret = typeof secret === 'string' ? secret : ''
-      const gameValidation = validateGameScore(sessionId, safeSecret, score)
+      const gameValidation = validateScoreSubmissionBySession(sessionId, score)
       if (!gameValidation.success) {
         return NextResponse.json(
           { success: false, message: 'Score validation failed', details: gameValidation.message },

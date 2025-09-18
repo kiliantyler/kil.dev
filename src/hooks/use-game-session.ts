@@ -1,5 +1,6 @@
 'use client'
 
+import type { ScoreSubmissionResponse } from '@/types/leaderboard'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 interface GameSession {
@@ -14,6 +15,20 @@ interface GameState {
   isGoldenApple: boolean
   score: number
   direction: 'UP' | 'DOWN' | 'LEFT' | 'RIGHT'
+}
+
+interface GameStartResponse {
+  success: boolean
+  sessionId?: string
+  secret?: string
+  seed?: number
+  message?: string
+}
+
+interface GameEndResponse {
+  success: boolean
+  validatedScore?: number
+  message?: string
 }
 
 export function useGameSession() {
@@ -37,19 +52,14 @@ export function useGameSession() {
         },
       })
 
-      const data = await response.json()
-
-      if (data.success) {
-        setSession({
-          sessionId: data.sessionId,
-          secret: data.secret,
-          seed: data.seed,
-        })
+      const data = (await response.json()) as GameStartResponse
+      if (data.success && data.sessionId && data.secret && typeof data.seed === 'number') {
+        setSession({ sessionId: data.sessionId, secret: data.secret, seed: data.seed })
         startTimeRef.current = Date.now()
         eventsRef.current = []
         foodsRef.current = []
       } else {
-        setError(data.message || 'Failed to start game session')
+        setError(data?.message ?? 'Failed to start game session')
       }
     } catch (err) {
       setError('Failed to start game session')
@@ -118,14 +128,11 @@ export function useGameSession() {
           body: JSON.stringify({ ...payload, signature }),
         })
 
-        const data = await response.json()
-
+        const data = (await response.json()) as GameEndResponse
         if (data.success) {
-          // Keep session until score submission completes
           return { success: true, validatedScore: data.validatedScore }
-        } else {
-          return { success: false, message: data.message }
         }
+        return { success: false, message: data.message ?? 'Failed to end game session' }
       } catch (err) {
         console.error('Error ending game session:', err)
         return { success: false, message: 'Failed to end game session' }
@@ -152,31 +159,16 @@ export function useGameSession() {
         }),
       })
 
-      return response.json()
+      const data = (await response.json()) as ScoreSubmissionResponse
+      return data
     },
     [session],
   )
 
-  // Clean up session on unmount
+  // Removed noisy cleanup POST on unmount to avoid spurious 400 errors
   useEffect(() => {
-    return () => {
-      if (session) {
-        // Optionally end the session on unmount
-        // This is a cleanup, so we don't await it
-        fetch('/api/game/end', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            sessionId: session.sessionId,
-            secret: session.secret,
-            finalScore: 0, // Use 0 as final score for cleanup
-          }),
-        }).catch(console.error)
-      }
-    }
-  }, [session])
+    return undefined
+  }, [])
 
   return {
     session,

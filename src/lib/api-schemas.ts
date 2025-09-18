@@ -56,3 +56,18 @@ export const SubmitScoreResponseSchema = z.object({
     )
     .optional(),
 })
+
+// Game session lifecycle schemas
+export const GameStartResponseSchema = z.object({
+  success: z.boolean(),
+  sessionId: z.string().optional(),
+  secret: z.string().optional(),
+  seed: z.number().optional(),
+  message: z.string().optional(),
+})
+
+export const GameEndResponseSchema = z.object({
+  success: z.boolean(),
+  validatedScore: z.number().optional(),
+  message: z.string().optional(),
+})
