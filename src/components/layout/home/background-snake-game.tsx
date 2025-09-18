@@ -1131,21 +1131,63 @@ export function BackgroundSnakeGame() {
       ctx.roundRect(borderLeft, borderTop, borderWidth, borderHeight, cornerRadius)
       ctx.fill()
 
+      // Draw SNAKE using snake pieces aligned to the grid
+      type Letter = 'S' | 'N' | 'A' | 'K' | 'E'
+      const letters: Letter[] = ['S', 'N', 'A', 'K', 'E']
+      const spacing = 1 // grid cells between letters
+
+      // 3x5 patterns
+      const glyph3x5: Record<Letter, string[]> = {
+        S: ['111', '100', '111', '001', '111'],
+        N: ['111', '101', '101', '101', '101'],
+        A: ['010', '101', '111', '101', '101'],
+        K: ['101', '101', '110', '101', '101'],
+        E: ['111', '100', '110', '100', '111'],
+      }
+
+      // Use only 3x5 glyphs
+      const glyph: Record<Letter, string[]> = glyph3x5
+      const letterW = 3
+      const letterH = 5
+
+      const totalWordW = letters.length * letterW + (letters.length - 1) * spacing
+      const xStartGrid = centerGridX + Math.max(0, Math.floor((squareGridSize - totalWordW) / 2))
+      const yCenter = safeYMin + Math.floor(squareGridSize / 2)
+      const yStartGrid = Math.max(safeYMin + 1, yCenter - Math.floor(letterH / 2) - 2)
+
       ctx.fillStyle = '#10b981'
-      ctx.font = 'bold 64px monospace'
-      ctx.textAlign = 'center'
-      ctx.fillText('SNAKE', borderLeft + borderWidth / 2, borderTop + borderHeight / 2 - 60)
+      for (let i = 0; i < letters.length; i++) {
+        const ch = letters[i]
+        if (!ch) continue
+        const rows: string[] | undefined = glyph[ch]
+        if (!rows) continue
+        const letterX = xStartGrid + i * (letterW + spacing)
+        for (let r = 0; r < rows.length; r++) {
+          const row: string = rows[r] ?? ''
+          for (let c = 0; c < row.length; c++) {
+            if (row[c] !== '1') continue
+            const gx = (letterX + c) * gridCellSize + gridOffset
+            const gy = (yStartGrid + r) * gridCellSize + gridOffset
+            ctx.fillRect(gx + 2, gy + 2, gridCellSize - 4, gridCellSize - 4)
+          }
+        }
+      }
+
+      // Draw instructions below the glyph title to avoid overlap
+      const centerXPx = borderLeft + borderWidth / 2
+      const glyphBottomPx = (yStartGrid + letterH) * gridCellSize + gridOffset
 
       ctx.fillStyle = '#ffffff'
       ctx.font = '24px monospace'
-      ctx.fillText('Use arrow keys to move', borderLeft + borderWidth / 2, borderTop + borderHeight / 2)
-      ctx.fillText('Press SPACE to start', borderLeft + borderWidth / 2, borderTop + borderHeight / 2 + 40)
+      ctx.textAlign = 'center'
+      ctx.fillText('Use arrow keys to move', centerXPx, glyphBottomPx + 24)
+      ctx.fillText('Press SPACE to start', centerXPx, glyphBottomPx + 56)
 
       // Draw quit instruction on start screen
       ctx.fillStyle = '#ffffff'
       ctx.font = '16px monospace'
       ctx.textAlign = 'center'
-      ctx.fillText('ESC to quit', borderLeft + borderWidth / 2, borderTop + borderHeight / 2 + 80)
+      ctx.fillText('ESC to quit', centerXPx, glyphBottomPx + 84)
     }
 
     // Restore context after CRT effects
