@@ -1,0 +1,7 @@
+export { default as Confused } from './cartoon-confused.webp'
+export { default as Cyberpunk } from './cartoon-cyberpunk.webp'
+export { default as Grumpy } from './cartoon-grumpy.webp'
+export { default as Halloween } from './cartoon-halloween.webp'
+export { default as Headshot } from './cartoon-headshot.webp'
+export { default as Ladybird } from './cartoon-ladybird.webp'
+export { default as Thanksgiving } from './cartoon-thanksgiving.webp'

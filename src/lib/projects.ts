@@ -1,8 +1,4 @@
-import dotfilesImage from '@/images/projects/dotfiles.webp'
-import kilDevImage from '@/images/projects/kil-dev.webp'
-import kubernetesImage from '@/images/projects/kubernetes.webp'
-import questnestImage from '@/images/projects/questnest.webp'
-import tiaxslaughterImage from '@/images/projects/tiaxslaughter.webp'
+import * as Projects from '@/images/projects'
 import type { Project } from '@/types/projects'
 
 export const projects: Project[] = [
@@ -15,7 +11,7 @@ export const projects: Project[] = [
     repo: 'https://github.com/kiliantyler/kil.dev',
     year: 2025,
     status: 'live',
-    imageSrc: kilDevImage,
+    imageSrc: Projects.KilDev,
     imageAlt: 'kil.dev website thumbnail',
   },
   {
@@ -26,7 +22,7 @@ export const projects: Project[] = [
     href: 'https://tiaxslaughter.com',
     year: 2025,
     status: 'live',
-    imageSrc: tiaxslaughterImage,
+    imageSrc: Projects.Tiaxslaughter,
     imageAlt: 'tiaxslaughter.com website thumbnail',
   },
   {
@@ -38,7 +34,7 @@ export const projects: Project[] = [
     repo: 'https://github.com/kiliantyler/dotfiles',
     year: 2023,
     status: 'wip',
-    imageSrc: dotfilesImage,
+    imageSrc: Projects.Dotfiles,
     imageAlt: 'dotfiles website thumbnail',
   },
   {
@@ -54,7 +50,7 @@ export const projects: Project[] = [
     repo: 'https://github.com/shamubernetes/home-k8s',
     year: 2021,
     status: 'live',
-    imageSrc: kubernetesImage,
+    imageSrc: Projects.Kubernetes,
     imageAlt: 'kubernetes website thumbnail',
   },
   {
@@ -64,7 +60,7 @@ export const projects: Project[] = [
     tags: ['Next', 'Tailwind', 'shadcn', 'TypeScript', 'Drizzle', 'React', 'Vercel'],
     year: 2025,
     status: 'wip',
-    imageSrc: questnestImage,
+    imageSrc: Projects.Questnest,
     imageAlt: 'questnest website thumbnail',
   },
 ]

@@ -21,7 +21,7 @@
     "start": "next start",
     "typecheck": "bun run build:theme && bun run build:presence && tsc --noEmit",
     "storybook": "storybook dev -p 6006 --no-open",
-    "build-storybook": "storybook build"
+    "build-storybook": "bun run prebuild && storybook build"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "1.1.15",
@@ -34,7 +34,9 @@
     "@radix-ui/react-tooltip": "1.2.8",
     "@storybook/nextjs-vite": "9.1.6",
     "@t3-oss/env-nextjs": "0.13.8",
+    "@types/canvas-confetti": "1.9.0",
     "@vercel/blob": "1.1.1",
+    "canvas-confetti": "1.9.3",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "date-fns": "4.1.0",

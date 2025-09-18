@@ -1,0 +1,5 @@
+export { default as Dotfiles } from './dotfiles.webp'
+export { default as KilDev } from './kil-dev.webp'
+export { default as Kubernetes } from './kubernetes.webp'
+export { default as Questnest } from './questnest.webp'
+export { default as Tiaxslaughter } from './tiaxslaughter.webp'

@@ -1,7 +1,4 @@
-import Cyberpunk from '@/images/headshot/cartoon-cyberpunk.webp'
-import Halloween from '@/images/headshot/cartoon-halloween.webp'
-import Headshot from '@/images/headshot/cartoon-headshot.webp'
-import Thanksgiving from '@/images/headshot/cartoon-thanksgiving.webp'
+import * as Headshots from '@/images/headshot'
 import type { ThemeConfig } from '@/types/themes'
 import { Ghost, Leaf, Moon, Sun, Zap } from 'lucide-react'
 
@@ -9,28 +6,28 @@ export const themes = [
   {
     name: 'light',
     icon: Sun,
-    headshotImage: Headshot,
+    headshotImage: Headshots.Headshot,
     baseColor: 'light',
     darkModeNote: '(why are you in light mode?)',
   },
   {
     name: 'dark',
     icon: Moon,
-    headshotImage: Headshot,
+    headshotImage: Headshots.Headshot,
     baseColor: 'dark',
     darkModeNote: '(good choice)',
   },
   {
     name: 'cyberpunk',
     icon: Zap,
-    headshotImage: Cyberpunk,
+    headshotImage: Headshots.Cyberpunk,
     darkModeNote: '(cyberpunk is cool, too)',
     baseColor: 'dark',
   },
   {
     name: 'halloween',
     icon: Ghost,
-    headshotImage: Halloween,
+    headshotImage: Headshots.Halloween,
     baseColor: 'dark',
     darkModeNote: '(Spooky Season!)',
     timeRange: { start: { month: 10, day: 15 }, end: { month: 11, day: 1 } },
@@ -38,7 +35,7 @@ export const themes = [
   {
     name: 'thanksgiving',
     icon: Leaf,
-    headshotImage: Thanksgiving,
+    headshotImage: Headshots.Thanksgiving,
     baseColor: 'dark',
     darkModeNote: '(Happy Thanksgiving!)',
     timeRange: { start: { month: 11, day: 15 }, end: { month: 11, day: 30 } },

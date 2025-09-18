@@ -1,6 +1,4 @@
-import draftKingsLogo from '@/images/logos/draftkings.webp'
-import newInnovationsLogo from '@/images/logos/newinnov.webp'
-import qgendaLogo from '@/images/logos/qgenda.webp'
+import * as Logos from '@/images/logos'
 import type { SkillCategory, WorkExperience } from '@/types/work-experience'
 
 export const WORK_HISTORY: WorkExperience[] = [
@@ -27,7 +25,7 @@ export const WORK_HISTORY: WorkExperience[] = [
       'FluxCD',
     ],
     companyUrl: 'https://www.qgenda.com',
-    companyLogoSrc: qgendaLogo,
+    companyLogoSrc: Logos.QGendaLogo,
     companyLogoAlt: 'QGenda logo',
   },
   {
@@ -48,7 +46,7 @@ export const WORK_HISTORY: WorkExperience[] = [
     highlights: [],
     skills: [],
     companyUrl: 'https://www.new-innov.com',
-    companyLogoSrc: newInnovationsLogo,
+    companyLogoSrc: Logos.NewInnovationsLogo,
     companyLogoAlt: 'New Innovations logo',
   },
   {
@@ -69,7 +67,7 @@ export const WORK_HISTORY: WorkExperience[] = [
     highlights: [],
     skills: [],
     companyUrl: 'https://www.draftkings.com',
-    companyLogoSrc: draftKingsLogo,
+    companyLogoSrc: Logos.DraftKingsLogo,
     companyLogoAlt: 'DraftKings logo',
   },
   {

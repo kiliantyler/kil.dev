@@ -12,6 +12,7 @@ import { getThemeBaseColor } from '@/utils/themes'
 import { cn } from '@/utils/utils'
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { Toaster, toast } from 'sonner'
+import { useConfetti } from './confetti-provider'
 import { useTheme } from './theme-provider'
 
 type AchievementsContextValue = {
@@ -110,14 +111,18 @@ export function AchievementsProvider({
     })
   }, [])
 
+  const { triggerConfettiFromCorners } = useConfetti()
+
   // Prevent duplicate unlocks/toasts in the same tick via a pending set
   const pendingUnlocksRef = useRef<Set<AchievementId>>(new Set())
+  const pendingConfettiRef = useRef<Set<AchievementId>>(new Set())
   const unlock = useCallback(
     (id: AchievementId) => {
       if (!mountedRef.current) return
       if (pendingUnlocksRef.current.has(id)) return
       if (has(id)) return
 
+      const def = ACHIEVEMENTS[id]
       pendingUnlocksRef.current.add(id)
       const timestampIso = new Date().toISOString()
       setUnlocked(prev => ({ ...prev, [id]: timestampIso }))
@@ -125,8 +130,16 @@ export function AchievementsProvider({
       queueMicrotask(() => pendingUnlocksRef.current.delete(id))
 
       showToast(id)
+
+      // Trigger confetti if achievement has confetti enabled (but only once)
+      if (def?.confetti && !pendingConfettiRef.current.has(id)) {
+        pendingConfettiRef.current.add(id)
+        triggerConfettiFromCorners()
+        // Clean up the confetti pending flag after animation completes
+        setTimeout(() => pendingConfettiRef.current.delete(id), 1000)
+      }
     },
-    [has, showToast],
+    [has, showToast, triggerConfettiFromCorners],
   )
 
   const reset = useCallback(() => {

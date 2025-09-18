@@ -156,10 +156,6 @@ function applyClasses(preference: Theme, system: SystemTheme | undefined) {
     const other = effective === 'dark' ? 'light' : 'dark'
     if (root.classList.contains(other)) remove(other)
 
-    // Check if user has theme tapdance achievement
-    const hasThemeTapdance =
-      typeof document !== 'undefined' && document.documentElement.hasAttribute('data-has-theme-tapdance')
-
     // Handle seasonal themes based on requirements
     const activeSeasonalThemes = getActiveSeasonalThemes()
     const hasActiveSeasonalTheme = activeSeasonalThemes.length > 0
