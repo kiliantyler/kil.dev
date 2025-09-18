@@ -22,8 +22,7 @@ export async function addScoreToLeaderboard(entry: LeaderboardEntry): Promise<nu
     // Get the rank (position) of this score (0-indexed, so add 1)
     const rank = await redis.zrank(LEADERBOARD_KEY, entryData)
     return rank !== null ? rank + 1 : 0
-  } catch (error) {
-    console.error('Error adding score to leaderboard:', error)
+  } catch {
     throw new Error('Failed to add score to leaderboard')
   }
 }
@@ -39,31 +38,23 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
     if (Array.isArray(scores)) {
       for (let i = 0; i < scores.length; i += 2) {
         const entryData = scores[i] as string
-        // const score = scores[i + 1] as number // Score is already in the parsed entry
-
-        // Debug logging
-        console.log('Raw entryData:', entryData, 'Type:', typeof entryData)
 
         try {
           // Check if entryData is already an object (not a string)
           if (typeof entryData === 'object') {
-            console.log('Entry data is already an object, using directly')
             leaderboard.push(entryData as LeaderboardEntry)
           } else {
             const entry = JSON.parse(entryData) as LeaderboardEntry
             leaderboard.push(entry)
           }
-        } catch (error) {
-          console.error('Failed to parse leaderboard entry:', error)
-          console.error('Entry data that failed:', entryData)
+        } catch {
           // Skip invalid entries
         }
       }
     }
 
     return leaderboard
-  } catch (error) {
-    console.error('Error getting leaderboard:', error)
+  } catch {
     return [] // Return empty array on error
   }
 }
@@ -72,27 +63,22 @@ export async function getQualificationThreshold(): Promise<number> {
   try {
     // Get the current leaderboard size
     const leaderboardSize = await redis.zcard(LEADERBOARD_KEY)
-    console.log('Leaderboard size:', leaderboardSize)
 
     if (leaderboardSize === 0) {
-      console.log('Empty leaderboard, using default threshold:', SCORE_QUALIFICATION_THRESHOLD)
       return SCORE_QUALIFICATION_THRESHOLD // Default threshold if leaderboard is empty
     }
 
     // Safety check: if leaderboard size is 0 but we got here, something is wrong
     if (leaderboardSize === 0) {
-      console.log('WARNING: Leaderboard size is 0 but we reached this point, using default threshold')
       return SCORE_QUALIFICATION_THRESHOLD
     }
 
     // If we have fewer than 10 entries, use the lowest score + 1 as threshold
     if (leaderboardSize < MAX_LEADERBOARD_SIZE) {
       const scores = await redis.zrange(LEADERBOARD_KEY, 0, 0, { withScores: true, rev: false })
-      console.log('Scores for threshold (lowest):', scores)
       if (scores.length >= 2) {
         const lowestScore = scores[1] as number
         const threshold = lowestScore + 1 // Must beat the lowest score, not just tie it
-        console.log('Using lowest score + 1 as threshold:', threshold)
         // Ensure threshold is never 0 or negative
         return Math.max(threshold, SCORE_QUALIFICATION_THRESHOLD)
       }
@@ -103,20 +89,16 @@ export async function getQualificationThreshold(): Promise<number> {
       withScores: true,
       rev: true,
     })
-    console.log('Scores for threshold (10th highest):', scores)
 
     if (scores.length < 2) {
-      console.log('Not enough scores, using default threshold:', SCORE_QUALIFICATION_THRESHOLD)
       return SCORE_QUALIFICATION_THRESHOLD
     }
 
     const tenthHighestScore = scores[1] as number
     const threshold = tenthHighestScore + 1 // Must beat the 10th highest score, not just tie it
-    console.log('Using 10th highest score + 1 as threshold:', threshold)
     // Ensure threshold is never 0 or negative
     return Math.max(threshold, SCORE_QUALIFICATION_THRESHOLD)
-  } catch (error) {
-    console.error('Error getting qualification threshold:', error)
+  } catch {
     return SCORE_QUALIFICATION_THRESHOLD // Fallback to default
   }
 }
@@ -125,6 +107,5 @@ export async function getQualificationThreshold(): Promise<number> {
 export async function getQualificationThresholdSafe(): Promise<number> {
   const threshold = await getQualificationThreshold()
   const safeThreshold = Math.max(threshold, SCORE_QUALIFICATION_THRESHOLD)
-  console.log('Final safe threshold:', safeThreshold)
   return safeThreshold
 }
