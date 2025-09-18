@@ -779,14 +779,22 @@ export function BackgroundSnakeGame() {
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
+    // When CRT is fully off, stop drawing frame/background
+    if (isCrtOff) {
+      ctx.restore()
+      return
+    }
+
     // Apply CRT animation effects
     ctx.save()
 
-    // Apply opacity for fade-in effect (ensure minimum visibility)
-    ctx.globalAlpha = Math.max(crtAnimation.opacity, 0.1)
+    // Apply opacity. When closing, let opacity drive the collapse visibility, otherwise maintain minimum
+    ctx.globalAlpha = Math.max(crtAnimation.opacity, isCrtClosing ? 0 : 0.1)
+
+    // Always draw CRT frame/background. Game elements inside are gated by `showSnake`.
 
     // Create CRT mask during animation (expanded to account for glow)
-    if (crtAnimation.isAnimating) {
+    if (crtAnimation.isAnimating || isCrtClosing) {
       const { centerX, centerY, horizontalWidth, verticalHeight } = crtAnimation
 
       // Expand clipping area to account for glow effect (20px on each side)
@@ -816,23 +824,25 @@ export function BackgroundSnakeGame() {
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
 
-    // Draw rounded rectangle border
+    // Draw rounded rectangle border (also during closing so the collapse is visible)
     ctx.beginPath()
     ctx.roundRect(borderLeft, borderTop, borderWidth, borderHeight, cornerRadius)
     ctx.stroke()
 
-    // Add inner glow effect
+    // Add inner glow effect (keep for closing too)
     ctx.strokeStyle = 'rgba(16, 185, 129, 0.2)'
     ctx.lineWidth = 1
     ctx.beginPath()
     ctx.roundRect(borderLeft + 2, borderTop + 2, borderWidth - 4, borderHeight - 4, cornerRadius - 2)
     ctx.stroke()
 
-    // Add subtle background fill
-    ctx.fillStyle = 'rgba(16, 185, 129, 0.05)'
-    ctx.beginPath()
-    ctx.roundRect(borderLeft, borderTop, borderWidth, borderHeight, cornerRadius)
-    ctx.fill()
+    // Add subtle background fill only when showing gameplay
+    if (showSnake) {
+      ctx.fillStyle = 'rgba(16, 185, 129, 0.05)'
+      ctx.beginPath()
+      ctx.roundRect(borderLeft, borderTop, borderWidth, borderHeight, cornerRadius)
+      ctx.fill()
+    }
 
     // Only draw game elements when snake game is ready to show
     if (showSnake) {
@@ -1136,11 +1146,20 @@ export function BackgroundSnakeGame() {
     playerName,
     nameInputPosition,
     isSubmittingScore,
+    isCrtClosing,
+    isCrtOff,
   ])
 
   // Handle restart and resize
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (typeof e.preventDefault === 'function') e.preventDefault()
+        // Start reverse CRT animation and trigger provider close
+        setIsPlaying(false)
+        startCrtCloseAnimation()
+        return
+      }
       if (e.key === ' ') {
         // Don't restart if we're in name input mode
         if (showNameInput) return
@@ -1166,11 +1185,13 @@ export function BackgroundSnakeGame() {
 
     window.addEventListener('keydown', handleKeyPress)
     window.addEventListener('resize', handleResize)
+    const rafIdAtSubscribe = crtCloseRef.current.rafId
     return () => {
       window.removeEventListener('keydown', handleKeyPress)
       window.removeEventListener('resize', handleResize)
+      if (rafIdAtSubscribe) cancelAnimationFrame(rafIdAtSubscribe)
     }
-  }, [gameOver, isPlaying, initGame, showNameInput])
+  }, [gameOver, isPlaying, initGame, showNameInput, startCrtCloseAnimation])
 
   // Control grid lights visibility when game is playing
   useEffect(() => {
