@@ -12,11 +12,16 @@ export function BackgroundSnakeGame() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [snake, setSnake] = useState<Position[]>([{ x: 5, y: 5 }])
   const [food, setFood] = useState<Position>({ x: 10, y: 10 })
+  const [isGoldenApple, setIsGoldenApple] = useState(false)
   const [direction, setDirection] = useState<Direction>('RIGHT')
   const [gameOver, setGameOver] = useState(false)
   const [score, setScore] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
   const gameLoopRef = useRef<number | null>(null)
+
+  // Use refs to track current food state to avoid stale closures
+  const foodRef = useRef<Position>({ x: 10, y: 10 })
+  const isGoldenAppleRef = useRef<boolean>(false)
 
   // Calculate grid dimensions based on window size
   const getGridDimensions = useCallback(() => {
@@ -36,23 +41,45 @@ export function BackgroundSnakeGame() {
     return Math.floor(80 / gridCellSize) * gridCellSize + 20
   }, [getGridDimensions])
 
+  // Calculate safe play area boundaries that match the visual border
+  const getSafeBoundaries = useCallback(() => {
+    const { gridCellSize, gridOffset } = getGridDimensions()
+    const headerHeight = getHeaderHeight()
+    const borderOffset = 40
+    const actualHeaderHeight = headerHeight + borderOffset
+    const footerHeight = Math.floor(60 / gridCellSize) * gridCellSize
+
+    // Convert pixel positions to grid coordinates, then add inset
+    const baseYMin = Math.floor((actualHeaderHeight - gridOffset) / gridCellSize)
+    const baseYMax = Math.floor((window.innerHeight - footerHeight - gridOffset) / gridCellSize) - 1
+
+    // Apply 1-grid-cell inset on top, left, and bottom
+    const safeYMin = baseYMin + 1 // Top inset
+    const safeYMax = baseYMax - 1 // Bottom inset
+    const safeXMin = 1 // Left inset
+    const safeXMax = Math.floor(window.innerWidth / gridCellSize) - 2 // Right stays the same
+
+    return {
+      safeYMin,
+      safeYMax,
+      safeXMin,
+      safeXMax,
+      actualHeaderHeight,
+      footerHeight,
+      borderOffset,
+    }
+  }, [getGridDimensions, getHeaderHeight])
+
   // Generate random food position
   const generateFood = useCallback(
-    (gridWidth: number, gridHeight: number): Position => {
-      const { gridCellSize } = getGridDimensions()
+    (gridWidth: number, gridHeight: number): { position: Position; isGolden: boolean } => {
+      const { safeYMin, safeYMax, safeXMin, safeXMax } = getSafeBoundaries()
 
-      // Calculate safe zones (avoid header and footer)
-      // Header is approximately 80px tall (py-6 md:py-8 = 48px to 64px + content)
-      // Footer is approximately 60px tall (py-4 = 32px + content)
-      const headerHeightGrid = Math.floor(80 / gridCellSize) + 1
-      const footerHeightGrid = Math.floor(60 / gridCellSize) + 1
-
-      // Safe Y range excludes header and footer areas
-      const safeYMin = headerHeightGrid
-      const safeYMax = gridHeight - footerHeightGrid - 1
+      // 15% chance for golden apple
+      const isGolden = Math.random() < 0.15
 
       // Ensure we have valid safe range
-      if (safeYMin >= safeYMax) {
+      if (safeYMin >= safeYMax || safeXMin >= safeXMax) {
         // Fallback to full grid if calculation fails
         const newFood = {
           x: Math.floor(Math.random() * gridWidth),
@@ -63,11 +90,11 @@ export function BackgroundSnakeGame() {
         if (isOnSnake) {
           return generateFood(gridWidth, gridHeight)
         }
-        return newFood
+        return { position: newFood, isGolden }
       }
 
       const newFood = {
-        x: Math.floor(Math.random() * gridWidth),
+        x: safeXMin + Math.floor(Math.random() * (safeXMax - safeXMin + 1)),
         y: safeYMin + Math.floor(Math.random() * (safeYMax - safeYMin + 1)),
       }
 
@@ -77,30 +104,32 @@ export function BackgroundSnakeGame() {
         return generateFood(gridWidth, gridHeight)
       }
 
-      return newFood
+      return { position: newFood, isGolden }
     },
-    [snake, getGridDimensions],
+    [snake, getSafeBoundaries],
   )
 
   // Initialize game
   const initGame = useCallback(() => {
-    const { gridWidth, gridHeight, gridCellSize } = getGridDimensions()
-
-    // Calculate safe zones for starting position
-    const headerHeightGrid = Math.floor(80 / gridCellSize) + 1
-    const footerHeightGrid = Math.floor(60 / gridCellSize) + 1
-    const safeYMin = headerHeightGrid
-    const safeYMax = gridHeight - footerHeightGrid - 1
+    const { gridWidth, gridHeight } = getGridDimensions()
+    const { safeYMin, safeYMax, safeXMin, safeXMax } = getSafeBoundaries()
 
     // Start snake in safe area
+    const startX = Math.max(safeXMin + 2, Math.min(5, safeXMax - 2))
     const startY = Math.max(safeYMin + 2, Math.min(5, safeYMax - 2))
-    setSnake([{ x: 5, y: startY }])
-    setFood(generateFood(gridWidth, gridHeight))
+    setSnake([{ x: startX, y: startY }])
+
+    const foodData = generateFood(gridWidth, gridHeight)
+    setFood(foodData.position)
+    setIsGoldenApple(foodData.isGolden)
+    foodRef.current = foodData.position
+    isGoldenAppleRef.current = foodData.isGolden
+
     setDirection('RIGHT')
     setGameOver(false)
     setScore(0)
     setIsPlaying(true)
-  }, [generateFood, getGridDimensions])
+  }, [generateFood, getGridDimensions, getSafeBoundaries])
 
   // Handle keyboard input
   useEffect(() => {
@@ -132,7 +161,7 @@ export function BackgroundSnakeGame() {
     if (!isPlaying || gameOver) return
 
     const moveSnake = () => {
-      const { gridWidth, gridHeight, gridCellSize } = getGridDimensions()
+      const { gridWidth, gridHeight } = getGridDimensions()
 
       setSnake(prevSnake => {
         if (!prevSnake[0]) return prevSnake
@@ -155,16 +184,10 @@ export function BackgroundSnakeGame() {
         }
 
         // Get current grid dimensions for accurate boundary detection
-        const { gridWidth: currentGridWidth, gridHeight: currentGridHeight } = getGridDimensions()
+        const { safeYMin, safeYMax, safeXMin, safeXMax } = getSafeBoundaries()
 
-        // Calculate safe zones for wraparound boundaries
-        const headerHeightGrid = Math.floor(80 / gridCellSize) + 1
-        const footerHeightGrid = Math.floor(60 / gridCellSize)
-        const safeYMin = headerHeightGrid
-        const safeYMax = currentGridHeight - footerHeightGrid - 1
-
-        // Check boundaries - left/right walls kill the snake
-        if (head.x < 0 || head.x >= currentGridWidth || head.y < safeYMin || head.y > safeYMax) {
+        // Check boundaries - walls kill the snake
+        if (head.x < safeXMin || head.x > safeXMax || head.y < safeYMin || head.y > safeYMax) {
           setGameOver(true)
           setIsPlaying(false)
           return prevSnake
@@ -179,16 +202,30 @@ export function BackgroundSnakeGame() {
 
         const newSnake = [head, ...prevSnake]
 
-        // Check food collision
+        // Check food collision using current food state
         if (head.x === food.x && head.y === food.y) {
-          setScore(prev => prev + 10)
-          setFood(generateFood(gridWidth, gridHeight))
-        } else {
-          newSnake.pop() // Remove tail if no food eaten
-        }
+          const points = isGoldenApple ? 50 : 10
+          setScore(prev => prev + points)
 
-        return newSnake
+          const foodData = generateFood(gridWidth, gridHeight)
+          setFood(foodData.position)
+          setIsGoldenApple(foodData.isGolden)
+          foodRef.current = foodData.position
+          isGoldenAppleRef.current = foodData.isGolden
+
+          // Don't remove tail since we ate food
+          return newSnake
+        } else {
+          // Remove tail if no food eaten
+          newSnake.pop()
+          return newSnake
+        }
       })
+    }
+
+    // Clear any existing interval
+    if (gameLoopRef.current) {
+      clearInterval(gameLoopRef.current)
     }
 
     gameLoopRef.current = window.setInterval(moveSnake, GAME_SPEED)
@@ -197,7 +234,7 @@ export function BackgroundSnakeGame() {
         clearInterval(gameLoopRef.current)
       }
     }
-  }, [direction, food, gameOver, isPlaying, generateFood, getGridDimensions])
+  }, [direction, gameOver, isPlaying, generateFood, getGridDimensions, getSafeBoundaries, food, isGoldenApple])
 
   // Draw game
   useEffect(() => {
@@ -207,11 +244,7 @@ export function BackgroundSnakeGame() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const { gridCellSize, gridOffset, gridWidth, gridHeight } = getGridDimensions()
-
-    // Calculate safe play area dimensions
-    const headerHeight = Math.floor(80 / gridCellSize) * gridCellSize
-    const footerHeight = Math.floor(60 / gridCellSize) * gridCellSize
+    const { gridCellSize, gridOffset, gridWidth } = getGridDimensions()
 
     // Set canvas size to window size
     canvas.width = window.innerWidth
@@ -220,10 +253,47 @@ export function BackgroundSnakeGame() {
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-    // Draw play area border
-    ctx.strokeStyle = 'rgba(16, 185, 129, 0.3)'
-    ctx.lineWidth = 2
-    ctx.strokeRect(0, headerHeight, gridWidth * gridCellSize, gridHeight * gridCellSize - headerHeight - footerHeight)
+    // Draw play area border with enhanced styling
+    const playAreaWidth = gridWidth * gridCellSize
+    const cornerRadius = 12
+    const { safeYMin, safeYMax } = getSafeBoundaries()
+
+    // Align border to grid like snake and food, with top/bottom moved out by 1 grid
+    const borderTop = safeYMin * gridCellSize + gridOffset
+    const borderBottom = (safeYMax + 1) * gridCellSize + gridOffset
+    const borderHeight = borderBottom - borderTop
+    const borderLeft = 1 * gridCellSize + gridOffset
+    const borderWidth = playAreaWidth - gridCellSize
+
+    // Create gradient for border
+    const gradient = ctx.createLinearGradient(borderLeft, borderTop, borderLeft + borderWidth, borderBottom)
+    gradient.addColorStop(0, 'rgba(16, 185, 129, 0.8)')
+    gradient.addColorStop(0.5, 'rgba(34, 197, 94, 0.6)')
+    gradient.addColorStop(1, 'rgba(16, 185, 129, 0.8)')
+
+    // Draw border with rounded corners
+    ctx.strokeStyle = gradient
+    ctx.lineWidth = 3
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+
+    // Draw rounded rectangle border
+    ctx.beginPath()
+    ctx.roundRect(borderLeft, borderTop, borderWidth, borderHeight, cornerRadius)
+    ctx.stroke()
+
+    // Add inner glow effect
+    ctx.strokeStyle = 'rgba(16, 185, 129, 0.2)'
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.roundRect(borderLeft + 2, borderTop + 2, borderWidth - 4, borderHeight - 4, cornerRadius - 2)
+    ctx.stroke()
+
+    // Add subtle background fill
+    ctx.fillStyle = 'rgba(16, 185, 129, 0.05)'
+    ctx.beginPath()
+    ctx.roundRect(borderLeft, borderTop, borderWidth, borderHeight, cornerRadius)
+    ctx.fill()
 
     // Draw snake aligned with background grid
     snake.forEach((segment, index) => {
@@ -237,13 +307,16 @@ export function BackgroundSnakeGame() {
     // Draw food aligned with background grid
     const foodX = food.x * gridCellSize + gridOffset
     const foodY = food.y * gridCellSize + gridOffset
-    ctx.fillStyle = '#ef4444'
+    ctx.fillStyle = isGoldenApple ? '#fbbf24' : '#ef4444'
     ctx.fillRect(foodX + 2, foodY + 2, gridCellSize - 4, gridCellSize - 4)
 
     // Draw game over overlay
     if (gameOver) {
+      // Draw rounded overlay background
       ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'
-      ctx.fillRect(0, headerHeight, gridWidth * gridCellSize, gridHeight * gridCellSize - headerHeight - footerHeight)
+      ctx.beginPath()
+      ctx.roundRect(borderLeft, borderTop, borderWidth, borderHeight, cornerRadius)
+      ctx.fill()
 
       ctx.fillStyle = '#ffffff'
       ctx.font = 'bold 48px monospace'
@@ -258,8 +331,11 @@ export function BackgroundSnakeGame() {
 
     // Draw start screen
     if (!isPlaying && !gameOver) {
+      // Draw rounded overlay background
       ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
-      ctx.fillRect(0, headerHeight, gridWidth * gridCellSize, gridHeight * gridCellSize - headerHeight - footerHeight)
+      ctx.beginPath()
+      ctx.roundRect(borderLeft, borderTop, borderWidth, borderHeight, cornerRadius)
+      ctx.fill()
 
       ctx.fillStyle = '#10b981'
       ctx.font = 'bold 64px monospace'
@@ -271,7 +347,7 @@ export function BackgroundSnakeGame() {
       ctx.fillText('Use arrow keys to move', canvas.width / 2, canvas.height / 2)
       ctx.fillText('Press SPACE to start', canvas.width / 2, canvas.height / 2 + 40)
     }
-  }, [snake, food, gameOver, isPlaying, score, getGridDimensions])
+  }, [snake, food, gameOver, isPlaying, score, getGridDimensions, isGoldenApple, getSafeBoundaries])
 
   // Handle restart and resize
   useEffect(() => {
@@ -314,8 +390,11 @@ export function BackgroundSnakeGame() {
       {/* Floating score counter */}
       {isPlaying && (
         <div
-          className="absolute left-4 z-50 bg-black/40 text-white px-4 py-2 rounded-lg border border-green-500/30 shadow-lg mt-4"
-          style={{ top: `${getHeaderHeight()}px` }}>
+          className="absolute z-50 bg-black/40 text-white px-4 py-2 rounded-lg border border-green-500/30 shadow-lg"
+          style={{
+            top: `${getSafeBoundaries().safeYMin * getGridDimensions().gridCellSize + getGridDimensions().gridOffset + 8}px`,
+            left: `${getSafeBoundaries().safeXMin * getGridDimensions().gridCellSize + getGridDimensions().gridOffset + 8}px`,
+          }}>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
             <span className="font-mono text-lg font-bold text-green-400">
