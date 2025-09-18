@@ -99,13 +99,37 @@ export function ScoreSubmission({ score, onComplete }: ScoreSubmissionProps) {
           onComplete()
         }, 2000)
       } else {
-        console.error('Failed to submit score:', data.message)
-        // Still close the modal but show error
+        // API returned success: false
+        const errorMessage = data.message ?? 'Failed to submit score. Please try again.'
+        toast.error('Score submission failed', {
+          description: errorMessage,
+        })
+
+        // Close modal and complete after showing error
         setShowNameInput(false)
         onComplete()
       }
     } catch (error) {
       console.error('Error submitting score:', error)
+
+      let errorMessage = 'Failed to submit score. Please try again.'
+
+      if (error instanceof z.ZodError) {
+        errorMessage = 'Invalid response from server. Please try again.'
+        console.error('Zod validation error:', error.issues)
+      } else if (error instanceof Error) {
+        if (error.message.includes('HTTP error')) {
+          errorMessage = 'Server error. Please try again later.'
+        } else if (error.message.includes('Failed to fetch')) {
+          errorMessage = 'Network error. Please check your connection.'
+        }
+      }
+
+      toast.error('Score submission failed', {
+        description: errorMessage,
+      })
+
+      // Close modal and complete after showing error
       setShowNameInput(false)
       onComplete()
     } finally {
