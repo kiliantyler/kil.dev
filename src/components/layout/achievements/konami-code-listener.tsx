@@ -1,11 +1,13 @@
 'use client'
 
 import { useAchievements } from '@/components/providers/achievements-provider'
+import { useKonamiAnimation } from '@/components/providers/konami-animation-provider'
 import { type AchievementId } from '@/lib/achievements'
 import { useEffect, useRef, useState } from 'react'
 
 export function KonamiCodeListener() {
   const { has, unlock } = useAchievements()
+  const { triggerAnimation } = useKonamiAnimation()
   const sequenceRef = useRef<string[]>([])
   const [isHomepage, setIsHomepage] = useState(false)
 
@@ -68,6 +70,7 @@ export function KonamiCodeListener() {
           const id = 'KONAMI_CODE' as AchievementId
           if (!has(id)) {
             unlock(id)
+            triggerAnimation()
           }
         }
       }
@@ -75,7 +78,7 @@ export function KonamiCodeListener() {
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [has, unlock, isHomepage])
+  }, [has, unlock, isHomepage, triggerAnimation])
 
   return null
 }
