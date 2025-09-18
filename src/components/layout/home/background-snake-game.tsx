@@ -181,6 +181,376 @@ export function BackgroundSnakeGame() {
     }
   }, [getGridDimensions, getSafeBoundaries, windowSize])
 
+  // Types for drawing helpers
+  type GameBoxDimensions = ReturnType<typeof getGameBoxDimensions>
+
+  // Draw helpers
+  const drawGameBorder = useCallback(
+    (ctx: CanvasRenderingContext2D, dimensions: GameBoxDimensions, showSnakeForBg: boolean) => {
+      const { borderLeft, borderTop, borderWidth, borderHeight } = dimensions
+      const cornerRadius = 12
+
+      const gradient = ctx.createLinearGradient(
+        borderLeft,
+        borderTop,
+        borderLeft + borderWidth,
+        borderTop + borderHeight,
+      )
+      gradient.addColorStop(0, 'rgba(16, 185, 129, 0.8)')
+      gradient.addColorStop(0.5, 'rgba(34, 197, 94, 0.6)')
+      gradient.addColorStop(1, 'rgba(16, 185, 129, 0.8)')
+
+      ctx.strokeStyle = gradient
+      ctx.lineWidth = 3
+      ctx.lineCap = 'round'
+      ctx.lineJoin = 'round'
+
+      ctx.beginPath()
+      ctx.roundRect(borderLeft, borderTop, borderWidth, borderHeight, cornerRadius)
+      ctx.stroke()
+
+      ctx.strokeStyle = 'rgba(16, 185, 129, 0.2)'
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.roundRect(borderLeft + 2, borderTop + 2, borderWidth - 4, borderHeight - 4, cornerRadius - 2)
+      ctx.stroke()
+
+      if (showSnakeForBg) {
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.05)'
+        ctx.beginPath()
+        ctx.roundRect(borderLeft, borderTop, borderWidth, borderHeight, cornerRadius)
+        ctx.fill()
+      }
+    },
+    [],
+  )
+
+  const drawSnake = useCallback(
+    (ctx: CanvasRenderingContext2D, snakeBody: Position[], dimensions: GameBoxDimensions) => {
+      const { gridCellSize, gridOffset, centerGridX, safeXMin } = dimensions
+      snakeBody.forEach((segment, index) => {
+        const x = (centerGridX + segment.x - safeXMin) * gridCellSize + gridOffset
+        const y = segment.y * gridCellSize + gridOffset
+        ctx.fillStyle = index === 0 ? '#10b981' : '#34d399'
+        ctx.fillRect(x + 2, y + 2, gridCellSize - 4, gridCellSize - 4)
+      })
+    },
+    [],
+  )
+
+  const drawFood = useCallback(
+    (ctx: CanvasRenderingContext2D, foodPos: Position, golden: boolean, dimensions: GameBoxDimensions) => {
+      const { gridCellSize, gridOffset, centerGridX, safeXMin } = dimensions
+      const foodX = (centerGridX + foodPos.x - safeXMin) * gridCellSize + gridOffset
+      const foodY = foodPos.y * gridCellSize + gridOffset
+      ctx.fillStyle = golden ? '#fbbf24' : '#ef4444'
+      ctx.fillRect(foodX + 2, foodY + 2, gridCellSize - 4, gridCellSize - 4)
+    },
+    [],
+  )
+
+  const drawCRTEffects = useCallback(
+    (
+      ctx: CanvasRenderingContext2D,
+      dimensions: GameBoxDimensions,
+      crt: typeof crtAnimation,
+      theme: string | undefined,
+      showSnakeForCrt: boolean,
+    ) => {
+      const { borderLeft, borderTop, borderWidth, borderHeight } = dimensions
+      const isDarkMode = theme === 'dark'
+
+      if (showSnakeForCrt) {
+        ctx.save()
+        const scanLineHeight = 2
+        const scanLineSpacing = 4
+        const scanLineOpacity = isDarkMode ? 0.15 : 0.04
+        const scanLineColor = '0, 0, 0'
+
+        ctx.fillStyle = `rgba(${scanLineColor}, ${scanLineOpacity})`
+        for (let y = borderTop; y < borderTop + borderHeight; y += scanLineHeight + scanLineSpacing) {
+          ctx.fillRect(borderLeft, y, borderWidth, scanLineHeight)
+        }
+
+        const verticalScanLineWidth = 1
+        const verticalScanLineSpacing = 8
+        const verticalScanLineOpacity = isDarkMode ? 0.08 : 0.02
+
+        ctx.fillStyle = `rgba(${scanLineColor}, ${verticalScanLineOpacity})`
+        for (let x = borderLeft; x < borderLeft + borderWidth; x += verticalScanLineWidth + verticalScanLineSpacing) {
+          ctx.fillRect(x, borderTop, verticalScanLineWidth, borderHeight)
+        }
+
+        ctx.save()
+        ctx.globalCompositeOperation = 'multiply'
+        const curvatureOpacity = isDarkMode ? 0.05 : 0.01
+        ctx.fillStyle = `rgba(0, 0, 0, ${curvatureOpacity})`
+
+        const vignette = ctx.createRadialGradient(
+          borderLeft + borderWidth / 2,
+          borderTop + borderHeight / 2,
+          0,
+          borderLeft + borderWidth / 2,
+          borderTop + borderHeight / 2,
+          Math.max(borderWidth, borderHeight) / 2,
+        )
+        vignette.addColorStop(0, 'rgba(0, 0, 0, 0)')
+        vignette.addColorStop(0.7, 'rgba(0, 0, 0, 0)')
+        vignette.addColorStop(1, `rgba(0, 0, 0, ${isDarkMode ? 0.1 : 0.02})`)
+
+        ctx.fillStyle = vignette
+        ctx.fillRect(borderLeft, borderTop, borderWidth, borderHeight)
+        ctx.restore()
+        ctx.restore()
+      }
+
+      if (crt.isAnimating) {
+        const { centerX, centerY, horizontalWidth, verticalHeight } = crt
+        if (horizontalWidth < 20) {
+          const pulseIntensity = 0.8 + 0.2 * Math.sin(Date.now() * 0.01)
+          ctx.shadowColor = '#10b981'
+          ctx.shadowBlur = 30 * pulseIntensity
+          ctx.fillStyle = 'rgba(16, 185, 129, 1)'
+          ctx.fillRect(centerX - 4, centerY - 4, 8, 8)
+          ctx.shadowBlur = 60 * pulseIntensity
+          ctx.fillStyle = 'rgba(16, 185, 129, 0.8)'
+          ctx.fillRect(centerX - 8, centerY - 8, 16, 16)
+          ctx.shadowBlur = 0
+        } else if (verticalHeight < 20) {
+          const rectX = centerX - horizontalWidth / 2
+          const rectY = centerY - 3
+          const pulseIntensity = 0.7 + 0.3 * Math.sin(Date.now() * 0.008)
+          ctx.shadowColor = '#10b981'
+          ctx.shadowBlur = 25 * pulseIntensity
+          ctx.fillStyle = 'rgba(16, 185, 129, 1)'
+          ctx.fillRect(rectX, rectY, horizontalWidth, 6)
+          ctx.shadowBlur = 45 * pulseIntensity
+          ctx.fillStyle = 'rgba(16, 185, 129, 0.8)'
+          ctx.fillRect(rectX - 8, rectY - 8, horizontalWidth + 16, 22)
+          ctx.shadowBlur = 0
+        }
+      }
+
+      if (crt.isAnimating || crt.glowIntensity > 0) {
+        const { borderLeft, borderTop, borderWidth, borderHeight } = dimensions
+        const cornerRadius = 12
+        const gradient = ctx.createLinearGradient(
+          borderLeft,
+          borderTop,
+          borderLeft + borderWidth,
+          borderTop + borderHeight,
+        )
+        gradient.addColorStop(0, 'rgba(16, 185, 129, 0.8)')
+        gradient.addColorStop(0.5, 'rgba(34, 197, 94, 0.6)')
+        gradient.addColorStop(1, 'rgba(16, 185, 129, 0.8)')
+
+        ctx.shadowColor = '#10b981'
+        ctx.shadowBlur = 20 * Math.max(crt.glowIntensity, 0.3)
+        ctx.shadowOffsetX = 0
+        ctx.shadowOffsetY = 0
+        ctx.strokeStyle = gradient
+        ctx.lineWidth = 3
+        ctx.beginPath()
+        ctx.roundRect(borderLeft, borderTop, borderWidth, borderHeight, cornerRadius)
+        ctx.stroke()
+        ctx.shadowBlur = 0
+      }
+    },
+    [],
+  )
+
+  const drawGameOverOverlay = useCallback(
+    (
+      ctx: CanvasRenderingContext2D,
+      scoreValue: number,
+      leaderboardData: LeaderboardEntry[],
+      loadingLeaderboard: boolean,
+      shouldShowNameInput: boolean,
+      nameChars: string[],
+      namePos: number,
+      submitting: boolean,
+      dimensions: GameBoxDimensions,
+    ) => {
+      const { borderLeft, borderTop, borderWidth, borderHeight } = dimensions
+      const cornerRadius = 12
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'
+      ctx.beginPath()
+      ctx.roundRect(borderLeft, borderTop, borderWidth, borderHeight, cornerRadius)
+      ctx.fill()
+
+      ctx.fillStyle = '#ffffff'
+      ctx.font = 'bold 100px VT323, monospace'
+      ctx.textAlign = 'center'
+      ctx.fillText('GAME OVER', borderLeft + borderWidth / 2, borderTop + 60)
+
+      ctx.font = '40px VT323, monospace'
+      ctx.fillText(`Score: ${scoreValue}`, borderLeft + borderWidth / 2, borderTop + 100)
+
+      if (loadingLeaderboard) {
+        ctx.fillStyle = '#10b981'
+        ctx.font = '36px VT323, monospace'
+        ctx.fillText('Loading leaderboard...', borderLeft + borderWidth / 2, borderTop + 140)
+      } else if (leaderboardData.length > 0) {
+        ctx.fillStyle = '#10b981'
+        ctx.font = 'bold 40px VT323, monospace'
+        ctx.fillText('LEADERBOARD', borderLeft + borderWidth / 2, borderTop + 140)
+
+        const startY = borderTop + 170
+        const lineHeight = 20
+        const maxEntries = Math.min(leaderboardData.length, 10)
+        const leaderboardWidth = 200
+        const leaderboardLeft = borderLeft + (borderWidth - leaderboardWidth) / 2
+
+        for (let i = 0; i < maxEntries; i++) {
+          const entry = leaderboardData[i]
+          if (!entry) continue
+          const y = startY + i * lineHeight
+          if (entry.score === scoreValue) {
+            ctx.fillStyle = 'rgba(16, 185, 129, 0.2)'
+            ctx.fillRect(leaderboardLeft, y - 12, leaderboardWidth, lineHeight)
+          }
+          ctx.fillStyle = '#10b981'
+          ctx.font = '20px VT323, monospace'
+          ctx.textAlign = 'left'
+          ctx.fillText(`#${i + 1}`, leaderboardLeft + 10, y)
+
+          ctx.fillStyle = entry.score === scoreValue ? '#ffffff' : '#10b981'
+          ctx.font = 'bold 20px VT323, monospace'
+          ctx.fillText(entry.name, leaderboardLeft + 40, y)
+
+          ctx.fillStyle = entry.score === scoreValue ? '#ffffff' : '#10b981'
+          ctx.font = '20px VT323, monospace'
+          ctx.textAlign = 'right'
+          ctx.fillText(entry.score.toString().padStart(4, '0'), leaderboardLeft + leaderboardWidth - 10, y)
+        }
+      }
+
+      if (shouldShowNameInput) {
+        const leaderboardHeight = leaderboardData.length > 0 ? Math.min(leaderboardData.length, 8) * 25 + 50 : 0
+        const nameInputY = borderTop + 170 + leaderboardHeight + 20
+        ctx.fillStyle = '#10b981'
+        ctx.font = 'bold 32px VT323, monospace'
+        ctx.textAlign = 'center'
+        ctx.fillText('NEW HIGH SCORE!', borderLeft + borderWidth / 2, nameInputY)
+
+        ctx.font = '24px VT323, monospace'
+        ctx.fillText('Enter your initials:', borderLeft + borderWidth / 2, nameInputY + 30)
+
+        const boxWidth = 30
+        const boxSpacing = 20
+        const totalWidth = boxWidth * 3 + boxSpacing * 2
+        const nameStartX = borderLeft + borderWidth / 2 - totalWidth / 2
+        const nameY = nameInputY + 60
+
+        for (let i = 0; i < 3; i++) {
+          const x = nameStartX + i * (boxWidth + boxSpacing)
+          ctx.strokeStyle = namePos === i ? '#ffffff' : '#10b981'
+          ctx.lineWidth = namePos === i ? 3 : 2
+          ctx.strokeRect(x, nameY - 20, boxWidth, 30)
+          ctx.fillStyle = '#10b981'
+          ctx.font = 'bold 32px VT323, monospace'
+          ctx.textAlign = 'center'
+          ctx.fillText(nameChars[i] ?? 'A', x + boxWidth / 2, nameY)
+        }
+
+        ctx.fillStyle = '#10b981'
+        ctx.font = '20px VT323, monospace'
+        ctx.textAlign = 'center'
+        ctx.fillText('↑↓ Change letter  ←→ Move  SPACE Next/Submit', borderLeft + borderWidth / 2, nameInputY + 110)
+
+        if (submitting) {
+          ctx.fillStyle = '#ffffff'
+          ctx.font = '24px VT323, monospace'
+          ctx.textAlign = 'center'
+          ctx.fillText('Submitting...', borderLeft + borderWidth / 2, nameInputY + 140)
+        }
+      }
+
+      ctx.fillStyle = '#ffffff'
+      ctx.font = '24px VT323, monospace'
+      ctx.textAlign = 'center'
+      ctx.fillText('Press SPACE to restart', borderLeft + borderWidth / 2, borderTop + borderHeight - 30)
+
+      ctx.fillStyle = '#ffffff'
+      ctx.font = '18px VT323, monospace'
+      ctx.textAlign = 'center'
+      ctx.fillText('ESC to quit', borderLeft + borderWidth / 2, borderTop + borderHeight - 10)
+    },
+    [],
+  )
+
+  const drawStartScreen = useCallback(
+    (
+      ctx: CanvasRenderingContext2D,
+      dimensions: GameBoxDimensions,
+      squareGridSize: number,
+      centerGridX: number,
+      safeYMin: number,
+      showSnakeForStart: boolean,
+      isPlayingState: boolean,
+      gameOverState: boolean,
+    ) => {
+      if (!showSnakeForStart || isPlayingState || gameOverState) return
+      const { gridCellSize, gridOffset, borderLeft, borderTop, borderWidth, borderHeight } = dimensions
+      const cornerRadius = 12
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
+      ctx.beginPath()
+      ctx.roundRect(borderLeft, borderTop, borderWidth, borderHeight, cornerRadius)
+      ctx.fill()
+
+      type Letter = 'S' | 'N' | 'A' | 'K' | 'E'
+      const letters: Letter[] = ['S', 'N', 'A', 'K', 'E']
+      const spacing = 1
+      const glyph3x5: Record<Letter, string[]> = {
+        S: ['111', '100', '111', '001', '111'],
+        N: ['111', '101', '101', '101', '101'],
+        A: ['010', '101', '111', '101', '101'],
+        K: ['101', '101', '110', '101', '101'],
+        E: ['111', '100', '110', '100', '111'],
+      }
+      const glyph: Record<Letter, string[]> = glyph3x5
+      const letterW = 3
+      const letterH = 5
+      const totalWordW = letters.length * letterW + (letters.length - 1) * spacing
+      const xStartGrid = centerGridX + Math.max(0, Math.floor((squareGridSize - totalWordW) / 2))
+      const yCenter = safeYMin + Math.floor(squareGridSize / 2)
+      const yStartGrid = Math.max(safeYMin + 1, yCenter - Math.floor(letterH / 2) - 2)
+
+      ctx.fillStyle = '#10b981'
+      for (let i = 0; i < letters.length; i++) {
+        const ch = letters[i]
+        if (!ch) continue
+        const rows = glyph[ch]
+        if (!rows) continue
+        const letterX = xStartGrid + i * (letterW + spacing)
+        for (let r = 0; r < rows.length; r++) {
+          const row = rows[r] ?? ''
+          for (let c = 0; c < row.length; c++) {
+            if (row[c] !== '1') continue
+            const gx = (letterX + c) * gridCellSize + gridOffset
+            const gy = (yStartGrid + r) * gridCellSize + gridOffset
+            ctx.fillRect(gx + 2, gy + 2, gridCellSize - 4, gridCellSize - 4)
+          }
+        }
+      }
+
+      const centerXPx = borderLeft + borderWidth / 2
+      ctx.fillStyle = '#ffffff'
+      ctx.font = '28px VT323, monospace'
+      ctx.textAlign = 'center'
+      ctx.fillText('Use arrow keys to move', centerXPx, borderTop + borderHeight - 60)
+      ctx.fillText('Press SPACE to start', centerXPx, borderTop + borderHeight - 30)
+
+      ctx.fillStyle = '#ffffff'
+      ctx.font = '20px VT323, monospace'
+      ctx.textAlign = 'center'
+      ctx.fillText('ESC to quit', centerXPx, borderTop + borderHeight - 10)
+    },
+    [],
+  )
+
   // Start CRT turn-on animation (mirror of power-down: point → horizontal line → full frame)
   const startCrtAnimation = useCallback(() => {
     // Ensure CRT is on for opening animation
