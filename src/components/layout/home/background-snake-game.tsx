@@ -6,6 +6,7 @@ import { LIGHT_GRID } from '@/lib/light-grid'
 import type { LeaderboardEntry } from '@/types/leaderboard'
 import { playGameOverSound, playScoreSound } from '@/utils/arcade-utils'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { z } from 'zod'
 
 type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT'
 type Position = { x: number; y: number }
@@ -14,6 +15,11 @@ const BASE_GAME_SPEED = 150
 const MIN_GAME_SPEED = 80
 const SPEED_REDUCTION_PER_SEGMENT = 2
 const GOLDEN_APPLE_CHANCE = 0.02
+
+const checkScoreResponseSchema = z.object({
+  qualifies: z.boolean(),
+  currentThreshold: z.number().optional(),
+})
 
 export function BackgroundSnakeGame() {
   const { showSnake, closeAnimation, finishCloseAnimation, isReturning } = useKonamiAnimation()
