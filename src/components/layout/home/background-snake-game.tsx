@@ -22,6 +22,7 @@ export function BackgroundSnakeGame() {
   // Use refs to track current food state to avoid stale closures
   const foodRef = useRef<Position>({ x: 10, y: 10 })
   const isGoldenAppleRef = useRef<boolean>(false)
+  const lastFoodEatenRef = useRef<Position | null>(null)
 
   // Calculate grid dimensions based on window size
   const getGridDimensions = useCallback(() => {
@@ -129,6 +130,7 @@ export function BackgroundSnakeGame() {
     setGameOver(false)
     setScore(0)
     setIsPlaying(true)
+    lastFoodEatenRef.current = null
   }, [generateFood, getGridDimensions, getSafeBoundaries])
 
   // Handle keyboard input
@@ -204,6 +206,20 @@ export function BackgroundSnakeGame() {
 
         // Check food collision using current food state
         if (head.x === food.x && head.y === food.y) {
+          // Prevent double scoring by checking if we already ate this food
+          const currentFood = { x: food.x, y: food.y }
+          if (
+            lastFoodEatenRef.current &&
+            lastFoodEatenRef.current.x === currentFood.x &&
+            lastFoodEatenRef.current.y === currentFood.y
+          ) {
+            // Already processed this food, just return snake without growing
+            return newSnake
+          }
+
+          // Mark this food as eaten
+          lastFoodEatenRef.current = currentFood
+
           const points = isGoldenApple ? 50 : 10
           setScore(prev => prev + points)
 
@@ -216,6 +232,9 @@ export function BackgroundSnakeGame() {
           // Don't remove tail since we ate food
           return newSnake
         } else {
+          // Clear the last food eaten when we're not on food
+          lastFoodEatenRef.current = null
+
           // Remove tail if no food eaten
           newSnake.pop()
           return newSnake
