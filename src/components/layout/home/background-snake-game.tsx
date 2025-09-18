@@ -3,6 +3,8 @@
 import { useKonamiAnimation } from '@/components/providers/konami-animation-provider'
 import { useTheme } from '@/components/providers/theme-provider'
 import { LIGHT_GRID } from '@/lib/light-grid'
+import type { LeaderboardEntry } from '@/types/leaderboard'
+import { playGameOverSound, playScoreSound } from '@/utils/arcade-utils'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT'
@@ -521,7 +523,7 @@ export function BackgroundSnakeGame() {
 
     window.addEventListener('keydown', handleKeyPress)
     return () => window.removeEventListener('keydown', handleKeyPress)
-  }, [direction, isPlaying])
+  }, [direction, isPlaying, showNameInput, handleNameInputKey, handleGameOver])
 
   // Create moveSnake function that can be reused
   const moveSnake = useCallback(() => {
@@ -554,6 +556,8 @@ export function BackgroundSnakeGame() {
       if (head.x < safeXMin || head.x > safeXMax || head.y < safeYMin || head.y > safeYMax) {
         setGameOver(true)
         setIsPlaying(false)
+        playGameOverSound()
+        void handleGameOver()
         return prevSnake
       }
 
@@ -561,6 +565,8 @@ export function BackgroundSnakeGame() {
       if (prevSnake.some(segment => segment.x === head.x && segment.y === head.y)) {
         setGameOver(true)
         setIsPlaying(false)
+        playGameOverSound()
+        void handleGameOver()
         return prevSnake
       }
 
@@ -583,7 +589,11 @@ export function BackgroundSnakeGame() {
         lastFoodEatenRef.current = currentFood
 
         const points = isGoldenApple ? 50 : 10
-        setScore(prev => prev + points)
+        setScore(prev => {
+          const newScore = prev + points
+          playScoreSound(newScore)
+          return newScore
+        })
 
         const foodData = generateFood(gridWidth, gridHeight)
         setFood(foodData.position)
@@ -609,6 +619,7 @@ export function BackgroundSnakeGame() {
     getSafeBoundaries,
     food,
     isGoldenApple,
+    handleGameOver,
   ])
 
   // Game loop
@@ -932,7 +943,7 @@ export function BackgroundSnakeGame() {
       window.removeEventListener('keydown', handleKeyPress)
       window.removeEventListener('resize', handleResize)
     }
-  }, [gameOver, isPlaying, initGame])
+  }, [gameOver, isPlaying, initGame, showNameInput])
 
   // Control grid lights visibility when game is playing
   useEffect(() => {
