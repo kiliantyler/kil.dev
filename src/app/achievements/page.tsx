@@ -22,7 +22,7 @@ export default async function AchievementsPage() {
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <div className="flex flex-col gap-2">
-              <SectionLabel as="p">Achievements</SectionLabel>
+              <SectionLabel as="p">Dopamine Hits</SectionLabel>
               <p className="text-muted-foreground">Some are hidden. Can you find them all?</p>
             </div>
             <AchievementResetButton />
