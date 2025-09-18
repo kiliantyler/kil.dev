@@ -120,8 +120,33 @@ export function initTheme(config: ThemeScriptConfig): void {
   const now = new Date()
   const active = config.seasonal.filter(s => inRange(now, s.start, s.end))
 
-  const allowed = uniqueStrings([...config.base, ...active.map(s => s.theme)])
-  const defaultTheme = active[0]?.theme ?? null
+  // Check if user has theme tapdance achievement (bypasses date restrictions)
+  let hasThemeTapdance = false
+  if (typeof document !== 'undefined') {
+    hasThemeTapdance = document.documentElement.hasAttribute('data-has-theme-tapdance')
+
+    // Fallback: if CSS attribute not set yet, try to detect from cookie directly
+    if (!hasThemeTapdance) {
+      try {
+        const cookieRegex = /(?:^|;\s*)kil\.dev_achievements_v1=([^;]+)/
+        const cookieMatch = cookieRegex.exec(document.cookie)
+        if (cookieMatch) {
+          const cookieValue = decodeURIComponent(cookieMatch[1])
+          if (cookieValue.includes('THEME_TAPDANCE')) {
+            hasThemeTapdance = true
+          }
+        }
+      } catch {}
+    }
+  }
+
+  const allowed = hasThemeTapdance
+    ? uniqueStrings([...config.base, ...config.seasonal.map(s => s.theme)])
+    : uniqueStrings([...config.base, ...active.map(s => s.theme)])
+
+  const defaultTheme = hasThemeTapdance
+    ? config.seasonal[0]?.theme ?? null
+    : active[0]?.theme ?? null
 
   const isAllowed = (t: unknown): t is string => typeof t === 'string' && allowed.includes(t)
 

@@ -3,8 +3,16 @@ import type { MonthDay } from '@/types/themes'
 import { THEME_RUNTIME_BUNDLE } from './theme-bundle'
 
 // Helper function to check if achievement is unlocked
-// This avoids circular imports by accessing localStorage directly
+// Checks CSS data attribute first (SSR/hydration safe), then localStorage
 function hasThemeTapdanceAchievement(): boolean {
+  if (typeof document !== 'undefined') {
+    // Check for SSR-hydrated CSS data attribute
+    const root = document.documentElement
+    if (root.hasAttribute('data-has-theme-tapdance')) {
+      return true
+    }
+  }
+
   if (typeof window === 'undefined') return false
   try {
     const stored = localStorage.getItem('kil.dev/achievements/v1')
