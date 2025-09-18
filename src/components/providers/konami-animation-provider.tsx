@@ -5,6 +5,7 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 type KonamiAnimationContextType = {
   isAnimating: boolean
   hasAnimated: boolean
+  showSnake: boolean
   triggerAnimation: () => void
 }
 
@@ -13,11 +14,13 @@ const KonamiAnimationContext = createContext<KonamiAnimationContextType | undefi
 export function KonamiAnimationProvider({ children }: { children: ReactNode }) {
   const [isAnimating, setIsAnimating] = useState(false)
   const [hasAnimated, setHasAnimated] = useState(false)
+  const [showSnake, setShowSnake] = useState(false)
 
   useEffect(() => {
     // Clear the animation state on page load to ensure content is visible
     sessionStorage.removeItem('konami-animated')
     setHasAnimated(false)
+    setShowSnake(false)
   }, [])
 
   const triggerAnimation = () => {
@@ -27,11 +30,14 @@ export function KonamiAnimationProvider({ children }: { children: ReactNode }) {
     sessionStorage.setItem('konami-animated', 'true')
 
     // Stop animating after 1.5s but keep hasAnimated true
-    setTimeout(() => setIsAnimating(false), 1500)
+    setTimeout(() => {
+      setIsAnimating(false)
+      setShowSnake(true)
+    }, 1500)
   }
 
   return (
-    <KonamiAnimationContext.Provider value={{ isAnimating, hasAnimated, triggerAnimation }}>
+    <KonamiAnimationContext.Provider value={{ isAnimating, hasAnimated, showSnake, triggerAnimation }}>
       {children}
     </KonamiAnimationContext.Provider>
   )
