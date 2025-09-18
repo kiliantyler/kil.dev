@@ -398,6 +398,22 @@ export function BackgroundSnakeGame() {
     }
   }, [gameOver, isPlaying, initGame])
 
+  // Control grid lights visibility when game is playing
+  useEffect(() => {
+    if (isPlaying) {
+      document.body.classList.add('snake-game-active')
+      console.log('Snake game active - grid lights should be hidden')
+    } else {
+      document.body.classList.remove('snake-game-active')
+      console.log('Snake game inactive - grid lights should be visible')
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.classList.remove('snake-game-active')
+    }
+  }, [isPlaying])
+
   return (
     <>
       <canvas

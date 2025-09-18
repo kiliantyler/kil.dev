@@ -488,3 +488,27 @@ html[data-has-pet-gallery='true'][data-pet-gallery-just-unlocked='true'] .js-pet
   transform: translateX(150vw) rotate(15deg);
   opacity: 0;
 }
+
+/* Hide grid lights when snake game is active */
+.snake-game-active [class*='gl-'] {
+  opacity: 0 !important;
+  transition: opacity 0.3s ease-in-out;
+}
+
+/* Hide the entire grid lights container */
+.snake-game-active .absolute.inset-0.overflow-hidden[aria-hidden] {
+  opacity: 0 !important;
+  transition: opacity 0.3s ease-in-out;
+}
+
+/* More specific targeting for grid lights */
+.snake-game-active div[class*='gl-'] {
+  opacity: 0 !important;
+  transition: opacity 0.3s ease-in-out;
+}
+
+/* Target the grid lights container directly */
+body.snake-game-active .absolute.inset-0.overflow-hidden {
+  opacity: 0 !important;
+  transition: opacity 0.3s ease-in-out;
+}
