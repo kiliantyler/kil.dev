@@ -20,6 +20,7 @@ export function BackgroundSnakeGame() {
   const [gameOver, setGameOver] = useState(false)
   const [score, setScore] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 })
   const gameLoopRef = useRef<number | null>(null)
 
   // Use refs to track current food state to avoid stale closures
@@ -34,18 +35,33 @@ export function BackgroundSnakeGame() {
     return Math.max(newSpeed, MIN_GAME_SPEED)
   }, [])
 
+  // Track window size changes
+  useEffect(() => {
+    const updateWindowSize = () => {
+      setWindowSize({ width: window.innerWidth, height: window.innerHeight })
+    }
+
+    // Set initial size
+    updateWindowSize()
+
+    window.addEventListener('resize', updateWindowSize)
+    return () => window.removeEventListener('resize', updateWindowSize)
+  }, [])
+
   // Calculate grid dimensions based on window size
   const getGridDimensions = useCallback(() => {
     const gridCellSize = LIGHT_GRID.GRID_SIZE_PX
     const gridOffset = LIGHT_GRID.GRID_OFFSET_PX
+    const width = windowSize.width || window.innerWidth
+    const height = windowSize.height || window.innerHeight
 
     return {
-      gridWidth: Math.floor(window.innerWidth / gridCellSize) - 1,
-      gridHeight: Math.floor(window.innerHeight / gridCellSize),
+      gridWidth: Math.floor(width / gridCellSize) - 1,
+      gridHeight: Math.floor(height / gridCellSize),
       gridCellSize,
       gridOffset,
     }
-  }, [])
+  }, [windowSize])
 
   const getHeaderHeight = useCallback(() => {
     const { gridCellSize } = getGridDimensions()
@@ -59,16 +75,18 @@ export function BackgroundSnakeGame() {
     const borderOffset = 40
     const actualHeaderHeight = headerHeight + borderOffset
     const footerHeight = Math.floor(60 / gridCellSize) * gridCellSize
+    const width = windowSize.width || window.innerWidth
+    const height = windowSize.height || window.innerHeight
 
     // Convert pixel positions to grid coordinates, then add inset
     const baseYMin = Math.floor((actualHeaderHeight - gridOffset) / gridCellSize)
-    const baseYMax = Math.floor((window.innerHeight - footerHeight - gridOffset) / gridCellSize) - 1
+    const baseYMax = Math.floor((height - footerHeight - gridOffset) / gridCellSize) - 1
 
     // Apply 1-grid-cell inset on top, left, and bottom
     const safeYMin = baseYMin + 1 // Top inset
     const safeYMax = baseYMax - 1 // Bottom inset
     const safeXMin = 1 // Left inset
-    const safeXMax = Math.floor(window.innerWidth / gridCellSize) - 2 // Right stays the same
+    const safeXMax = Math.floor(width / gridCellSize) - 2 // Right stays the same
 
     return {
       safeYMin,
@@ -79,7 +97,7 @@ export function BackgroundSnakeGame() {
       footerHeight,
       borderOffset,
     }
-  }, [getGridDimensions, getHeaderHeight])
+  }, [getGridDimensions, getHeaderHeight, windowSize])
 
   // Generate random food position
   const generateFood = useCallback(
@@ -168,89 +186,97 @@ export function BackgroundSnakeGame() {
     return () => window.removeEventListener('keydown', handleKeyPress)
   }, [direction, isPlaying])
 
+  // Create moveSnake function that can be reused
+  const moveSnake = useCallback(() => {
+    const { gridWidth, gridHeight } = getGridDimensions()
+
+    setSnake(prevSnake => {
+      if (!prevSnake[0]) return prevSnake
+      const head: Position = { x: prevSnake[0].x, y: prevSnake[0].y }
+
+      // Move head based on direction
+      switch (direction) {
+        case 'UP':
+          head.y -= 1
+          break
+        case 'DOWN':
+          head.y += 1
+          break
+        case 'LEFT':
+          head.x -= 1
+          break
+        case 'RIGHT':
+          head.x += 1
+          break
+      }
+
+      // Get current grid dimensions for accurate boundary detection
+      const { safeYMin, safeYMax, safeXMin, safeXMax } = getSafeBoundaries()
+
+      // Check boundaries - walls kill the snake
+      if (head.x < safeXMin || head.x > safeXMax || head.y < safeYMin || head.y > safeYMax) {
+        setGameOver(true)
+        setIsPlaying(false)
+        return prevSnake
+      }
+
+      // Check self collision
+      if (prevSnake.some(segment => segment.x === head.x && segment.y === head.y)) {
+        setGameOver(true)
+        setIsPlaying(false)
+        return prevSnake
+      }
+
+      const newSnake = [head, ...prevSnake]
+
+      // Check food collision using current food state
+      if (head.x === food.x && head.y === food.y) {
+        // Prevent double scoring by checking if we already ate this food
+        const currentFood = { x: food.x, y: food.y }
+        if (
+          lastFoodEatenRef.current &&
+          lastFoodEatenRef.current.x === currentFood.x &&
+          lastFoodEatenRef.current.y === currentFood.y
+        ) {
+          // Already processed this food, just return snake without growing
+          return newSnake
+        }
+
+        // Mark this food as eaten
+        lastFoodEatenRef.current = currentFood
+
+        const points = isGoldenApple ? 50 : 10
+        setScore(prev => prev + points)
+
+        const foodData = generateFood(gridWidth, gridHeight)
+        setFood(foodData.position)
+        setIsGoldenApple(foodData.isGolden)
+        foodRef.current = foodData.position
+        isGoldenAppleRef.current = foodData.isGolden
+
+        // Don't remove tail since we ate food
+        return newSnake
+      } else {
+        // Clear the last food eaten when we're not on food
+        lastFoodEatenRef.current = null
+
+        // Remove tail if no food eaten
+        newSnake.pop()
+        return newSnake
+      }
+    })
+  }, [
+    direction,
+    generateFood,
+    getGridDimensions,
+    getSafeBoundaries,
+    food,
+    isGoldenApple,
+  ])
+
   // Game loop
   useEffect(() => {
     if (!isPlaying || gameOver) return
-
-    const moveSnake = () => {
-      const { gridWidth, gridHeight } = getGridDimensions()
-
-      setSnake(prevSnake => {
-        if (!prevSnake[0]) return prevSnake
-        const head: Position = { x: prevSnake[0].x, y: prevSnake[0].y }
-
-        // Move head based on direction
-        switch (direction) {
-          case 'UP':
-            head.y -= 1
-            break
-          case 'DOWN':
-            head.y += 1
-            break
-          case 'LEFT':
-            head.x -= 1
-            break
-          case 'RIGHT':
-            head.x += 1
-            break
-        }
-
-        // Get current grid dimensions for accurate boundary detection
-        const { safeYMin, safeYMax, safeXMin, safeXMax } = getSafeBoundaries()
-
-        // Check boundaries - walls kill the snake
-        if (head.x < safeXMin || head.x > safeXMax || head.y < safeYMin || head.y > safeYMax) {
-          setGameOver(true)
-          setIsPlaying(false)
-          return prevSnake
-        }
-
-        // Check self collision
-        if (prevSnake.some(segment => segment.x === head.x && segment.y === head.y)) {
-          setGameOver(true)
-          setIsPlaying(false)
-          return prevSnake
-        }
-
-        const newSnake = [head, ...prevSnake]
-
-        // Check food collision using current food state
-        if (head.x === food.x && head.y === food.y) {
-          // Prevent double scoring by checking if we already ate this food
-          const currentFood = { x: food.x, y: food.y }
-          if (
-            lastFoodEatenRef.current &&
-            lastFoodEatenRef.current.x === currentFood.x &&
-            lastFoodEatenRef.current.y === currentFood.y
-          ) {
-            // Already processed this food, just return snake without growing
-            return newSnake
-          }
-
-          // Mark this food as eaten
-          lastFoodEatenRef.current = currentFood
-
-          const points = isGoldenApple ? 50 : 10
-          setScore(prev => prev + points)
-
-          const foodData = generateFood(gridWidth, gridHeight)
-          setFood(foodData.position)
-          setIsGoldenApple(foodData.isGolden)
-          foodRef.current = foodData.position
-          isGoldenAppleRef.current = foodData.isGolden
-
-          // Don't remove tail since we ate food
-          return newSnake
-        } else {
-          // Clear the last food eaten when we're not on food
-          lastFoodEatenRef.current = null
-
-          // Remove tail if no food eaten
-          newSnake.pop()
-          return newSnake
-        }
-      })
-    }
 
     // Clear any existing interval
     if (gameLoopRef.current) {
@@ -266,16 +292,13 @@ export function BackgroundSnakeGame() {
       }
     }
   }, [
-    direction,
     gameOver,
     isPlaying,
-    generateFood,
-    getGridDimensions,
-    getSafeBoundaries,
-    food,
-    isGoldenApple,
     snake.length,
     getCurrentGameSpeed,
+    moveSnake,
+    getGridDimensions,
+    getSafeBoundaries,
   ])
 
   // Draw game
@@ -411,6 +434,7 @@ export function BackgroundSnakeGame() {
           canvas.height = window.innerHeight
         }
       }
+      // Game loop will automatically restart due to windowSize state change
     }
 
     window.addEventListener('keydown', handleKeyPress)

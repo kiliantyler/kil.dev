@@ -1,9 +1,9 @@
 'use client'
 
 import { useKonamiAnimation } from '@/components/providers/konami-animation-provider'
+import { BackgroundSnakeGame } from './background-snake-game'
 import { HeroContent } from './hero/hero-content'
 import { ProfileImage } from './hero/profile-image'
-import { BackgroundSnakeGame } from './background-snake-game'
 
 export function HomeContent() {
   const { showSnake } = useKonamiAnimation()

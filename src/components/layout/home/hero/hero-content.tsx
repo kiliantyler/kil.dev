@@ -1,15 +1,16 @@
 'use client'
 
+import { useKonamiAnimation } from '@/components/providers/konami-animation-provider'
 import { LinkButton } from '@/components/ui/link-button'
 import { MapTooltip } from '@/components/ui/map-tooltip'
-import { useKonamiAnimation } from '@/components/providers/konami-animation-provider'
 import { HOME_CONTENT } from '@/lib/content'
 
 export function HeroContent() {
   const { isAnimating, hasAnimated } = useKonamiAnimation()
 
   return (
-    <div className={`order-2 flex flex-col gap-6 lg:order-1 ${isAnimating ? 'konami-fly-left' : ''} ${hasAnimated ? 'konami-complete konami-fly-left' : ''}`}>
+    <div
+      className={`order-2 flex flex-col gap-6 lg:order-1 ${isAnimating ? 'konami-fly-left' : ''} ${hasAnimated ? 'konami-complete konami-fly-left' : ''}`}>
       <div className="flex flex-col gap-2">
         <h1 className="text-5xl leading-tight font-black tracking-tight text-foreground md:text-6xl">
           {HOME_CONTENT.NAME}
