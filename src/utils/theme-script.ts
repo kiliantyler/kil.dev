@@ -145,7 +145,7 @@ export function initTheme(config: ThemeScriptConfig): void {
     : uniqueStrings([...config.base, ...active.map(s => s.theme)])
 
   const defaultTheme = hasThemeTapdance
-    ? config.seasonal[0]?.theme ?? null
+    ? active[0]?.theme ?? null  // Only use active seasonal themes, even when unlocked
     : active[0]?.theme ?? null
 
   const isAllowed = (t: unknown): t is string => typeof t === 'string' && allowed.includes(t)

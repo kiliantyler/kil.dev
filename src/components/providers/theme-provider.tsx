@@ -1,7 +1,7 @@
 'use client'
 
 import { themes, type Theme, type ThemeName } from '@/lib/themes'
-import { getAvailableThemes, getDefaultThemeForNow, SEASONAL_THEMES } from '@/utils/theme-runtime'
+import { getAvailableThemes, getDefaultThemeForNow, SEASONAL_THEMES, getActiveSeasonalThemes } from '@/utils/theme-runtime'
 import * as React from 'react'
 
 type SystemTheme = 'light' | 'dark'
