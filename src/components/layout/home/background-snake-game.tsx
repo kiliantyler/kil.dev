@@ -1,5 +1,6 @@
 'use client'
 
+import { useKonamiAnimation } from '@/components/providers/konami-animation-provider'
 import { LIGHT_GRID } from '@/lib/light-grid'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
@@ -12,6 +13,7 @@ const SPEED_REDUCTION_PER_SEGMENT = 2
 const GOLDEN_APPLE_CHANCE = 0.02
 
 export function BackgroundSnakeGame() {
+  const { showSnake } = useKonamiAnimation()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [snake, setSnake] = useState<Position[]>([{ x: 5, y: 5 }])
   const [food, setFood] = useState<Position>({ x: 10, y: 10 })
@@ -21,6 +23,15 @@ export function BackgroundSnakeGame() {
   const [score, setScore] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 })
+  const [crtAnimation, setCrtAnimation] = useState({
+    isAnimating: true, // Start animating immediately
+    centerX: 0,
+    centerY: 0,
+    horizontalWidth: 0,
+    verticalHeight: 0,
+    opacity: 0,
+    glowIntensity: 0,
+  })
   const gameLoopRef = useRef<number | null>(null)
 
   // Use refs to track current food state to avoid stale closures
@@ -98,6 +109,117 @@ export function BackgroundSnakeGame() {
       borderOffset,
     }
   }, [getGridDimensions, getHeaderHeight, windowSize])
+
+  // Start CRT turn-on animation
+  const startCrtAnimation = useCallback(() => {
+    // Get the center of the play area for the animation
+    const { gridCellSize, gridOffset, gridWidth } = getGridDimensions()
+    const { safeYMin, safeYMax } = getSafeBoundaries()
+
+    const playAreaWidth = gridWidth * gridCellSize
+    const playAreaHeight = (safeYMax - safeYMin + 1) * gridCellSize
+    const centerX = 1 * gridCellSize + gridOffset + playAreaWidth / 2
+    const centerY = safeYMin * gridCellSize + gridOffset + playAreaHeight / 2
+
+    setCrtAnimation({
+      isAnimating: true,
+      centerX,
+      centerY,
+      horizontalWidth: 0,
+      verticalHeight: 0,
+      opacity: 0,
+      glowIntensity: 0,
+    })
+
+    // Animation timeline - synchronized with Konami animation (starts 0.6s after Konami)
+    const duration = 800 // 0.8 seconds total to complete with Konami
+    const pointDuration = 80 // Point appears for 0.08 seconds
+    const horizontalDuration = 500 // Horizontal line grows for 0.5 seconds (much slower)
+    const verticalDuration = 200 // Vertical expansion for 0.2 seconds (faster to compensate)
+    const glowDuration = 600 // Glow effect for 0.6 seconds
+
+    const startTime = Date.now()
+
+    const animate = () => {
+      const elapsed = Date.now() - startTime
+      const progress = Math.min(elapsed / duration, 1)
+
+      // Phase 1: Single point in center (0-0.2s)
+      const pointProgress = Math.min(elapsed / pointDuration, 1)
+      const pointSize = pointProgress * 8 // Larger, more visible point
+
+      // Phase 2: Horizontal line grows (0.2-0.6s)
+      const horizontalStart = pointDuration
+      const horizontalProgress = Math.max(0, Math.min((elapsed - horizontalStart) / horizontalDuration, 1))
+      // Ease-out for smoother horizontal expansion
+      const horizontalEased = 1 - Math.pow(1 - horizontalProgress, 3)
+      const horizontalWidth = horizontalEased * playAreaWidth
+
+      // Phase 3: Vertical expansion (0.6-1.6s)
+      const verticalStart = pointDuration + horizontalDuration
+      const verticalProgress = Math.max(0, Math.min((elapsed - verticalStart) / verticalDuration, 1))
+      // Ease-out for smoother vertical expansion
+      const verticalEased = 1 - Math.pow(1 - verticalProgress, 2)
+      const verticalHeight = verticalEased * playAreaHeight
+
+      // Opacity animation (starts at 0.1s, reaches 1 at 1.2s)
+      const opacityStart = 100
+      const opacityProgress = Math.max(0, Math.min((elapsed - opacityStart) / 1100, 1))
+      // Ease-out for smoother opacity transition
+      const opacityEased = 1 - Math.pow(1 - opacityProgress, 2)
+      const opacity = Math.min(opacityEased, 1)
+
+      // Glow intensity animation - more consistent throughout
+      const glowProgress = Math.min(elapsed / glowDuration, 1)
+      // Start with strong glow, maintain it, then fade out smoothly
+      const glowIntensity = glowProgress < 0.8 ? 0.8 : 0.8 * (1 - (glowProgress - 0.8) / 0.2)
+
+      setCrtAnimation({
+        isAnimating: progress < 1,
+        centerX,
+        centerY,
+        horizontalWidth: Math.max(horizontalWidth, pointSize),
+        verticalHeight: Math.max(verticalHeight, pointSize),
+        opacity,
+        glowIntensity,
+      })
+
+      if (progress < 1) {
+        requestAnimationFrame(animate)
+      } else {
+        // Animation completed - set final state smoothly
+        setCrtAnimation(prev => ({
+          ...prev,
+          isAnimating: false,
+          horizontalWidth: playAreaWidth,
+          verticalHeight: playAreaHeight,
+          opacity: 1,
+          glowIntensity: 0.3, // Maintain subtle glow for consistency
+        }))
+      }
+    }
+
+    requestAnimationFrame(animate)
+
+    // Fallback timeout to ensure game becomes visible
+    const fallbackTimeout = setTimeout(() => {
+      setCrtAnimation(prev => ({
+        ...prev,
+        isAnimating: false,
+        horizontalWidth: playAreaWidth,
+        verticalHeight: playAreaHeight,
+        opacity: 1,
+        glowIntensity: 0.3, // Maintain subtle glow for consistency
+      }))
+    }, 1400) // 1.4 seconds fallback (0.6s delay + 0.8s animation)
+
+    return () => clearTimeout(fallbackTimeout)
+  }, [getGridDimensions, getSafeBoundaries])
+
+  // Start CRT animation immediately when component mounts (simultaneous with Konami)
+  useEffect(() => {
+    startCrtAnimation()
+  }, [startCrtAnimation])
 
   // Generate random food position
   const generateFood = useCallback(
@@ -318,6 +440,28 @@ export function BackgroundSnakeGame() {
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
+    // Apply CRT animation effects
+    ctx.save()
+
+    // Apply opacity for fade-in effect (ensure minimum visibility)
+    ctx.globalAlpha = Math.max(crtAnimation.opacity, 0.1)
+
+    // Create CRT mask during animation (expanded to account for glow)
+    if (crtAnimation.isAnimating) {
+      const { centerX, centerY, horizontalWidth, verticalHeight } = crtAnimation
+
+      // Expand clipping area to account for glow effect (20px on each side)
+      const glowPadding = 20
+      const rectX = centerX - horizontalWidth / 2 - glowPadding
+      const rectY = centerY - verticalHeight / 2 - glowPadding
+      const rectWidth = horizontalWidth + glowPadding * 2
+      const rectHeight = verticalHeight + glowPadding * 2
+
+      ctx.beginPath()
+      ctx.rect(rectX, rectY, rectWidth, rectHeight)
+      ctx.clip()
+    }
+
     // Draw play area border with enhanced styling
     const playAreaWidth = gridWidth * gridCellSize
     const cornerRadius = 12
@@ -360,23 +504,92 @@ export function BackgroundSnakeGame() {
     ctx.roundRect(borderLeft, borderTop, borderWidth, borderHeight, cornerRadius)
     ctx.fill()
 
-    // Draw snake aligned with background grid
-    snake.forEach((segment, index) => {
-      const x = segment.x * gridCellSize + gridOffset
-      const y = segment.y * gridCellSize + gridOffset
+    // Only draw game elements when snake game is ready to show
+    if (showSnake) {
+      // Draw snake aligned with background grid
+      snake.forEach((segment, index) => {
+        const x = segment.x * gridCellSize + gridOffset
+        const y = segment.y * gridCellSize + gridOffset
 
-      ctx.fillStyle = index === 0 ? '#10b981' : '#34d399' // Head is brighter
-      ctx.fillRect(x + 2, y + 2, gridCellSize - 4, gridCellSize - 4)
-    })
+        ctx.fillStyle = index === 0 ? '#10b981' : '#34d399' // Head is brighter
+        ctx.fillRect(x + 2, y + 2, gridCellSize - 4, gridCellSize - 4)
+      })
 
-    // Draw food aligned with background grid
-    const foodX = food.x * gridCellSize + gridOffset
-    const foodY = food.y * gridCellSize + gridOffset
-    ctx.fillStyle = isGoldenApple ? '#fbbf24' : '#ef4444'
-    ctx.fillRect(foodX + 2, foodY + 2, gridCellSize - 4, gridCellSize - 4)
+      // Draw food aligned with background grid
+      const foodX = food.x * gridCellSize + gridOffset
+      const foodY = food.y * gridCellSize + gridOffset
+      ctx.fillStyle = isGoldenApple ? '#fbbf24' : '#ef4444'
+      ctx.fillRect(foodX + 2, foodY + 2, gridCellSize - 4, gridCellSize - 4)
+    }
 
-    // Draw game over overlay
-    if (gameOver) {
+    // Add bright CRT glow effect after clipping
+    if (crtAnimation.isAnimating) {
+      const { centerX, centerY, horizontalWidth, verticalHeight } = crtAnimation
+
+      // Create bright glow for single point phase
+      if (horizontalWidth < 20) {
+        // Pulsing glow effect
+        const pulseIntensity = 0.8 + 0.2 * Math.sin(Date.now() * 0.01) // Fast pulse
+
+        // Bright center point with strong glow
+        ctx.shadowColor = '#10b981'
+        ctx.shadowBlur = 30 * pulseIntensity
+        ctx.fillStyle = 'rgba(16, 185, 129, 1)'
+        ctx.fillRect(centerX - 4, centerY - 4, 8, 8)
+
+        // Additional outer glow
+        ctx.shadowBlur = 60 * pulseIntensity
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.8)'
+        ctx.fillRect(centerX - 8, centerY - 8, 16, 16)
+
+        // Reset shadow
+        ctx.shadowBlur = 0
+      }
+
+      // Create bright glow for horizontal line phase
+      else if (verticalHeight < 20) {
+        const rectX = centerX - horizontalWidth / 2
+        const rectY = centerY - 3
+
+        // Pulsing glow effect for horizontal line
+        const pulseIntensity = 0.7 + 0.3 * Math.sin(Date.now() * 0.008) // Slightly slower pulse
+
+        // Bright horizontal line with strong glow
+        ctx.shadowColor = '#10b981'
+        ctx.shadowBlur = 25 * pulseIntensity
+        ctx.fillStyle = 'rgba(16, 185, 129, 1)'
+        ctx.fillRect(rectX, rectY, horizontalWidth, 6)
+
+        // Additional outer glow
+        ctx.shadowBlur = 45 * pulseIntensity
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.8)'
+        ctx.fillRect(rectX - 8, rectY - 8, horizontalWidth + 16, 22)
+
+        // Reset shadow
+        ctx.shadowBlur = 0
+      }
+    }
+
+    // Add consistent CRT glow effect to border
+    if (crtAnimation.isAnimating || crtAnimation.glowIntensity > 0) {
+      ctx.shadowColor = '#10b981'
+      ctx.shadowBlur = 20 * Math.max(crtAnimation.glowIntensity, 0.3) // Minimum glow during animation
+      ctx.shadowOffsetX = 0
+      ctx.shadowOffsetY = 0
+
+      // Redraw border with consistent glow
+      ctx.strokeStyle = gradient
+      ctx.lineWidth = 3
+      ctx.beginPath()
+      ctx.roundRect(borderLeft, borderTop, borderWidth, borderHeight, cornerRadius)
+      ctx.stroke()
+
+      // Reset shadow
+      ctx.shadowBlur = 0
+    }
+
+    // Draw game over overlay (only when snake game is ready)
+    if (showSnake && gameOver) {
       // Draw rounded overlay background
       ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'
       ctx.beginPath()
@@ -394,8 +607,8 @@ export function BackgroundSnakeGame() {
       ctx.fillText('Press SPACE to restart', canvas.width / 2, canvas.height / 2 + 60)
     }
 
-    // Draw start screen
-    if (!isPlaying && !gameOver) {
+    // Draw start screen (only when snake game is ready)
+    if (showSnake && !isPlaying && !gameOver) {
       // Draw rounded overlay background
       ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
       ctx.beginPath()
@@ -412,7 +625,21 @@ export function BackgroundSnakeGame() {
       ctx.fillText('Use arrow keys to move', canvas.width / 2, canvas.height / 2)
       ctx.fillText('Press SPACE to start', canvas.width / 2, canvas.height / 2 + 40)
     }
-  }, [snake, food, gameOver, isPlaying, score, getGridDimensions, isGoldenApple, getSafeBoundaries])
+
+    // Restore context after CRT effects
+    ctx.restore()
+  }, [
+    snake,
+    food,
+    gameOver,
+    isPlaying,
+    score,
+    getGridDimensions,
+    isGoldenApple,
+    getSafeBoundaries,
+    crtAnimation,
+    showSnake,
+  ])
 
   // Handle restart and resize
   useEffect(() => {
