@@ -109,6 +109,17 @@ export const ACHIEVEMENTS = {
       "That theme menu is a lot of fun to play with, really cool animation when it opens. I'd probably get sick of it after 5 or 6 times.",
     confetti: true,
   },
+  KONAMI_CODE: {
+    id: 'KONAMI_CODE',
+    title: 'Konami Code',
+    description: 'You entered the Konami code! ↑↑↓↓←→←→BA',
+    icon: '🎮',
+    imageSrc: Images.KonamiCodeAchievement,
+    imageAlt: 'Konami Code',
+    cardDescription: 'Up up, down down, left right, left right, B, A! The classic cheat code that unlocks 30 lives!',
+    unlockHint: 'Try entering a classic cheat code on your keyboard...',
+    confetti: true,
+  },
 } as const satisfies Record<string, AchievementDefinition>
 
 export type AchievementId = keyof typeof ACHIEVEMENTS
