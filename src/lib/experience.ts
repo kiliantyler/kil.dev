@@ -102,7 +102,7 @@ export const WORK_HISTORY: WorkExperience[] = [
   },
   {
     id: 'ge',
-    role: 'Cloud Engineer',
+    role: 'Cloud Engineer | DevOps Engineer',
     company: 'General Electric',
     workLocation: {
       location: 'Cleveland, OH',
@@ -129,6 +129,26 @@ export const WORK_HISTORY: WorkExperience[] = [
     companyLogoAlt: 'General Electric logo',
   },
   {
+    id: 'pnc',
+    role: 'Linux Server Administrator',
+    company: 'PNC Bank',
+    workLocation: {
+      location: 'Cleveland, OH',
+    },
+    from: '2015-04-01',
+    to: '2016-05-01',
+    summary:
+      'Supported a major datacenter migration by leveling up server infrastructure and automating deployments to improve efficiency.',
+    highlights: [
+      'Created and provisioned Linux servers for a datacenter migration',
+      'Established best practices for the whole team',
+      'Built deployment automations that wrapped the contract early',
+    ],
+    companyUrl: 'https://www.pnc.com',
+    companyLogoSrc: Logos.PNCLogo,
+    companyLogoAlt: 'PNC Bank logo',
+  },
+  {
     id: 'unknown',
     role: 'Previous Roles',
     company: 'Various',
@@ -141,7 +161,7 @@ export const WORK_HISTORY: WorkExperience[] = [
       longitude: -98.5795,
     },
     from: '2013-04-01',
-    to: '2019-05-31',
+    to: '2015-03-31',
     summary: "I'll fill the rest in later.",
   },
 ]
