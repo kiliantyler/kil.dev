@@ -9,6 +9,7 @@ const BASE_GAME_SPEED = 150
 const MIN_GAME_SPEED = 80
 const SPEED_REDUCTION_PER_SEGMENT = 2
 const GOLDEN_APPLE_CHANCE = 0.02
+const MAX_FOOD_GENERATION_ATTEMPTS = 100
 
 type UseSnakeGameOptions = {
   isInputActive?: boolean
