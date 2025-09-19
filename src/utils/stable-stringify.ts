@@ -3,39 +3,91 @@
 // - Arrays: preserve order
 // - Primitives: JSON.stringify default behavior
 
-type JsonPrimitive = string | number | boolean | null
-type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue }
+function serialize(value: unknown, seen: WeakSet<object> = new WeakSet<object>()): string {
+  // Primitives
+  if (value === null) return 'null'
 
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  if (value === null || typeof value !== 'object') return false
-  const proto = Object.getPrototypeOf(value) as object | null
-  return proto === Object.prototype || proto === null
-}
+  const valueType = typeof value
 
-function serialize(value: unknown): string {
-  // Handle primitives and non-plain objects via JSON.stringify directly
-  if (value === null || typeof value !== 'object') {
-    return JSON.stringify(value as JsonPrimitive)
+  if (valueType === 'string' || valueType === 'boolean') {
+    return JSON.stringify(value)
   }
 
-  // Date, RegExp, Map, Set, etc. fall back to JSON.stringify's behavior
-  if (!isPlainObject(value) && !Array.isArray(value)) {
-    return JSON.stringify(value as unknown as JsonValue)
+  if (valueType === 'number') {
+    return JSON.stringify(Number.isFinite(value as number) ? (value as number) : null)
   }
 
-  if (Array.isArray(value)) {
-    const items = value.map(v => serialize(v))
+  if (valueType === 'bigint') {
+    // JSON.stringify throws on BigInt; convert to string representation
+    return JSON.stringify((value as bigint).toString())
+  }
+
+  if (valueType === 'undefined' || valueType === 'function' || valueType === 'symbol') {
+    // Top-level unsupported primitives -> null to remain JSON-safe
+    return 'null'
+  }
+
+  // Objects
+  // value is not null and typeof === 'object' at this point
+  const obj = value as object
+
+  if (seen.has(obj)) {
+    throw new TypeError('Converting circular structure to JSON')
+  }
+
+  // Dates -> ISO string
+  if (obj instanceof Date) {
+    return JSON.stringify(obj.toJSON())
+  }
+
+  // RegExp -> string representation
+  if (obj instanceof RegExp) {
+    return JSON.stringify(obj.toString())
+  }
+
+  // Map -> array of [keyJson,valueJson] pairs sorted for stability
+  if (obj instanceof Map) {
+    seen.add(obj)
+    const pairStrings: string[] = []
+    for (const [k, v] of obj.entries()) {
+      const keyJson = serialize(k, seen)
+      const valueJson = serialize(v, seen)
+      pairStrings.push(`[${keyJson},${valueJson}]`)
+    }
+    pairStrings.sort()
+    return `[${pairStrings.join(',')}]`
+  }
+
+  // Set -> sorted array of serialized entries for stability
+  if (obj instanceof Set) {
+    seen.add(obj)
+    const items = Array.from(obj.values()).map(v => serialize(v, seen))
+    items.sort()
     return `[${items.join(',')}]`
   }
 
-  const obj = value
-  const keys = Object.keys(obj).sort()
+  // Array -> preserve order, convert undefined/function/symbol to null
+  if (Array.isArray(obj)) {
+    seen.add(obj)
+    const items = obj.map(item => {
+      if (typeof item === 'undefined' || typeof item === 'function' || typeof item === 'symbol') {
+        return 'null'
+      }
+      return serialize(item, seen)
+    })
+    return `[${items.join(',')}]`
+  }
+
+  // Any other object (including plain objects and class instances):
+  // Use own enumerable properties only, with lexicographically sorted keys
+  seen.add(obj)
+  const keys = Object.keys(obj as Record<string, unknown>).sort()
   const parts: string[] = []
   for (const key of keys) {
-    const val = obj[key]
-    // Omit undefined to match JSON.stringify behavior
-    if (typeof val === 'undefined') continue
-    parts.push(`${JSON.stringify(key)}:${serialize(val)}`)
+    const val = (obj as Record<string, unknown>)[key]
+    // Omit undefined/function/symbol to match JSON.stringify behavior on objects
+    if (typeof val === 'undefined' || typeof val === 'function' || typeof val === 'symbol') continue
+    parts.push(`${JSON.stringify(key)}:${serialize(val, seen)}`)
   }
   return `{${parts.join(',')}}`
 }
