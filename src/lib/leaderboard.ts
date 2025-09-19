@@ -1,5 +1,6 @@
 import { env } from '@/env'
 import { type LeaderboardEntry } from '@/types/leaderboard'
+import { stableStringify } from '@/utils/stable-stringify'
 import { redis } from './redis'
 
 type RedisPipelineResult<T> = [Error | null, T]
@@ -32,7 +33,7 @@ function getLeaderboardFromMemory(): LeaderboardEntry[] {
 export async function addScoreToLeaderboard(entry: LeaderboardEntry): Promise<number> {
   try {
     // Store the full entry data as JSON in the member field
-    const entryData = JSON.stringify(entry)
+    const entryData = stableStringify(entry)
 
     // Use Redis pipeline to atomically execute zadd, zcard, and zrevrank
     const pipeline = redis.pipeline()
