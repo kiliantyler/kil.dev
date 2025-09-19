@@ -1,7 +1,7 @@
 'use client'
 
 import { ScoreQualificationResponseSchema, ScoreSubmissionResponseSchema } from '@/lib/api-schemas'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { NameInputModal } from './name-input-modal'
@@ -13,7 +13,7 @@ interface ScoreSubmissionProps {
 
 export function ScoreSubmission({ score, onComplete }: ScoreSubmissionProps) {
   const [showNameInput, setShowNameInput] = useState(false)
-  const [, setIsSubmitting] = useState(false)
+  const timeoutRef = useRef<number | null>(null)
 
   // Check if score qualifies on mount
   useEffect(() => {
@@ -40,9 +40,17 @@ export function ScoreSubmission({ score, onComplete }: ScoreSubmissionProps) {
     void checkQualification()
   }, [score])
 
-  const handleNameSubmit = async (name: string) => {
-    setIsSubmitting(true)
+  // Cleanup any pending timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
+    }
+  }, [])
 
+  const handleNameSubmit = async (name: string) => {
     try {
       const response = await fetch('/api/scores', {
         method: 'POST',
@@ -71,8 +79,13 @@ export function ScoreSubmission({ score, onComplete }: ScoreSubmissionProps) {
         setShowNameInput(false)
 
         // Wait a moment then complete
-        setTimeout(() => {
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current)
+          timeoutRef.current = null
+        }
+        timeoutRef.current = window.setTimeout(() => {
           onComplete()
+          timeoutRef.current = null
         }, 2000)
       } else {
         // API returned success: false
@@ -82,6 +95,10 @@ export function ScoreSubmission({ score, onComplete }: ScoreSubmissionProps) {
         })
 
         // Close modal and complete after showing error
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current)
+          timeoutRef.current = null
+        }
         setShowNameInput(false)
         onComplete()
       }
@@ -106,14 +123,20 @@ export function ScoreSubmission({ score, onComplete }: ScoreSubmissionProps) {
       })
 
       // Close modal and complete after showing error
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
       setShowNameInput(false)
       onComplete()
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
   const handleClose = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
     setShowNameInput(false)
     onComplete()
   }
