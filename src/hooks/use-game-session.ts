@@ -146,17 +146,27 @@ export function useGameSession() {
       if (!session) return { success: false, message: 'No active session' }
 
       // Validated score submission
+      const timestamp = Date.now()
+      const nonce = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('')
+
+      const signingPayload = {
+        sessionId: session.sessionId,
+        name,
+        score,
+        timestamp,
+        nonce,
+      }
+
+      const signature = await computeSha256Hex(`${session.secret}.${stableStringify(signingPayload)}`)
+
       const response = await fetch('/api/scores', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          name,
-          score,
-          sessionId: session.sessionId,
-          secret: session.secret,
-        }),
+        body: JSON.stringify({ ...signingPayload, signature }),
       })
 
       const data = (await response.json()) as ScoreSubmissionResponse
