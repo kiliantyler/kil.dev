@@ -1,17 +1,11 @@
 'use client'
 
-import type { GameBoxDimensions } from '@/utils/grid'
 import { useCallback, useEffect } from 'react'
 
 type GameOverlayProps = {
   isPlaying: boolean
   gameOver: boolean
-  score: number
   showNameInput: boolean
-  playerName: string[]
-  nameInputPosition: number
-  isSubmittingScore: boolean
-  dimensions: GameBoxDimensions
   onRestart: () => void
   onEsc: () => void
   onNameInputKey: (e: KeyboardEvent) => void
