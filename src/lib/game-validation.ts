@@ -1,8 +1,6 @@
+import { redis } from '@/lib/redis'
 import { stableStringify } from '@/utils/stable-stringify'
 import { createHash, randomBytes } from 'crypto'
-
-// Game session data stored in memory (in production, use Redis)
-const gameSessions = new Map<string, GameSession>()
 
 type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT'
 
@@ -36,7 +34,75 @@ const MIN_MOVE_EVENTS = IS_DEV ? 3 : 5
 const MIN_MOVE_INTERVAL_MS = IS_DEV ? 30 : 50
 const MAX_FOOD_RATE_MS = IS_DEV ? 80 : 200
 
-export function createGameSession(): { sessionId: string; secret: string; seed: number } {
+// Redis key and TTL configuration
+const SESSION_KEY_PREFIX = 'game:session:'
+const SESSION_TTL_SECONDS = 60 * 60 // 1 hour
+
+type RetryOptions = {
+  attempts?: number
+  initialDelayMs?: number
+  maxDelayMs?: number
+}
+
+async function withRetry<T>(fn: () => Promise<T>, options?: RetryOptions): Promise<T> {
+  const attempts = options?.attempts ?? 3
+  const initialDelayMs = options?.initialDelayMs ?? 100
+  const maxDelayMs = options?.maxDelayMs ?? 1000
+
+  let lastError: unknown
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      return await fn()
+    } catch (error) {
+      lastError = error
+      const delay = Math.min(maxDelayMs, initialDelayMs * 2 ** attempt) + Math.floor(Math.random() * 50)
+      if (attempt === attempts - 1) break
+      await new Promise(resolve => setTimeout(resolve, delay))
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error('Unknown error during Redis operation')
+}
+
+function getSessionKey(sessionId: string): string {
+  return `${SESSION_KEY_PREFIX}${sessionId}`
+}
+
+export async function createSession(session: GameSession): Promise<void> {
+  const key = getSessionKey(session.id)
+  const value = JSON.stringify(session)
+  await withRetry(() => redis.set(key, value, { ex: SESSION_TTL_SECONDS }))
+}
+
+export async function getSession(sessionId: string): Promise<GameSession | undefined> {
+  const key = getSessionKey(sessionId)
+  const raw = await withRetry(() => redis.get<string>(key))
+  if (!raw) return undefined
+  try {
+    const parsed = JSON.parse(raw) as GameSession
+    return parsed
+  } catch {
+    // If parsing fails, delete the corrupt key to avoid repeated errors
+    try {
+      await withRetry(() => redis.del(key))
+    } catch {
+      // ignore cleanup error
+    }
+    return undefined
+  }
+}
+
+export async function updateSession(session: GameSession): Promise<void> {
+  const key = getSessionKey(session.id)
+  const value = JSON.stringify(session)
+  await withRetry(() => redis.set(key, value, { ex: SESSION_TTL_SECONDS }))
+}
+
+export async function deleteSession(sessionId: string): Promise<void> {
+  const key = getSessionKey(sessionId)
+  await withRetry(() => redis.del(key))
+}
+
+export async function createGameSession(): Promise<{ sessionId: string; secret: string; seed: number }> {
   const sessionId = randomBytes(16).toString('hex')
   const secret = randomBytes(32).toString('hex')
   const seed = randomBytes(4).readUInt32BE(0)
