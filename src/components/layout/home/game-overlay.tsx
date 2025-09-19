@@ -20,12 +20,7 @@ type GameOverlayProps = {
 export function GameOverlay({
   isPlaying,
   gameOver,
-  score,
   showNameInput,
-  playerName,
-  nameInputPosition,
-  isSubmittingScore,
-  dimensions,
   onRestart,
   onEsc,
   onNameInputKey,
@@ -51,7 +46,5 @@ export function GameOverlay({
     return () => window.removeEventListener('keydown', handleKeyPress)
   }, [handleKeyPress])
 
-  // Canvas is handled in SnakeCanvas; overlay is drawn there. This component exists for keyboard orchestration.
-  // We still render a minimal transparent layer to keep composition predictable if needed in future.
   return null
 }
