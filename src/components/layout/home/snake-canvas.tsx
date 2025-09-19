@@ -1,24 +1,15 @@
 'use client'
 
+import type { CrtAnimationState } from '@/hooks/use-crt-animation'
 import type { Position } from '@/hooks/use-snake-game'
 import type { GameBoxDimensions } from '@/utils/grid'
 import { useEffect, useRef } from 'react'
-
-type CrtAnimation = {
-  isAnimating: boolean
-  centerX: number
-  centerY: number
-  horizontalWidth: number
-  verticalHeight: number
-  opacity: number
-  glowIntensity: number
-}
 
 type SnakeCanvasProps = {
   snake: Position[]
   food: Position
   isGoldenApple: boolean
-  crtAnimation: CrtAnimation
+  crtAnimation: CrtAnimationState
   gameBox: GameBoxDimensions
   showSnake: boolean
   theme: string | undefined
