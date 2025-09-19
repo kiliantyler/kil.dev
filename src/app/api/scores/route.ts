@@ -30,11 +30,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { name, score, sessionId } = validation.data
+    const { name, score, sessionId, timestamp, nonce, signature } = validation.data
     const sanitizedName = sanitizeName(name)
 
-    // If session data is provided, validate against session's stored validated score (no secret needed)
+    // If session data is provided, verify signature + anti-replay, then validate against stored validated score
     if (typeof sessionId === 'string') {
+      const sigCheck = await verifySignedScoreSubmission({
+        sessionId,
+        name, // use original name for signature verification (not sanitized)
+        score,
+        timestamp: timestamp as number,
+        nonce: nonce as string,
+        signature: signature as string,
+      })
+      if (!sigCheck.success) {
+        return NextResponse.json({ success: false, message: 'Signature verification failed' }, { status: 400 })
+      }
+
       const gameValidation = await validateScoreSubmissionBySession(sessionId, score)
       if (!gameValidation.success) {
         return NextResponse.json(
