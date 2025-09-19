@@ -7,15 +7,30 @@ export async function POST(_request: NextRequest) {
   try {
     const { sessionId, secret, seed } = await createGameSession()
 
-    return NextResponse.json({
-      success: true,
-      sessionId,
-      secret,
-      seed,
-      message: 'Game session started',
-    })
+    return NextResponse.json(
+      {
+        success: true,
+        sessionId,
+        secret,
+        seed,
+        message: 'Game session started',
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store',
+        },
+      },
+    )
   } catch (error) {
     console.error('Error starting game session:', error)
-    return NextResponse.json({ success: false, message: 'Failed to start game session' }, { status: 500 })
+    return NextResponse.json(
+      { success: false, message: 'Failed to start game session' },
+      {
+        status: 500,
+        headers: {
+          'Cache-Control': 'no-store',
+        },
+      },
+    )
   }
 }
