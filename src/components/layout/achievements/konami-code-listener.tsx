@@ -57,7 +57,7 @@ export function KonamiCodeListener() {
 
         if (isMatch) {
           sequenceRef.current = []
-          const id = 'KONAMI_CODE' as AchievementId
+          const id: AchievementId = 'KONAMI_KILLER'
 
           // Always trigger the animation
           triggerAnimation()
