@@ -57,3 +57,7 @@ export function isSafari(): boolean {
 
   return isSafariUA || hasSafariFeatures
 }
+
+export function isDev(): boolean {
+  return process.env.NODE_ENV !== 'production' || process.argv.includes('--dev')
+}
