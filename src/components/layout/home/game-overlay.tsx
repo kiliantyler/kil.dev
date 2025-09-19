@@ -28,7 +28,6 @@ export function GameOverlay({
         return
       }
       if (e.key === ' ') {
-        if (showNameInput) return
         if (gameOver || !isPlaying) onRestart()
       }
     },
