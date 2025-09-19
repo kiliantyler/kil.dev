@@ -11,7 +11,7 @@ export interface WorkExperience {
     latitude?: number
     longitude?: number
   }
-  officeLocation: {
+  officeLocation?: {
     location: string
     latitude: number
     longitude: number

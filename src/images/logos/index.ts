@@ -1,3 +1,7 @@
 export { default as DraftKingsLogo } from './draftkings.webp'
+export { default as GELogo } from './ge.webp'
+export { default as iStreamPlanetLogo } from './istream.webp'
+export { default as KaseyaLogo } from './kaseya.webp'
 export { default as NewInnovationsLogo } from './newinnov.webp'
+export { default as PNCLogo } from './pnc.webp'
 export { default as QGendaLogo } from './qgenda.webp'
