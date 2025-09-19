@@ -1,6 +1,12 @@
 import { z } from 'zod'
 
 // Shared Zod schemas for API response validation
+export const LeaderboardEntrySchema = z.object({
+  name: z.string(),
+  score: z.number(),
+  timestamp: z.number(),
+  id: z.string(),
+})
 export const ScoreQualificationResponseSchema = z.object({
   success: z.boolean(),
   qualifies: z.boolean(),
@@ -11,16 +17,7 @@ export const ScoreQualificationResponseSchema = z.object({
 export const ScoreSubmissionResponseSchema = z.object({
   success: z.boolean(),
   position: z.number().optional(),
-  leaderboard: z
-    .array(
-      z.object({
-        name: z.string(),
-        score: z.number(),
-        timestamp: z.number(),
-        id: z.string(),
-      }),
-    )
-    .optional(),
+  leaderboard: z.array(LeaderboardEntrySchema).optional(),
   message: z.string().optional(),
 })
 
@@ -32,29 +29,13 @@ export const CheckScoreResponseSchema = z.object({
 
 export const LeaderboardResponseSchema = z.object({
   success: z.boolean(),
-  leaderboard: z.array(
-    z.object({
-      name: z.string(),
-      score: z.number(),
-      timestamp: z.number(),
-      id: z.string(),
-    }),
-  ),
+  leaderboard: z.array(LeaderboardEntrySchema),
 })
 
 export const SubmitScoreResponseSchema = z.object({
   success: z.boolean(),
   message: z.string(),
-  leaderboard: z
-    .array(
-      z.object({
-        name: z.string(),
-        score: z.number(),
-        timestamp: z.number(),
-        id: z.string(),
-      }),
-    )
-    .optional(),
+  leaderboard: z.array(LeaderboardEntrySchema).optional(),
 })
 
 // Game session lifecycle schemas
