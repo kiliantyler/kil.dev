@@ -301,7 +301,6 @@ export function BackgroundSnakeGame() {
       nameInputPosition,
       setNameInputPosition,
       submitScore,
-      score,
       handleNameInputKey,
       session?.sessionId,
       session?.secret,
