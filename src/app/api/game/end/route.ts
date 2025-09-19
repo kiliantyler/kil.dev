@@ -1,3 +1,4 @@
+import { GameEndRequestSchema } from '@/lib/api-schemas'
 import { endGameSession } from '@/lib/game-validation'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
@@ -5,23 +6,21 @@ import { NextResponse } from 'next/server'
 // POST /api/game/end - End a game session and validate the final score
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as {
-      sessionId: string
-      signature: string
-      finalScore: number
-      events: { t: number; k: 'UP' | 'DOWN' | 'LEFT' | 'RIGHT' }[]
-      foods: { t: number; g: boolean }[]
-      durationMs: number
-    }
+    const json = await request.json()
+    const parsed = GameEndRequestSchema.safeParse(json)
 
-    const { sessionId, signature, finalScore, events, foods, durationMs } = body
-
-    if (!sessionId || !signature || typeof finalScore !== 'number') {
+    if (!parsed.success) {
       return NextResponse.json(
-        { success: false, message: 'Missing required fields: sessionId, signature, finalScore' },
+        {
+          success: false,
+          message: 'Invalid request body',
+          errors: parsed.error.flatten(),
+        },
         { status: 400 },
       )
     }
+
+    const { sessionId, signature, finalScore, events, foods, durationMs } = parsed.data
 
     const result = endGameSession(sessionId, signature, finalScore, events ?? [], foods ?? [], durationMs ?? 0)
 
