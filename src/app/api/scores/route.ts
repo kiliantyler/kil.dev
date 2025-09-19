@@ -31,27 +31,46 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { name, score, sessionId, timestamp, nonce, signature } = validation.data
+    const {
+      name,
+      score,
+      sessionId,
+      timestamp,
+      nonce,
+      signature,
+    }: {
+      name: string
+      score: number
+      sessionId?: string
+      timestamp?: number
+      nonce?: string
+      signature?: string
+    } = validation.data
     const sanitizedName = sanitizeName(name)
 
     // If session data is provided, verify signature + anti-replay, then validate against stored validated score
     if (typeof sessionId === 'string') {
-      const sigCheck = await (
-        verifySignedScoreSubmission as (args: {
-          sessionId: string
-          name: string
-          score: number
-          timestamp: number
-          nonce: string
-          signature: string
-        }) => Promise<{ success: boolean; message?: string }>
-      )({
+      if (timestamp === undefined || nonce === undefined || signature === undefined) {
+        return NextResponse.json(
+          { success: false, message: 'Missing signed fields (timestamp, nonce, signature)' },
+          { status: 400 },
+        )
+      }
+      const typedVerify = verifySignedScoreSubmission as (args: {
+        sessionId: string
+        name: string
+        score: number
+        timestamp: number
+        nonce: string
+        signature: string
+      }) => Promise<{ success: boolean; message?: string }>
+      const sigCheck = await typedVerify({
         sessionId,
         name, // use original name for signature verification (not sanitized)
         score,
-        timestamp: timestamp as number,
-        nonce: nonce as string,
-        signature: signature as string,
+        timestamp,
+        nonce,
+        signature,
       })
       if (!sigCheck.success) {
         return NextResponse.json({ success: false, message: 'Signature verification failed' }, { status: 400 })
