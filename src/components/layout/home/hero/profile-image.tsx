@@ -136,7 +136,7 @@ export function ProfileImage() {
 
   return (
     <div
-      className={`group relative order-1 mx-auto w-full max-w-md lg:order-2 lg:mx-0 select-none ${isReturning ? 'konami-return-right' : `${isAnimating ? 'konami-fly-right' : ''} ${hasAnimated ? 'konami-complete konami-fly-right' : ''}`}`}
+      className={`group relative order-1 mx-auto w-full max-w-md lg:order-2 lg:mx-0 select-none ${getAnimationClass(isAnimating, hasAnimated, isReturning)}`}
       role="button"
       tabIndex={0}
       aria-pressed={isGrumpy}
