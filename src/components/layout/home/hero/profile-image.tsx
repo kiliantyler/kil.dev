@@ -1,6 +1,7 @@
 'use client'
 
 import { useAchievements } from '@/components/providers/achievements-provider'
+import { useKonamiAnimation } from '@/components/providers/konami-animation-provider'
 import { captureLadybirdDetected, captureProfileImageClicked } from '@/hooks/posthog'
 import { useHash } from '@/hooks/use-hash'
 import * as Headshots from '@/images/headshot'
@@ -13,7 +14,16 @@ import { getThemeHeadshot } from '@/utils/themes'
 import Image, { type StaticImageData } from 'next/image'
 import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 
+function getAnimationClass(isAnimating: boolean, hasAnimated: boolean, isReturning: boolean): string {
+  if (isReturning) return 'konami-return-right'
+  let classes = ''
+  if (isAnimating) classes += 'konami-fly-right'
+  if (hasAnimated) classes += (classes ? ' ' : '') + 'konami-complete konami-fly-right'
+  return classes
+}
+
 export function ProfileImage() {
+  const { isAnimating, hasAnimated, isReturning } = useKonamiAnimation()
   const { unlock, has } = useAchievements()
   const hash = useHash()
   const [mounted, setMounted] = useState(false)
@@ -126,7 +136,7 @@ export function ProfileImage() {
 
   return (
     <div
-      className="group relative order-1 mx-auto w-full max-w-md lg:order-2 lg:mx-0 select-none"
+      className={`group relative order-1 mx-auto w-full max-w-md lg:order-2 lg:mx-0 select-none ${getAnimationClass(isAnimating, hasAnimated, isReturning)}`}
       role="button"
       tabIndex={0}
       aria-pressed={isGrumpy}

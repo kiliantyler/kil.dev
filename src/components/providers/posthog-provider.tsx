@@ -1,16 +1,16 @@
 'use client'
 
+import { isDev } from '@/utils/utils'
 import posthog from 'posthog-js'
 import { PostHogProvider as PHProvider } from 'posthog-js/react'
 import { useEffect } from 'react'
 
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
-  const isDev = process.env.NODE_ENV !== 'production'
   const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY
+  const canCapture = !isDev() && !!posthogKey
 
   useEffect(() => {
-    if (isDev) return
-    if (!posthogKey) return
+    if (!canCapture) return
 
     posthog.init(posthogKey, {
       api_host: '/vibecheck',
@@ -19,9 +19,9 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
       capture_exceptions: true,
       debug: false,
     })
-  }, [isDev, posthogKey])
+  }, [canCapture, posthogKey])
 
-  if (isDev) return <>{children}</>
+  if (!canCapture) return <>{children}</>
 
   return <PHProvider client={posthog}>{children}</PHProvider>
 }

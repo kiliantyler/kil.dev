@@ -7,7 +7,7 @@ import { Header } from '@/components/layout/header'
 import { buildPresenceScript } from '@/utils/achievements'
 import { buildThemeScript } from '@/utils/theme-runtime'
 import { type Metadata } from 'next'
-import { Noto_Sans, Space_Grotesk } from 'next/font/google'
+import { Noto_Sans, Space_Grotesk, VT323 } from 'next/font/google'
 
 export const metadata: Metadata = {
   title: 'Kilian Tyler | Site Reliability Engineer',
@@ -27,9 +27,18 @@ const notoSans = Noto_Sans({
   variable: '--font-noto-sans',
 })
 
+const vt323 = VT323({
+  subsets: ['latin'],
+  weight: '400',
+  variable: '--font-vt323',
+})
+
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${spaceGrotesk.variable} ${notoSans.variable}`} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${spaceGrotesk.variable} ${notoSans.variable} ${vt323.variable}`}
+      suppressHydrationWarning>
       <head>
         <script id="pre-theme" dangerouslySetInnerHTML={{ __html: buildThemeScript() }} />
         <script

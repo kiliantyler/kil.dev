@@ -5,6 +5,8 @@ export const env = createEnv({
   server: {
     NODE_ENV: z.enum(['development', 'test', 'production']),
     BLOB_READ_WRITE_TOKEN: z.string().optional(),
+    UPSTASH_REDIS_REST_API_URL: z.string(),
+    UPSTASH_REDIS_REST_API_TOKEN: z.string(),
   },
   client: {
     NEXT_PUBLIC_POSTHOG_KEY: z.string(),
@@ -13,6 +15,8 @@ export const env = createEnv({
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
     BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
+    UPSTASH_REDIS_REST_API_URL: process.env.UPSTASH_REDIS_REST_API_URL,
+    UPSTASH_REDIS_REST_API_TOKEN: process.env.UPSTASH_REDIS_REST_API_TOKEN,
     NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
     NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
   },

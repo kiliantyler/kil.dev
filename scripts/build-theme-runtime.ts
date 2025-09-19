@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { isDev } from '@/utils/utils'
 import { build } from 'esbuild'
 import { writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
@@ -11,8 +12,7 @@ async function main() {
   const projectRoot = resolve(__dirname, '..')
   const entry = resolve(projectRoot, 'src/utils/theme-script.ts')
   const outFile = resolve(projectRoot, 'src/utils/theme-bundle.ts')
-  const isDev = process.env.NODE_ENV !== 'production' || process.argv.includes('--dev')
-  const sourcemap = isDev ? 'inline' : false
+  const sourcemap = isDev() ? 'inline' : false
 
   const result = await build({
     entryPoints: [entry],

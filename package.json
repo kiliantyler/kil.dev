@@ -35,6 +35,8 @@
     "@storybook/nextjs-vite": "9.1.6",
     "@t3-oss/env-nextjs": "0.13.8",
     "@types/canvas-confetti": "1.9.0",
+    "@upstash/ratelimit": "2.0.6",
+    "@upstash/redis": "1.35.3",
     "@vercel/blob": "1.1.1",
     "canvas-confetti": "1.9.3",
     "class-variance-authority": "0.7.1",
@@ -50,6 +52,7 @@
     "react-dom": "19.1.1",
     "sonner": "2.0.7",
     "tailwind-merge": "3.3.1",
+    "uuid": "13.0.0",
     "vaul": "1.1.2",
     "zod": "4.1.8"
   },

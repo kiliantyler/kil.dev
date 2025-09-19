@@ -57,3 +57,15 @@ export function isSafari(): boolean {
 
   return isSafariUA || hasSafariFeatures
 }
+
+export function isDev(): boolean {
+  // Prefer build-time replacement of NODE_ENV (works in browser bundles)
+  const envIsDev = process.env.NODE_ENV !== 'production'
+
+  // Safely check argv only when available (Node/runtime only)
+  const canAccessArgv =
+    typeof process !== 'undefined' && Array.isArray((process as unknown as { argv?: unknown[] }).argv)
+  const hasDevFlag = canAccessArgv ? (process as unknown as { argv: string[] }).argv.includes('--dev') : false
+
+  return envIsDev || hasDevFlag
+}

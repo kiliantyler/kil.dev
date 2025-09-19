@@ -109,6 +109,17 @@ export const ACHIEVEMENTS = {
       "That theme menu is a lot of fun to play with, really cool animation when it opens. I'd probably get sick of it after 5 or 6 times.",
     confetti: true,
   },
+  KONAMI_KILLER: {
+    id: 'KONAMI_KILLER',
+    title: 'Konami Killer',
+    description: 'You entered the Konami code! ↑↑↓↓←→←→BA',
+    icon: '🎮',
+    imageSrc: Images.KonamiKillerAchievement,
+    imageAlt: 'Konami Killer',
+    cardDescription: 'You entered the code and got to play some snake! I hope you enjoyed it.',
+    unlockHint: 'Home is where the Konami is.',
+    confetti: true,
+  },
 } as const satisfies Record<string, AchievementDefinition>
 
 export type AchievementId = keyof typeof ACHIEVEMENTS
