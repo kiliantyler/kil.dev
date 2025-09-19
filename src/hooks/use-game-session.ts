@@ -98,7 +98,7 @@ export function useGameSession() {
   )
 
   const endGame = useCallback(
-    async (finalScore: number) => {
+    async (finalScoreParam: number) => {
       if (!session) return { success: false, message: 'No active session' }
 
       try {
@@ -109,6 +109,12 @@ export function useGameSession() {
           const bytes = Array.from(new Uint8Array(hashBuffer))
           return bytes.map(b => b.toString(16).padStart(2, '0')).join('')
         }
+
+        // Derive final score from recorded food events to avoid stale state
+        const computedFinalScore = foodsRef.current.reduce((acc, f) => acc + (f.g ? 50 : 10), 0)
+
+        // Prefer computed score, but fall back to provided param if somehow empty
+        const finalScore = computedFinalScore > 0 || finalScoreParam === 0 ? computedFinalScore : finalScoreParam
 
         // Compute signature: sha256(secret + '.' + stableStringify(payload))
         const payload = {
