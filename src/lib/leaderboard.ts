@@ -4,8 +4,6 @@ import { stableStringify } from '@/utils/stable-stringify'
 import { isDev } from '@/utils/utils'
 import { redis } from './redis'
 
-type RedisPipelineResult<T> = [Error | null, T]
-
 // Redis key structure
 export const LEADERBOARD_KEY = 'snake:leaderboard'
 export const SCORE_QUALIFICATION_THRESHOLD = 100 // Minimum score to qualify
@@ -36,40 +34,10 @@ export async function addScoreToLeaderboard(entry: LeaderboardEntry): Promise<nu
     // Store the full entry data as JSON in the member field
     const entryData = stableStringify(entry)
 
-    // Use Redis pipeline to atomically execute zadd, zcard, and zrevrank
-    const pipeline = redis.pipeline()
-    pipeline.zadd(LEADERBOARD_KEY, { score: entry.score, member: entryData })
-    pipeline.zcard(LEADERBOARD_KEY)
-    pipeline.zrevrank(LEADERBOARD_KEY, entryData)
-
-    // Execute the pipeline and get the results
-    const results = await pipeline.exec()
-
-    // Unpack and validate pipeline results: each item is [error, value]
-    if (!Array.isArray(results) || results.length < 3) {
-      throw new Error('Unexpected Redis pipeline results shape')
-    }
-
-    const [zaddErr] = results[0] as RedisPipelineResult<number | string>
-    if (zaddErr) {
-      console.error('Redis pipeline zadd error:', zaddErr)
-      throw new Error('Failed to add score to leaderboard (zadd)')
-    }
-
-    const [zcardErr, zcardResult] = results[1] as RedisPipelineResult<number | string>
-    if (zcardErr) {
-      console.error('Redis pipeline zcard error:', zcardErr)
-      throw new Error('Failed to read leaderboard size (zcard)')
-    }
-
-    const [zrevrankErr, zrevrankResult] = results[2] as RedisPipelineResult<number | null>
-    if (zrevrankErr) {
-      console.error('Redis pipeline zrevrank error:', zrevrankErr)
-      throw new Error('Failed to read leaderboard rank (zrevrank)')
-    }
-
-    const currentSize = Number(zcardResult)
-    const rank = zrevrankResult !== null ? Number(zrevrankResult) : null
+    // Minimal sequential calls (avoid pipeline tuple parsing)
+    await redis.zadd(LEADERBOARD_KEY, { score: entry.score, member: entryData })
+    const currentSize = await redis.zcard(LEADERBOARD_KEY)
+    const rankIndex = await redis.zrevrank(LEADERBOARD_KEY, entryData)
 
     // Remove excess entries if we have more than MAX_LEADERBOARD_SIZE
     if (currentSize > MAX_LEADERBOARD_SIZE) {
@@ -78,7 +46,7 @@ export async function addScoreToLeaderboard(entry: LeaderboardEntry): Promise<nu
     }
 
     // Return rank (0-indexed, so add 1) or 0 if rank is null
-    return rank !== null ? rank + 1 : 0
+    return rankIndex !== null ? rankIndex + 1 : 0
   } catch {
     // Fallback to in-memory leaderboard in non-production
     if (isDev()) {
