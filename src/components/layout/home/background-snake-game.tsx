@@ -7,6 +7,7 @@ import { useCrtAnimation } from '@/hooks/use-crt-animation'
 import { useGameSession } from '@/hooks/use-game-session'
 import { useLeaderboard } from '@/hooks/use-leaderboard'
 import { useSnakeGame, type Direction, type Position } from '@/hooks/use-snake-game'
+import { isDev } from '@/utils/utils'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { toast } from 'sonner'
 
@@ -75,9 +76,11 @@ export function BackgroundSnakeGame() {
             validatedFinalScoreRef.current = validated
             await handleGameOverFlow(validated)
           } else {
-            toast.error("Run didn't pass validation", {
-              description: result.message ?? 'Try a longer run with a few moves.',
-            })
+            if (isDev()) {
+              toast.error("Run didn't pass validation", {
+                description: result.message ?? 'Try a longer run with a few moves.',
+              })
+            }
           }
         })()
       },
