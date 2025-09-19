@@ -18,8 +18,39 @@ export function generateArcadeSound(frequency: number, duration = 100) {
   gainNode.gain.setValueAtTime(0.1, audioContext.currentTime)
   gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000)
 
+  let cleanedUp = false
+  let fallbackTimeoutId: number | null = null
+
+  const cleanup = () => {
+    if (cleanedUp) return
+    cleanedUp = true
+    try {
+      oscillator.onended = null
+      if (fallbackTimeoutId !== null) {
+        clearTimeout(fallbackTimeoutId)
+        fallbackTimeoutId = null
+      }
+      try {
+        // Stop in case it hasn't already
+        oscillator.stop()
+      } catch {}
+      try {
+        oscillator.disconnect()
+      } catch {}
+      try {
+        gainNode.disconnect()
+      } catch {}
+      void audioContext.close().catch(() => null)
+    } catch {}
+  }
+
+  oscillator.onended = cleanup
+
   oscillator.start(audioContext.currentTime)
   oscillator.stop(audioContext.currentTime + duration / 1000)
+
+  // Fallback in case onended doesn't fire (browser quirks)
+  fallbackTimeoutId = window.setTimeout(cleanup, Math.ceil(duration * 1.5))
 }
 
 export function playScoreSound(score: number) {
