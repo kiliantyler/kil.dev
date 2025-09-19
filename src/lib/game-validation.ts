@@ -1,3 +1,4 @@
+import { stableStringify } from '@/utils/stable-stringify'
 import { createHash, randomBytes } from 'crypto'
 
 // Game session data stored in memory (in production, use Redis)
@@ -79,8 +80,8 @@ export function endGameSession(
     return { success: false, message: 'Game session is not active' }
   }
 
-  // Verify signature
-  const payloadString = JSON.stringify({ sessionId, finalScore, events, foods, durationMs })
+  // Verify signature with deterministic serialization
+  const payloadString = stableStringify({ sessionId, finalScore, events, foods, durationMs })
   const expectedSig = computeSignatureHex(session.secret, payloadString)
   if (expectedSig !== signature) {
     return { success: false, message: 'Invalid signature' }
