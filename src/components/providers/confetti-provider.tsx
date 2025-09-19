@@ -16,6 +16,7 @@ export function ConfettiProvider({ children }: { children: React.ReactNode }) {
   const pendingConfettiRef = useRef<Set<string>>(new Set())
 
   const triggerConfetti = useCallback(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     void confetti({
       particleCount: 100,
       spread: 70,
@@ -25,6 +26,7 @@ export function ConfettiProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const triggerConfettiFromCorners = useCallback(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     const confettiId = 'corners'
 
     // Prevent multiple confetti triggers in quick succession
@@ -61,6 +63,7 @@ export function ConfettiProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const triggerConfettiFromTop = useCallback(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     const confettiId = 'top'
 
     if (pendingConfettiRef.current.has(confettiId)) return
@@ -79,6 +82,7 @@ export function ConfettiProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const triggerConfettiFromCenter = useCallback(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     const confettiId = 'center'
 
     if (pendingConfettiRef.current.has(confettiId)) return
