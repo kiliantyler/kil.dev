@@ -7,11 +7,10 @@ import { useEffect } from 'react'
 
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
   const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY
-  const canCapture = !isDev() && posthogKey
+  const canCapture = !isDev() && !!posthogKey
 
   useEffect(() => {
-    if (canCapture) return
-    if (!posthogKey) return
+    if (!canCapture) return
 
     posthog.init(posthogKey, {
       api_host: '/vibecheck',
@@ -22,7 +21,7 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
     })
   }, [canCapture, posthogKey])
 
-  if (canCapture) return <>{children}</>
+  if (!canCapture) return <>{children}</>
 
   return <PHProvider client={posthog}>{children}</PHProvider>
 }
