@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     const json = (await request.json()) as unknown
     const data: GameEndRequest = GameEndRequestSchema.parse(json)
     const { sessionId, signature, finalScore, events, foods, durationMs } = data
-    const result = endGameSession(sessionId, signature, finalScore, events ?? [], foods ?? [], durationMs ?? 0)
+    const result = await endGameSession(sessionId, signature, finalScore, events ?? [], foods ?? [], durationMs ?? 0)
 
     if (!result.success) {
       return NextResponse.json({ success: false, message: result.message }, { status: 400 })

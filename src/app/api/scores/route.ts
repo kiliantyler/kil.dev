@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
 
     // If session data is provided, validate against session's stored validated score (no secret needed)
     if (typeof sessionId === 'string') {
-      const gameValidation = validateScoreSubmissionBySession(sessionId, score)
+      const gameValidation = await validateScoreSubmissionBySession(sessionId, score)
       if (!gameValidation.success) {
         return NextResponse.json(
           { success: false, message: 'Score validation failed', details: gameValidation.message },

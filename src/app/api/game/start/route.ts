@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server'
 // POST /api/game/start - Start a new game session
 export async function POST(_request: NextRequest) {
   try {
-    const { sessionId, secret, seed } = createGameSession()
+    const { sessionId, secret, seed } = await createGameSession()
 
     return NextResponse.json({
       success: true,
