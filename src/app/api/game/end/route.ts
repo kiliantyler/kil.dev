@@ -2,26 +2,26 @@ import { GameEndRequestSchema } from '@/lib/api-schemas'
 import { endGameSession } from '@/lib/game-validation'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
+import { ZodError } from 'zod'
+
+type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT'
+type MoveEvent = { t: number; k: Direction }
+type FoodEvent = { t: number; g: boolean }
+type GameEndRequest = {
+  sessionId: string
+  signature: string
+  finalScore: number
+  events: MoveEvent[]
+  foods: FoodEvent[]
+  durationMs: number
+}
 
 // POST /api/game/end - End a game session and validate the final score
 export async function POST(request: NextRequest) {
   try {
-    const json = await request.json()
-    const parsed = GameEndRequestSchema.safeParse(json)
-
-    if (!parsed.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Invalid request body',
-          errors: parsed.error.flatten(),
-        },
-        { status: 400 },
-      )
-    }
-
-    const { sessionId, signature, finalScore, events, foods, durationMs } = parsed.data
-
+    const json: unknown = await request.json()
+    const data: GameEndRequest = GameEndRequestSchema.parse(json)
+    const { sessionId, signature, finalScore, events, foods, durationMs } = data
     const result = endGameSession(sessionId, signature, finalScore, events ?? [], foods ?? [], durationMs ?? 0)
 
     if (!result.success) {
@@ -34,6 +34,17 @@ export async function POST(request: NextRequest) {
       message: 'Game session ended and score validated',
     })
   } catch (error) {
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Invalid request body',
+          errors: error.flatten(),
+        },
+        { status: 400 },
+      )
+    }
+
     console.error('Error ending game session:', error)
     return NextResponse.json({ success: false, message: 'Failed to end game session' }, { status: 500 })
   }
