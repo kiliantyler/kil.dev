@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 
 export type KonamiAnimationContextType = {
@@ -22,6 +22,7 @@ export function KonamiAnimationProvider({ children }: { children: ReactNode }) {
   const [showSnake, setShowSnake] = useState(false)
   const [startCrtAnimation, setStartCrtAnimation] = useState(false)
   const [isReturning, setIsReturning] = useState(false)
+  const timeoutIdsRef = useRef<Array<ReturnType<typeof setTimeout>>>([])
 
   useEffect(() => {
     // Clear the animation state on page load to ensure content is visible
@@ -29,6 +30,13 @@ export function KonamiAnimationProvider({ children }: { children: ReactNode }) {
     setHasAnimated(false)
     setShowSnake(false)
     setStartCrtAnimation(false)
+    return () => {
+      // Cleanup any pending timeouts to avoid memory leaks
+      for (const id of timeoutIdsRef.current) {
+        clearTimeout(id)
+      }
+      timeoutIdsRef.current = []
+    }
   }, [])
 
   const triggerAnimation = () => {
@@ -49,16 +57,18 @@ export function KonamiAnimationProvider({ children }: { children: ReactNode }) {
     sessionStorage.setItem('konami-animated', 'true')
 
     // Start CRT animation after a delay to let content start moving
-    setTimeout(() => {
+    const crtId = setTimeout(() => {
       setStartCrtAnimation(true)
       // Make the game visible while the CRT powers on so it reveals through the mask
       setShowSnake(true)
     }, 600) // 0.6s delay to let content clear the area first
+    timeoutIdsRef.current.push(crtId)
 
     // Stop animating after 1.5s but keep hasAnimated true
-    setTimeout(() => {
+    const stopId = setTimeout(() => {
       setIsAnimating(false)
     }, 1500)
+    timeoutIdsRef.current.push(stopId)
   }
 
   const closeAnimation = () => {
@@ -77,12 +87,13 @@ export function KonamiAnimationProvider({ children }: { children: ReactNode }) {
     setIsAnimating(false)
 
     // Keep isReturning true long enough for the return animation (1.5s) to finish
-    setTimeout(() => {
+    const returnId = setTimeout(() => {
       setIsReturning(false)
       try {
         sessionStorage.removeItem('konami-animated')
       } catch {}
     }, 1600)
+    timeoutIdsRef.current.push(returnId)
   }
 
   return (
