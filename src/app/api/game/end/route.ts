@@ -4,23 +4,10 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { ZodError } from 'zod'
 
-type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT'
-type MoveEvent = { t: number; k: Direction }
-type FoodEvent = { t: number; g: boolean }
-type GameEndRequest = {
-  sessionId: string
-  signature: string
-  finalScore: number
-  events: MoveEvent[]
-  foods: FoodEvent[]
-  durationMs: number
-}
-
 // POST /api/game/end - End a game session and validate the final score
 export async function POST(request: NextRequest) {
   try {
-    const json = (await request.json()) as unknown
-    const data: GameEndRequest = GameEndRequestSchema.parse(json)
+    const data = GameEndRequestSchema.parse(await request.json())
     const { sessionId, signature, finalScore, events, foods, durationMs } = data
     const result = await endGameSession(sessionId, signature, finalScore, events ?? [], foods ?? [], durationMs ?? 0)
 

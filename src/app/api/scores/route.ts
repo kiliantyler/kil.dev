@@ -21,8 +21,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const body = (await request.json()) as unknown
-    const validation = validateScoreSubmission(body)
+    const validation = validateScoreSubmission(await request.json())
 
     if (!validation.success) {
       return NextResponse.json(
