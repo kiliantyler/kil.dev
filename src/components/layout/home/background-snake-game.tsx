@@ -8,6 +8,7 @@ import { useGameSession } from '@/hooks/use-game-session'
 import { useLeaderboard } from '@/hooks/use-leaderboard'
 import { useSnakeGame, type Direction, type Position } from '@/hooks/use-snake-game'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { toast } from 'sonner'
 
 type ScoreBadgeProps = {
   top: number
@@ -68,8 +69,16 @@ export function BackgroundSnakeGame() {
         void (async () => {
           if (hasEndedRef.current) return
           hasEndedRef.current = true
-          await endGame(finalScore)
-          await handleGameOverFlow(finalScore)
+          const result = await endGame(finalScore)
+          if (result.success) {
+            const validated = typeof result.validatedScore === 'number' ? result.validatedScore : finalScore
+            validatedFinalScoreRef.current = validated
+            await handleGameOverFlow(validated)
+          } else {
+            toast.error("Run didn't pass validation", {
+              description: result.message ?? 'Try a longer run with a few moves.',
+            })
+          }
         })()
       },
     })
@@ -83,6 +92,7 @@ export function BackgroundSnakeGame() {
 
   // Prevent duplicate end-game submissions
   const hasEndedRef = useRef(false)
+  const validatedFinalScoreRef = useRef(0)
   useEffect(() => {
     if (isPlaying) hasEndedRef.current = false
   }, [isPlaying])
@@ -280,7 +290,7 @@ export function BackgroundSnakeGame() {
         if (nameInputPosition < 2) {
           setNameInputPosition(prev => Math.min(2, prev + 1))
         } else {
-          void submitScore(score, session?.sessionId, session?.secret)
+          void submitScore(validatedFinalScoreRef.current, session?.sessionId, session?.secret)
         }
         return
       }
