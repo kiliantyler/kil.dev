@@ -1,3 +1,4 @@
+export { default as Christmas } from './cartoon-christmas.webp'
 export { default as Confused } from './cartoon-confused.webp'
 export { default as Cyberpunk } from './cartoon-cyberpunk.webp'
 export { default as Grumpy } from './cartoon-grumpy.webp'

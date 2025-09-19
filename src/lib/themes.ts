@@ -1,6 +1,6 @@
 import * as Headshots from '@/images/headshot'
 import type { ThemeConfig } from '@/types/themes'
-import { Ghost, Leaf, Moon, Sun, Zap } from 'lucide-react'
+import { Ghost, Gift, Leaf, Moon, Sun, Zap } from 'lucide-react'
 
 export const themes = [
   {
@@ -39,6 +39,15 @@ export const themes = [
     baseColor: 'dark',
     darkModeNote: '(Happy Thanksgiving!)',
     timeRange: { start: { month: 11, day: 15 }, end: { month: 11, day: 30 } },
+  },
+  {
+    name: 'christmas',
+    icon: Gift,
+    headshotImage: Headshots.Christmas,
+    baseColor: 'dark',
+    darkModeNote: '(Merry Christmas!)',
+    disableGridLights: true,
+    timeRange: { start: { month: 12, day: 1 }, end: { month: 12, day: 26 } },
   },
 ] as const satisfies ReadonlyArray<ThemeConfig>
 
