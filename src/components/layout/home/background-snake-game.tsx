@@ -324,12 +324,7 @@ export function BackgroundSnakeGame() {
       <GameOverlay
         isPlaying={isPlaying}
         gameOver={gameOver}
-        score={score}
         showNameInput={showNameInput}
-        playerName={playerName}
-        nameInputPosition={nameInputPosition}
-        isSubmittingScore={isSubmittingScore}
-        dimensions={gameBox}
         onRestart={() => initGame()}
         onEsc={() => {
           setIsPlaying(false)
