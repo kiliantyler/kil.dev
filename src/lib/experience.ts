@@ -149,20 +149,45 @@ export const WORK_HISTORY: WorkExperience[] = [
     companyLogoAlt: 'PNC Bank logo',
   },
   {
-    id: 'unknown',
+    id: 'istreamplanet',
+    role: 'Systems Administrator | Team Lead',
+    company: 'iStreamPlanet',
+    workLocation: {
+      location: 'Las Vegas, NV',
+      latitude: 36.169941,
+      longitude: -115.139832,
+    },
+    from: '2013-05-01',
+    to: '2014-12-31',
+    summary:
+      'Led a small team running highly virtualized environments and helped deliver large-scale media streaming—including the 2014 Olympics.',
+    highlights: [
+      'Deployed and maintained Ubuntu and CentOS Linux servers',
+      'Operated a highly virtualized stack with Hyper-V, VMware vSphere, Azure, and AWS',
+      'Supported streaming using HDS, HLS, Smooth, and MPEG-DASH',
+      'Created and maintained automation scripts',
+      'Designed, deployed, and maintained an in-house SaaS product',
+      'For the 2014 Olympics, partnered with NBC and Microsoft to deliver a stable, redundant, automated platform that streamed to millions',
+    ],
+    companyUrl: 'https://en.wikipedia.org/wiki/IStreamPlanet',
+    companyLogoSrc: Logos.iStreamPlanetLogo,
+    companyLogoAlt: 'iStreamPlanet logo',
+  },
+  {
+    id: 'allothers',
     role: 'Previous Roles',
     company: 'Various',
     workLocation: {
-      location: 'Remote',
+      location: 'Varied',
     },
-    officeLocation: {
-      location: 'Various',
-      latitude: 39.8283, // Geographic center of contiguous US
-      longitude: -98.5795,
-    },
-    from: '2013-04-01',
-    to: '2015-03-31',
-    summary: "I'll fill the rest in later.",
+    from: '2008-03-17',
+    to: '2013-03-31',
+    summary: 'Unrelated roles and companies',
+    highlights: [
+      'Apple Retail',
+      'Microcenter',
+      "Play 'N Trade",
+    ],
   },
 ]
 
