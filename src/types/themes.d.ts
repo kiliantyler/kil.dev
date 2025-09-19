@@ -13,4 +13,5 @@ export type ThemeConfig = {
   darkModeNote?: string
   timeRange?: { start: MonthDay; end: MonthDay }
   disableGridLights?: boolean
+  enableSnow?: boolean
 }
