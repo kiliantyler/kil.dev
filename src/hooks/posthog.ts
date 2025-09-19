@@ -1,9 +1,9 @@
+import { isDev } from '@/utils/utils'
 import type { Route } from 'next'
 import posthog from 'posthog-js'
 
-const isDev = process.env.NODE_ENV !== 'production'
 const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY
-const canCapture = !isDev && posthogKey
+const canCapture = !isDev() && posthogKey
 
 export function captureSocialLinkClicked(platform: string, href: Route) {
   if (!canCapture) return
