@@ -14,6 +14,14 @@ import { getThemeHeadshot } from '@/utils/themes'
 import Image, { type StaticImageData } from 'next/image'
 import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 
+function getAnimationClass(isAnimating: boolean, hasAnimated: boolean, isReturning: boolean): string {
+  if (isReturning) return 'konami-return-right'
+  let classes = ''
+  if (isAnimating) classes += 'konami-fly-right'
+  if (hasAnimated) classes += (classes ? ' ' : '') + 'konami-complete konami-fly-right'
+  return classes
+}
+
 export function ProfileImage() {
   const { isAnimating, hasAnimated, isReturning } = useKonamiAnimation()
   const { unlock, has } = useAchievements()
