@@ -1,6 +1,7 @@
 'use client'
 
 import type { ScoreSubmissionResponse } from '@/types/leaderboard'
+import { computeSha256Hex } from '@/utils/crypto'
 import { stableStringify } from '@/utils/stable-stringify'
 import { useCallback, useRef, useState } from 'react'
 
@@ -102,14 +103,6 @@ export function useGameSession() {
       if (!session) return { success: false, message: 'No active session' }
 
       try {
-        async function computeSha256Hex(input: string): Promise<string> {
-          const encoder = new TextEncoder()
-          const data = encoder.encode(input)
-          const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-          const bytes = Array.from(new Uint8Array(hashBuffer))
-          return bytes.map(b => b.toString(16).padStart(2, '0')).join('')
-        }
-
         // Derive final score from recorded food events to avoid stale state
         const computedFinalScore = foodsRef.current.reduce((acc, f) => acc + (f.g ? 50 : 10), 0)
 
