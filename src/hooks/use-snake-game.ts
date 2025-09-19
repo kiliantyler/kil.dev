@@ -56,30 +56,65 @@ export function useSnakeGame(options: UseSnakeGameOptions = {}) {
     return () => window.removeEventListener('resize', updateWindowSize)
   }, [])
 
-  // Generate random food position within safe bounds
+  // Generate random food position within safe bounds without recursion
   const generateFood = useCallback((): { position: Position; isGolden: boolean } => {
     const { gridWidth, gridHeight } = getGridDimensions(windowSize.width, windowSize.height)
     const { safeYMin, safeYMax, safeXMin, safeXMax } = getSafeBoundaries(windowSize.width, windowSize.height)
 
     const isGolden = Math.random() < GOLDEN_APPLE_CHANCE
 
-    if (safeYMin >= safeYMax || safeXMin >= safeXMax) {
-      const fallback = {
-        x: Math.floor(Math.random() * gridWidth),
-        y: Math.floor(Math.random() * gridHeight),
-      }
-      const isOnSnake = snake.some(s => s.x === fallback.x && s.y === fallback.y)
-      if (isOnSnake) return generateFood()
-      return { position: fallback, isGolden }
-    }
+    const isSafeAreaValid = !(safeYMin >= safeYMax || safeXMin >= safeXMax)
 
-    const position = {
+    const getRandomInSafeArea = (): Position => ({
       x: safeXMin + Math.floor(Math.random() * (safeXMax - safeXMin + 1)),
       y: safeYMin + Math.floor(Math.random() * (safeYMax - safeYMin + 1)),
+    })
+
+    const getRandomInGrid = (): Position => ({
+      x: Math.floor(Math.random() * gridWidth),
+      y: Math.floor(Math.random() * gridHeight),
+    })
+
+    // Bounded attempts to find a free cell
+    for (let attempt = 0; attempt < MAX_FOOD_GENERATION_ATTEMPTS; attempt++) {
+      const candidate = isSafeAreaValid ? getRandomInSafeArea() : getRandomInGrid()
+      const isOnSnake = snake.some(segment => segment.x === candidate.x && segment.y === candidate.y)
+      if (!isOnSnake) {
+        return { position: candidate, isGolden }
+      }
     }
-    const isOnSnake = snake.some(s => s.x === position.x && s.y === position.y)
-    if (isOnSnake) return generateFood()
-    return { position, isGolden }
+
+    // Exhausted attempts — compute list of free cells
+    const freeCells: Position[] = []
+
+    if (isSafeAreaValid) {
+      for (let y = safeYMin; y <= safeYMax; y++) {
+        for (let x = safeXMin; x <= safeXMax; x++) {
+          const occupied = snake.some(segment => segment.x === x && segment.y === y)
+          if (!occupied) freeCells.push({ x, y })
+        }
+      }
+    }
+
+    // If no free cells in safe area (or safe area invalid), scan whole grid
+    if (freeCells.length === 0) {
+      for (let y = 0; y < gridHeight; y++) {
+        for (let x = 0; x < gridWidth; x++) {
+          const occupied = snake.some(segment => segment.x === x && segment.y === y)
+          if (!occupied) freeCells.push({ x, y })
+        }
+      }
+    }
+
+    if (freeCells.length > 0) {
+      const index = Math.floor(Math.random() * freeCells.length)
+      const chosen = freeCells[index]!
+      return { position: chosen, isGolden }
+    }
+
+    // Deterministic fallback (should be unreachable unless grid is entirely filled)
+    const fallback: Position = isSafeAreaValid ? { x: safeXMin, y: safeYMin } : { x: 0, y: 0 }
+    return { position: fallback, isGolden }
   }, [snake, windowSize])
 
   const initGame = useCallback(() => {
