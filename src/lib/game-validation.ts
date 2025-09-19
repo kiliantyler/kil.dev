@@ -38,6 +38,23 @@ const MAX_FOOD_RATE_MS = IS_DEV ? 80 : 200
 const SESSION_KEY_PREFIX = 'game:session:'
 const SESSION_TTL_SECONDS = 60 * 60 // 1 hour
 
+// In-memory fallback store (useful in dev/local or if Redis is temporarily unavailable)
+const memorySessions = new Map<string, GameSession>()
+
+function setMemorySession(session: GameSession) {
+  memorySessions.set(session.id, session)
+  // Best-effort TTL cleanup
+  setTimeout(
+    () => {
+      const existing = memorySessions.get(session.id)
+      if (existing && Date.now() - existing.createdAt >= SESSION_TTL_SECONDS * 1000) {
+        memorySessions.delete(session.id)
+      }
+    },
+    SESSION_TTL_SECONDS * 1000 + 1000,
+  )
+}
+
 type RetryOptions = {
   attempts?: number
   initialDelayMs?: number
@@ -69,37 +86,58 @@ function getSessionKey(sessionId: string): string {
 
 export async function createSession(session: GameSession): Promise<void> {
   const key = getSessionKey(session.id)
-  const value = JSON.stringify(session)
-  await withRetry(() => redis.set(key, value, { ex: SESSION_TTL_SECONDS }))
+  try {
+    await withRetry(() => redis.set(key, session, { ex: SESSION_TTL_SECONDS }))
+    // Also store in memory as a soft cache to avoid race/infra hiccups
+    setMemorySession(session)
+  } catch {
+    // Fallback to memory in dev
+    if (IS_DEV) setMemorySession(session)
+    else throw new Error('Failed to create session')
+  }
 }
 
 export async function getSession(sessionId: string): Promise<GameSession | undefined> {
   const key = getSessionKey(sessionId)
-  const raw = await withRetry(() => redis.get<string>(key))
-  if (!raw) return undefined
+  let raw: GameSession | null = null
   try {
-    const parsed = JSON.parse(raw) as GameSession
-    return parsed
+    raw = await withRetry(() => redis.get<GameSession>(key))
   } catch {
-    // If parsing fails, delete the corrupt key to avoid repeated errors
-    try {
-      await withRetry(() => redis.del(key))
-    } catch {
-      // ignore cleanup error
-    }
+    const mem = memorySessions.get(sessionId)
+    if (mem) return mem
+    if (!IS_DEV) throw new Error('Failed to get session')
     return undefined
   }
+  if (!raw) {
+    const mem = memorySessions.get(sessionId)
+    if (mem) return mem
+    return undefined
+  }
+  // If Upstash already deserialized JSON, return it directly
+  return raw
 }
 
 export async function updateSession(session: GameSession): Promise<void> {
   const key = getSessionKey(session.id)
-  const value = JSON.stringify(session)
-  await withRetry(() => redis.set(key, value, { ex: SESSION_TTL_SECONDS }))
+  try {
+    await withRetry(() => redis.set(key, session, { ex: SESSION_TTL_SECONDS }))
+    setMemorySession(session)
+  } catch {
+    if (IS_DEV) setMemorySession(session)
+    else throw new Error('Failed to update session')
+  }
 }
 
 export async function deleteSession(sessionId: string): Promise<void> {
   const key = getSessionKey(sessionId)
-  await withRetry(() => redis.del(key))
+  try {
+    await withRetry(() => redis.del(key))
+  } catch {
+    if (IS_DEV) memorySessions.delete(sessionId)
+    else throw new Error('Failed to delete session')
+  }
+  // Ensure memory copy is cleared as well
+  memorySessions.delete(sessionId)
 }
 
 export async function createGameSession(): Promise<{ sessionId: string; secret: string; seed: number }> {
