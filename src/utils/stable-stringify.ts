@@ -8,7 +8,7 @@ type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   if (value === null || typeof value !== 'object') return false
-  const proto = Object.getPrototypeOf(value)
+  const proto = Object.getPrototypeOf(value) as object | null
   return proto === Object.prototype || proto === null
 }
 
@@ -28,7 +28,7 @@ function serialize(value: unknown): string {
     return `[${items.join(',')}]`
   }
 
-  const obj = value as Record<string, unknown>
+  const obj = value
   const keys = Object.keys(obj).sort()
   const parts: string[] = []
   for (const key of keys) {
