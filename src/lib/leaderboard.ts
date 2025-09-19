@@ -126,11 +126,6 @@ export async function getQualificationThreshold(): Promise<number> {
       return SCORE_QUALIFICATION_THRESHOLD // Default threshold if leaderboard is empty
     }
 
-    // Safety check: if leaderboard size is 0 but we got here, something is wrong
-    if (leaderboardSize === 0) {
-      return SCORE_QUALIFICATION_THRESHOLD
-    }
-
     // If we have fewer than 10 entries, use the lowest score + 1 as threshold
     if (leaderboardSize < MAX_LEADERBOARD_SIZE) {
       const scores = await redis.zrange(LEADERBOARD_KEY, 0, 0, { withScores: true, rev: false })
