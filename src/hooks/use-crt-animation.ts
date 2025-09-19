@@ -14,7 +14,7 @@ export type CrtAnimationState = {
   glowIntensity: number
 }
 
-type UseCrtAnimationArgs = {
+export type UseCrtAnimationArgs = {
   getDimensions: () => GameBoxDimensions
 }
 
