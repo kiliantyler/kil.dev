@@ -8,7 +8,7 @@ type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT'
 
 interface GameSession {
   id: string
-  startTime: number
+  createdAt: number
   isActive: boolean
   secret: string
   seed: number
@@ -43,21 +43,13 @@ export function createGameSession(): { sessionId: string; secret: string; seed: 
 
   const session: GameSession = {
     id: sessionId,
-    startTime: Date.now(),
+    createdAt: Date.now(),
     isActive: true,
     secret,
     seed,
   }
 
   gameSessions.set(sessionId, session)
-
-  // Clean up old sessions (older than 1 hour)
-  setTimeout(
-    () => {
-      gameSessions.delete(sessionId)
-    },
-    60 * 60 * 1000,
-  )
 
   return { sessionId, secret, seed }
 }
@@ -175,16 +167,17 @@ export function validateScoreSubmissionBySession(
 }
 
 // Clean up old sessions periodically
-setInterval(
+const cleanupInterval = setInterval(
   () => {
     const now = Date.now()
     const oneHourAgo = now - 60 * 60 * 1000
 
     for (const [sessionId, session] of gameSessions.entries()) {
-      if (session.startTime < oneHourAgo) {
+      if (session.createdAt <= oneHourAgo) {
         gameSessions.delete(sessionId)
       }
     }
   },
   10 * 60 * 1000,
-) // Clean up every 10 minutes
+)
+cleanupInterval.unref()
