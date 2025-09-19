@@ -84,9 +84,6 @@ export const WORK_HISTORY: WorkExperience[] = [
     company: 'Kaseya',
     workLocation: {
       location: 'Las Vegas, NV',
-    },
-    officeLocation: {
-      location: 'Las Vegas, NV',
       latitude: 36.169941,
       longitude: -115.139832,
     },
