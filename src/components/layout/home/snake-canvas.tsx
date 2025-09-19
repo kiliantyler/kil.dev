@@ -82,7 +82,7 @@ export function SnakeCanvas({
       if (!off) return
       off.width = canvas.width
       off.height = canvas.height
-      offscreenCtxRef.current = off.getContext('2d')
+      offscreenCtxRef.current = off.getContext('2d', { willReadFrequently: true })
     }
 
     setSize()
@@ -174,7 +174,7 @@ export function SnakeCanvas({
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-    const ctx = canvas.getContext('2d')
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
     if (!ctx) return
 
     let animationId = 0
