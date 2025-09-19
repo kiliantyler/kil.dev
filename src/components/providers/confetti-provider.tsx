@@ -16,14 +16,17 @@ export function ConfettiProvider({ children }: { children: React.ReactNode }) {
   const pendingConfettiRef = useRef<Set<string>>(new Set())
 
   const triggerConfetti = useCallback(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     void confetti({
       particleCount: 100,
       spread: 70,
       origin: { y: 0.6 },
+      zIndex: 50,
     })
   }, [])
 
   const triggerConfettiFromCorners = useCallback(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     const confettiId = 'corners'
 
     // Prevent multiple confetti triggers in quick succession
@@ -52,14 +55,15 @@ export function ConfettiProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Fire from both corners with slight delay
-    void confetti(leftCorner)
-    void confetti(rightCorner)
+    void confetti({ ...leftCorner, zIndex: 50 })
+    void confetti({ ...rightCorner, zIndex: 50 })
 
     // Clean up the confetti pending flag after animation completes
     setTimeout(() => pendingConfettiRef.current.delete(confettiId), 1000)
   }, [])
 
   const triggerConfettiFromTop = useCallback(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     const confettiId = 'top'
 
     if (pendingConfettiRef.current.has(confettiId)) return
@@ -71,12 +75,14 @@ export function ConfettiProvider({ children }: { children: React.ReactNode }) {
       origin: { y: 0 },
       angle: 270,
       startVelocity: 45,
+      zIndex: 50,
     })
 
     setTimeout(() => pendingConfettiRef.current.delete(confettiId), 1000)
   }, [])
 
   const triggerConfettiFromCenter = useCallback(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     const confettiId = 'center'
 
     if (pendingConfettiRef.current.has(confettiId)) return
@@ -87,6 +93,7 @@ export function ConfettiProvider({ children }: { children: React.ReactNode }) {
       spread: 360,
       origin: { x: 0.5, y: 0.5 },
       startVelocity: 30,
+      zIndex: 50,
     })
 
     setTimeout(() => pendingConfettiRef.current.delete(confettiId), 1000)

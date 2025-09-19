@@ -274,7 +274,7 @@ export function AchievementsProvider({
             border: '1px solid var(--color-border)',
           },
           classNames: {
-            toast: 'rounded-lg shadow-2xl',
+            toast: 'rounded-lg shadow-2xl z-50',
             title: 'text-base font-semibold',
             description: 'text-sm text-muted-foreground',
             icon: 'text-base',

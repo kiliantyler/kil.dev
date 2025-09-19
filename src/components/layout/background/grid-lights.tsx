@@ -1,6 +1,7 @@
 'use client'
 
 import { LIGHT_GRID } from '@/lib/light-grid'
+import { themes } from '@/lib/themes'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 type Point = { x: number; y: number }
@@ -137,14 +138,36 @@ export function GridLights() {
   const containerRef = useRef<HTMLDivElement>(null)
   const [styleText, setStyleText] = useState<string>('')
   const numLights = LIGHT_GRID.NUM_LIGHTS
+  const [disableGridLights, setDisableGridLights] = useState(false)
 
   const prefersReducedMotion = useMemo(() => {
     if (typeof window === 'undefined') return false
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches
   }, [])
 
+  // Track whether the active theme requests grid lights to be disabled (from themes.ts)
   useEffect(() => {
-    if (prefersReducedMotion) {
+    if (typeof document === 'undefined') return
+    const root = document.documentElement
+    const themeNames = themes.map(t => t.name)
+    const supportsDisable = (
+      t: (typeof themes)[number] | undefined,
+    ): t is (typeof themes)[number] & {
+      disableGridLights?: boolean
+    } => Boolean(t && 'disableGridLights' in t)
+    const update = () => {
+      const activeName = themeNames.find(n => root.classList.contains(n))
+      const cfg = themes.find(t => t.name === activeName)
+      setDisableGridLights(supportsDisable(cfg) ? Boolean(cfg.disableGridLights) : false)
+    }
+    update()
+    const observer = new MutationObserver(() => update())
+    observer.observe(root, { attributes: true, attributeFilter: ['class'] })
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (prefersReducedMotion || disableGridLights) {
       setStyleText('')
       return
     }
@@ -164,11 +187,13 @@ export function GridLights() {
     const handle = () => regenerate()
     window.addEventListener('resize', handle)
     return () => window.removeEventListener('resize', handle)
-  }, [prefersReducedMotion, numLights])
+  }, [prefersReducedMotion, disableGridLights, numLights])
 
   const dotClass = 'absolute rounded-full pointer-events-none'
   const near = LIGHT_GRID.GLOW_NEAR_PX
   const far = LIGHT_GRID.GLOW_FAR_PX
+
+  if (prefersReducedMotion || disableGridLights) return null
 
   return (
     <div ref={containerRef} className="absolute inset-0 overflow-hidden" aria-hidden>

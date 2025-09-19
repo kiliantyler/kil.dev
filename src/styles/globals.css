@@ -5,6 +5,7 @@
 @custom-variant cyberpunk (&:is(.cyberpunk *));
 @custom-variant halloween (&:is(.halloween *));
 @custom-variant thanksgiving (&:is(.thanksgiving *));
+@custom-variant christmas (&:is(.christmas *));
 @variant nav (@media (min-width: 920px));
 
 @theme {
@@ -264,6 +265,49 @@
   color-scheme: dark;
   --card-back-shadow: drop-shadow(0 0 6px oklch(60% 0.18 45 / 0.4)) drop-shadow(0 0 10px oklch(40% 0.2 15 / 0.3))
     drop-shadow(0 0 14px oklch(55% 0.12 160 / 0.2));
+}
+
+/* Christmas theme */
+.christmas {
+  --background: oklch(18% 0.06 160);
+  --foreground: oklch(98% 0 0);
+  --card: oklch(22% 0.05 160);
+  --card-foreground: oklch(98% 0 0);
+  --popover: oklch(22% 0.05 160);
+  --popover-foreground: oklch(98% 0 0);
+  --primary: oklch(62.8% 0.257 29.2);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(70% 0.22 145);
+  --secondary-foreground: oklch(12% 0.03 160);
+  --muted: oklch(26% 0.02 160);
+  --muted-foreground: oklch(78% 0.02 160);
+  --accent: oklch(92% 0.03 160);
+  --accent-foreground: oklch(18% 0.03 160);
+  --destructive: oklch(70% 0.22 145);
+  --destructive-foreground: oklch(12% 0.03 160);
+  --border: oklch(34% 0.02 160);
+  --input: oklch(34% 0.02 160);
+  --ring: oklch(62.8% 0.257 29.2);
+  --grid-color: oklch(80% 0.12 160 / 0.15);
+  --grid-light: oklch(1 0 360);
+  --chart-1: oklch(62.8% 0.257 29.2);
+  --chart-2: oklch(70% 0.22 145);
+  --chart-3: oklch(92% 0.03 160);
+  --chart-4: oklch(78% 0.12 312);
+  --chart-5: oklch(82% 0.1 50);
+  --sidebar: oklch(18% 0.06 160);
+  --sidebar-foreground: oklch(98% 0 0);
+  --sidebar-primary: oklch(62.8% 0.257 29.2);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(26% 0.02 160);
+  --sidebar-accent-foreground: oklch(92% 0.02 160);
+  --sidebar-border: oklch(34% 0.02 160);
+  --sidebar-ring: oklch(62.8% 0.257 29.2);
+  --theme-darklike: 1;
+  --card-backdrop: oklch(0 0 0 / 0.6);
+  color-scheme: dark;
+  --card-back-shadow: drop-shadow(0 0 6px oklch(62.8% 0.257 29.2 / 0.45))
+    drop-shadow(0 0 10px oklch(70% 0.22 145 / 0.35)) drop-shadow(0 0 14px oklch(92% 0.03 160 / 0.25));
 }
 
 /* Custom utilities */

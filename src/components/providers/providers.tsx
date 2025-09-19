@@ -5,6 +5,7 @@ import type { UnlockedMap } from '@/utils/achievements'
 import { AchievementsProvider } from './achievements-provider'
 import { ConfettiProvider } from './confetti-provider'
 import { PostHogProvider } from './posthog-provider'
+import { SnowProvider } from './snow-provider'
 import { ThemeProvider } from './theme-provider'
 
 export function Providers({
@@ -20,7 +21,9 @@ export function Providers({
     <PostHogProvider>
       <ThemeProvider initialAppliedTheme={initialAppliedTheme}>
         <ConfettiProvider>
-          <AchievementsProvider initialUnlocked={initialUnlocked}>{children}</AchievementsProvider>
+          <SnowProvider>
+            <AchievementsProvider initialUnlocked={initialUnlocked}>{children}</AchievementsProvider>
+          </SnowProvider>
         </ConfettiProvider>
       </ThemeProvider>
     </PostHogProvider>
