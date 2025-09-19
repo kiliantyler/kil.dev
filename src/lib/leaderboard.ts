@@ -2,6 +2,8 @@ import { env } from '@/env'
 import { type LeaderboardEntry } from '@/types/leaderboard'
 import { redis } from './redis'
 
+type RedisPipelineResult<T> = [Error | null, T]
+
 // Redis key structure
 export const LEADERBOARD_KEY = 'snake:leaderboard'
 export const SCORE_QUALIFICATION_THRESHOLD = 100 // Minimum score to qualify
@@ -16,7 +18,9 @@ function addScoreToMemory(entry: LeaderboardEntry): number {
     if (b.score !== a.score) return b.score - a.score
     return a.timestamp - b.timestamp
   })
-  if (memoryLeaderboard.length > MAX_LEADERBOARD_SIZE) memoryLeaderboard.length = MAX_LEADERBOARD_SIZE
+  if (memoryLeaderboard.length > MAX_LEADERBOARD_SIZE) {
+    memoryLeaderboard.splice(MAX_LEADERBOARD_SIZE)
+  }
   const rank = memoryLeaderboard.findIndex(e => e.id === entry.id)
   return rank >= 0 ? rank + 1 : 0
 }
@@ -27,7 +31,6 @@ function getLeaderboardFromMemory(): LeaderboardEntry[] {
 
 export async function addScoreToLeaderboard(entry: LeaderboardEntry): Promise<number> {
   try {
-    type RedisPipelineResult<T> = [Error | null, T]
     // Store the full entry data as JSON in the member field
     const entryData = JSON.stringify(entry)
 
