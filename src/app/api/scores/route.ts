@@ -1,5 +1,5 @@
 import { env } from '@/env'
-import { validateScoreSubmissionBySession } from '@/lib/game-validation'
+import { validateScoreSubmissionBySession, verifySignedScoreSubmission } from '@/lib/game-validation'
 import { addScoreToLeaderboard, getLeaderboard } from '@/lib/leaderboard'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { sanitizeName, validateScoreSubmission } from '@/lib/score-validation'

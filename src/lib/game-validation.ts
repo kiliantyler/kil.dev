@@ -27,6 +27,22 @@ function computeSignatureHex(secret: string, payloadString: string): string {
   return createHash('sha256').update(`${secret}.${payloadString}`).digest('hex')
 }
 
+const NONCE_KEY_PREFIX = 'game:nonce:'
+const NONCE_TTL_SECONDS = 60 * 5 // 5 minutes
+
+export async function reserveNonceOnce(nonce: string): Promise<boolean> {
+  if (!nonce) return false
+  const key = `${NONCE_KEY_PREFIX}${nonce}`
+  try {
+    // NX set ensures we only accept the nonce once
+    const setRes = await redis.set(key, '1', { nx: true, ex: NONCE_TTL_SECONDS })
+    return setRes === 'OK'
+  } catch {
+    // In case of Redis issues, fail-closed in production
+    return process.env.NODE_ENV !== 'production'
+  }
+}
+
 // Tunable validation thresholds (relaxed in development)
 const IS_DEV = process.env.NODE_ENV !== 'production'
 const MIN_DURATION_MS = IS_DEV ? 500 : 2000
@@ -270,4 +286,38 @@ export async function validateScoreSubmissionBySession(
   }
 
   return { success: true, validatedScore: submittedScore }
+}
+
+export async function verifySignedScoreSubmission(
+  params: {
+    sessionId: string
+    name: string
+    score: number
+    timestamp: number
+    nonce: string
+    signature: string
+  },
+  maxSkewMs = 2 * 60 * 1000, // 2 minutes
+): Promise<{ success: boolean; message?: string }> {
+  const { sessionId, name, score, timestamp, nonce, signature } = params
+  const session = await getSession(sessionId)
+  if (!session) return { success: false, message: 'Invalid game session' }
+  if (!sessionId || !name || typeof score !== 'number') return { success: false, message: 'Invalid payload' }
+
+  // Reject stale or future timestamps
+  const now = Date.now()
+  if (Math.abs(now - timestamp) > maxSkewMs) {
+    return { success: false, message: 'Stale or invalid timestamp' }
+  }
+
+  // Nonce must be unique
+  const nonceOk = await reserveNonceOnce(nonce)
+  if (!nonceOk) return { success: false, message: 'Replay detected' }
+
+  // Verify signature over stable payload
+  const payloadString = stableStringify({ sessionId, name, score, timestamp, nonce })
+  const expected = computeSignatureHex(session.secret, payloadString)
+  if (expected !== signature) return { success: false, message: 'Invalid signature' }
+
+  return { success: true }
 }
