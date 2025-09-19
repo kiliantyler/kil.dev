@@ -112,7 +112,7 @@ export function useLeaderboard() {
           setPlayerName(prev => {
             const next = [...prev]
             const currentChar = next[nameInputPosition]
-            if (!currentChar) return next
+            if (currentChar === undefined || nameInputPosition < 0 || nameInputPosition >= next.length) return prev
             const newChar = currentChar === 'Z' ? 'A' : String.fromCharCode(currentChar.charCodeAt(0) + 1)
             next[nameInputPosition] = newChar
             return next
