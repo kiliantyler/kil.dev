@@ -74,7 +74,7 @@ export async function addScoreToLeaderboard(entry: LeaderboardEntry): Promise<nu
 
     // Return rank (0-indexed, so add 1) or 0 if rank is null
     return rank !== null ? rank + 1 : 0
-  } catch (err) {
+  } catch {
     // Fallback to in-memory leaderboard in non-production
     if (env.NODE_ENV !== 'production') {
       return addScoreToMemory(entry)
@@ -110,7 +110,7 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
     }
 
     return leaderboard
-  } catch (err) {
+  } catch {
     // Fallback to in-memory leaderboard in non-production
     if (env.NODE_ENV !== 'production') return getLeaderboardFromMemory()
     return [] // Return empty array on error
@@ -156,7 +156,7 @@ export async function getQualificationThreshold(): Promise<number> {
     const threshold = tenthHighestScore + 1 // Must beat the 10th highest score, not just tie it
     // Ensure threshold is never 0 or negative
     return Math.max(threshold, SCORE_QUALIFICATION_THRESHOLD)
-  } catch (err) {
+  } catch {
     // Fallback: derive threshold from in-memory leaderboard when available
     if (env.NODE_ENV !== 'production') {
       const size = memoryLeaderboard.length
