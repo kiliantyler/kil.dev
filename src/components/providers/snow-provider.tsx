@@ -32,7 +32,8 @@ export function SnowProvider({ children }: { children: React.ReactNode }) {
     const update = () => {
       const activeName = themeNames.find(n => root.classList.contains(n))
       const cfg = themes.find(t => t.name === activeName)
-      setIsActive(Boolean(cfg?.enableSnow))
+      const enableSnow = !!(cfg && 'enableSnow' in cfg && cfg.enableSnow)
+      setIsActive(enableSnow)
     }
 
     update()
