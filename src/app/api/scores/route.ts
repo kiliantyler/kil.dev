@@ -35,7 +35,16 @@ export async function POST(request: NextRequest) {
 
     // If session data is provided, verify signature + anti-replay, then validate against stored validated score
     if (typeof sessionId === 'string') {
-      const sigCheck = await verifySignedScoreSubmission({
+      const sigCheck = await (
+        verifySignedScoreSubmission as (args: {
+          sessionId: string
+          name: string
+          score: number
+          timestamp: number
+          nonce: string
+          signature: string
+        }) => Promise<{ success: boolean; message?: string }>
+      )({
         sessionId,
         name, // use original name for signature verification (not sanitized)
         score,
