@@ -14,19 +14,16 @@ export function SnowProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     if (typeof window === 'undefined' || typeof document === 'undefined') return
 
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (prefersReducedMotion) {
-      setIsActive(false)
-      return
-    }
-
     const root = document.documentElement
     const themeNames = themes.map(t => t.name)
+    const mql = window.matchMedia('(prefers-reduced-motion: reduce)')
+
     const update = () => {
       const activeName = themeNames.find(n => root.classList.contains(n))
       const cfg = themes.find(t => t.name === activeName)
-      const enableSnow = !!(cfg && 'enableSnow' in cfg && cfg.enableSnow)
-      setIsActive(enableSnow)
+      const enableSnowByTheme = !!(cfg && 'enableSnow' in cfg && cfg.enableSnow)
+      const reduceMotion = mql.matches
+      setIsActive(enableSnowByTheme && !reduceMotion)
     }
 
     update()
@@ -34,7 +31,21 @@ export function SnowProvider({ children }: { children: React.ReactNode }) {
     const observer = new MutationObserver(() => update())
     observer.observe(root, { attributes: true, attributeFilter: ['class'] })
 
-    return () => observer.disconnect()
+    const handleMqlChange = () => update()
+    if (typeof mql.addEventListener === 'function') {
+      mql.addEventListener('change', handleMqlChange)
+    } else if (typeof mql.addListener === 'function') {
+      mql.addListener(handleMqlChange)
+    }
+
+    return () => {
+      observer.disconnect()
+      if (typeof mql.removeEventListener === 'function') {
+        mql.removeEventListener('change', handleMqlChange)
+      } else if (typeof mql.removeListener === 'function') {
+        mql.removeListener(handleMqlChange)
+      }
+    }
   }, [])
 
   return (
