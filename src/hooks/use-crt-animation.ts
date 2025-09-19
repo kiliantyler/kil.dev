@@ -207,8 +207,9 @@ export function useCrtAnimation({ getDimensions }: UseCrtAnimationArgs) {
   }, [startCrtAnimation])
 
   useEffect(() => {
+    const closeState = crtCloseRef.current
     return () => {
-      const rafId = crtCloseRef.current.rafId
+      const rafId = closeState.rafId
       if (rafId) cancelAnimationFrame(rafId)
     }
   }, [])
