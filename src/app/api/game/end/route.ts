@@ -19,7 +19,7 @@ type GameEndRequest = {
 // POST /api/game/end - End a game session and validate the final score
 export async function POST(request: NextRequest) {
   try {
-    const json: unknown = await request.json()
+    const json = (await request.json()) as unknown
     const data: GameEndRequest = GameEndRequestSchema.parse(json)
     const { sessionId, signature, finalScore, events, foods, durationMs } = data
     const result = endGameSession(sessionId, signature, finalScore, events ?? [], foods ?? [], durationMs ?? 0)
