@@ -118,7 +118,10 @@ export async function POST(request: NextRequest) {
         )
       }
       // Use the validated score
-      const validatedScore = gameValidation.validatedScore!
+      const validatedScore = gameValidation.validatedScore
+      if (validatedScore === undefined) {
+        throw new Error('Validated score is undefined despite successful validation')
+      }
 
       // Create leaderboard entry with validated score
       const entry: LeaderboardEntry = {
