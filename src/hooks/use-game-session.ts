@@ -1,6 +1,7 @@
 'use client'
 
 import type { ScoreSubmissionResponse } from '@/types/leaderboard'
+import { stableStringify } from '@/utils/stable-stringify'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 interface GameSession {
@@ -109,7 +110,7 @@ export function useGameSession() {
           return bytes.map(b => b.toString(16).padStart(2, '0')).join('')
         }
 
-        // Compute signature: sha256(secret + '.' + JSON.stringify(payload))
+        // Compute signature: sha256(secret + '.' + stableStringify(payload))
         const payload = {
           sessionId: session.sessionId,
           finalScore,
@@ -118,7 +119,7 @@ export function useGameSession() {
           durationMs: Date.now() - startTimeRef.current,
         }
 
-        const signature = await computeSha256Hex(`${session.secret}.${JSON.stringify(payload)}`)
+        const signature = await computeSha256Hex(`${session.secret}.${stableStringify(payload)}`)
 
         const response = await fetch('/api/game/end', {
           method: 'POST',
