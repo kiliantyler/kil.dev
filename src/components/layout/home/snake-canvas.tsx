@@ -47,7 +47,7 @@ export function SnakeCanvas({
 
     // CRT mask
     ctx.save()
-    if (crtAnimation.isAnimating) {
+    if (crtAnimation.phase === 'opening' || crtAnimation.phase === 'closing') {
       const { centerX, centerY, horizontalWidth, verticalHeight } = crtAnimation
       const glowPadding = 20
       const rectX = centerX - horizontalWidth / 2 - glowPadding
@@ -148,7 +148,7 @@ export function SnakeCanvas({
       ctx.restore()
     }
 
-    if (crtAnimation.isAnimating || crtAnimation.glowIntensity > 0) {
+    if (crtAnimation.phase !== 'closed' || crtAnimation.glowIntensity > 0) {
       const gradient2 = ctx.createLinearGradient(
         borderLeft,
         borderTop,

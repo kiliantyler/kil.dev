@@ -75,7 +75,7 @@ export function BackgroundSnakeGame() {
     })
 
   // CRT animation
-  const { showSnake, crtAnimation, isCrtOff, startCrtCloseAnimation } = useCrtAnimation({
+  const { showSnake, crtAnimation, startCrtCloseAnimation } = useCrtAnimation({
     getDimensions,
   })
 
@@ -313,7 +313,7 @@ export function BackgroundSnakeGame() {
         isGoldenApple={isGoldenApple}
         crtAnimation={crtAnimation}
         gameBox={gameBox}
-        showSnake={showSnake && !isCrtOff}
+        showSnake={showSnake && crtAnimation.phase !== 'closed'}
         theme={resolvedTheme}
         isPlaying={isPlaying}
         gameOver={gameOver}
