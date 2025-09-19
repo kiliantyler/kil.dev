@@ -115,20 +115,20 @@ export async function createGameSession(): Promise<{ sessionId: string; secret: 
     seed,
   }
 
-  gameSessions.set(sessionId, session)
+  await createSession(session)
 
   return { sessionId, secret, seed }
 }
 
-export function endGameSession(
+export async function endGameSession(
   sessionId: string,
   signature: string,
   finalScore: number,
   events: MoveEvent[],
   foods: FoodEvent[],
   durationMs: number,
-): { success: boolean; validatedScore?: number; message?: string } {
-  const session = gameSessions.get(sessionId)
+): Promise<{ success: boolean; validatedScore?: number; message?: string }> {
+  const session = await getSession(sessionId)
 
   if (!session) {
     return { success: false, message: 'Invalid game session' }
@@ -182,15 +182,17 @@ export function endGameSession(
   session.isActive = false
   session.validatedScore = finalScore
 
+  await updateSession(session)
+
   return { success: true, validatedScore: finalScore }
 }
 
-export function validateScoreSubmission(
+export async function validateScoreSubmission(
   sessionId: string,
   secret: string,
   submittedScore: number,
-): { success: boolean; validatedScore?: number; message?: string } {
-  const session = gameSessions.get(sessionId)
+): Promise<{ success: boolean; validatedScore?: number; message?: string }> {
+  const session = await getSession(sessionId)
 
   if (!session) {
     return { success: false, message: 'Invalid game session' }
@@ -211,11 +213,11 @@ export function validateScoreSubmission(
   return { success: true, validatedScore: submittedScore }
 }
 
-export function validateScoreSubmissionBySession(
+export async function validateScoreSubmissionBySession(
   sessionId: string,
   submittedScore: number,
-): { success: boolean; validatedScore?: number; message?: string } {
-  const session = gameSessions.get(sessionId)
+): Promise<{ success: boolean; validatedScore?: number; message?: string }> {
+  const session = await getSession(sessionId)
 
   if (!session) {
     return { success: false, message: 'Invalid game session' }
@@ -231,19 +233,3 @@ export function validateScoreSubmissionBySession(
 
   return { success: true, validatedScore: submittedScore }
 }
-
-// Clean up old sessions periodically
-const cleanupInterval = setInterval(
-  () => {
-    const now = Date.now()
-    const oneHourAgo = now - 60 * 60 * 1000
-
-    for (const [sessionId, session] of gameSessions.entries()) {
-      if (session.createdAt <= oneHourAgo) {
-        gameSessions.delete(sessionId)
-      }
-    }
-  },
-  10 * 60 * 1000,
-)
-cleanupInterval.unref()
