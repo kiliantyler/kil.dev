@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { name, score, sessionId, secret } = validation.data
+    const { name, score, sessionId } = validation.data
     const sanitizedName = sanitizeName(name)
 
     // If session data is provided, validate against session's stored validated score (no secret needed)
