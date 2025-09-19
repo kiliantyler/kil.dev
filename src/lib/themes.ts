@@ -47,6 +47,7 @@ export const themes = [
     baseColor: 'dark',
     darkModeNote: '(Merry Christmas!)',
     disableGridLights: true,
+    enableSnow: true,
     timeRange: { start: { month: 12, day: 1 }, end: { month: 12, day: 26 } },
   },
 ] as const satisfies ReadonlyArray<ThemeConfig>
