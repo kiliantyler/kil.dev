@@ -52,3 +52,25 @@ export const GameEndResponseSchema = z.object({
   validatedScore: z.number().optional(),
   message: z.string().optional(),
 })
+
+// Game end request schema
+export const GameDirectionEnum = z.enum(['UP', 'DOWN', 'LEFT', 'RIGHT'])
+
+export const GameEndEventSchema = z.object({
+  t: z.number(),
+  k: GameDirectionEnum,
+})
+
+export const GameEndFoodSchema = z.object({
+  t: z.number(),
+  g: z.boolean(),
+})
+
+export const GameEndRequestSchema = z.object({
+  sessionId: z.string().min(1),
+  signature: z.string().min(1),
+  finalScore: z.number(),
+  events: z.array(GameEndEventSchema).default([]),
+  foods: z.array(GameEndFoodSchema).default([]),
+  durationMs: z.number().nonnegative().default(0),
+})
