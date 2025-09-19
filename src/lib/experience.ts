@@ -79,6 +79,31 @@ export const WORK_HISTORY: WorkExperience[] = [
     companyLogoAlt: 'DraftKings logo',
   },
   {
+    id: 'kaseya',
+    role: 'Senior DevOps Engineer',
+    company: 'Kaseya',
+    workLocation: {
+      location: 'Las Vegas, NV',
+    },
+    officeLocation: {
+      location: 'Las Vegas, NV',
+      latitude: 36.169941,
+      longitude: -115.139832,
+    },
+    from: '2019-06-01',
+    to: '2020-04-01',
+    summary:
+      'Turned a manual-heavy DevOps setup into code-driven automation with a bias for speed, repeatability, and fewer 2 a.m. surprises.',
+    highlights: [
+      'Introduced Chef and codified formerly manual ops',
+      'Rebuilt Jenkins pipelines for consistency and much faster runtimes',
+      'Added Packer to tame long-running Windows server builds',
+    ],
+    companyUrl: 'https://www.kaseya.com',
+    companyLogoSrc: Logos.KaseyaLogo,
+    companyLogoAlt: 'Kaseya logo',
+  },
+  {
     id: 'unknown',
     role: 'Previous Roles',
     company: 'Various',
@@ -91,7 +116,7 @@ export const WORK_HISTORY: WorkExperience[] = [
       longitude: -98.5795,
     },
     from: '2013-04-01',
-    to: '2020-04-27',
+    to: '2019-05-31',
     summary: "I'll fill the rest in later.",
   },
 ]
