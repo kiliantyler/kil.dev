@@ -122,7 +122,8 @@ export async function POST(request: NextRequest) {
     console.error('Error submitting score:', error)
     const payload = { success: false as const, message: 'Internal server error' as const }
     if (env.NODE_ENV !== 'production') {
-      return NextResponse.json({ ...payload, details: (error as Error)?.message }, { status: 500 })
+      const details = error instanceof Error ? error.message : typeof error === 'string' ? error : JSON.stringify(error)
+      return NextResponse.json({ ...payload, details }, { status: 500 })
     }
     return NextResponse.json(payload, { status: 500 })
   }
