@@ -203,7 +203,8 @@ export function useCrtAnimation({ getDimensions }: UseCrtAnimationArgs) {
   }, [isReturning, startCrtCloseAnimation])
 
   useEffect(() => {
-    startCrtAnimation()
+    const disposer = startCrtAnimation()
+    return () => disposer?.()
   }, [startCrtAnimation])
 
   useEffect(() => {
