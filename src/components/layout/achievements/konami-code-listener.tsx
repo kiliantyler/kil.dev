@@ -3,25 +3,15 @@
 import { useAchievements } from '@/components/providers/achievements-provider'
 import { useKonamiAnimation } from '@/components/providers/konami-animation-provider'
 import { type AchievementId } from '@/lib/achievements'
-import { useEffect, useRef, useState } from 'react'
+import { usePathname } from 'next/navigation'
+import { useEffect, useRef } from 'react'
 
 export function KonamiCodeListener() {
   const { has, unlock } = useAchievements()
   const { triggerAnimation } = useKonamiAnimation()
   const sequenceRef = useRef<string[]>([])
-  const [isHomepage, setIsHomepage] = useState(false)
-
-  useEffect(() => {
-    // Check if we're on the homepage
-    const checkHomepage = () => {
-      setIsHomepage(window.location.pathname === '/')
-    }
-
-    checkHomepage()
-    window.addEventListener('popstate', checkHomepage)
-
-    return () => window.removeEventListener('popstate', checkHomepage)
-  }, [])
+  const pathname = usePathname()
+  const isHomepage = pathname === '/'
 
   useEffect(() => {
     if (!isHomepage) return
