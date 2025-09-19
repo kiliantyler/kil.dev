@@ -5,12 +5,19 @@ import { LinkButton } from '@/components/ui/link-button'
 import { MapTooltip } from '@/components/ui/map-tooltip'
 import { HOME_CONTENT } from '@/lib/content'
 
+function getKonamiClasses(isAnimating: boolean, hasAnimated: boolean, isReturning: boolean): string {
+  if (isReturning) return 'konami-return-left'
+  if (hasAnimated) return 'konami-complete konami-fly-left'
+  if (isAnimating) return 'konami-fly-left'
+  return ''
+}
+
 export function HeroContent() {
   const { isAnimating, hasAnimated, isReturning } = useKonamiAnimation()
 
   return (
     <div
-      className={`order-2 flex flex-col gap-6 lg:order-1 ${isReturning ? 'konami-return-left' : `${isAnimating ? 'konami-fly-left' : ''} ${hasAnimated ? 'konami-complete konami-fly-left' : ''}`}`}>
+      className={`order-2 flex flex-col gap-6 lg:order-1 ${getKonamiClasses(isAnimating, hasAnimated, isReturning)}`}>
       <div className="flex flex-col gap-2">
         <h1 className="text-5xl leading-tight font-black tracking-tight text-foreground md:text-6xl">
           {HOME_CONTENT.NAME}
