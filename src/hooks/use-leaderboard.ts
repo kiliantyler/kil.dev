@@ -1,5 +1,7 @@
 import { CheckScoreResponseSchema, LeaderboardResponseSchema, SubmitScoreResponseSchema } from '@/lib/api-schemas'
 import type { LeaderboardEntry } from '@/types/leaderboard'
+import { computeSha256Hex } from '@/utils/crypto'
+import { stableStringify } from '@/utils/stable-stringify'
 import { useCallback, useState } from 'react'
 
 const SUBMIT_HIDE_NAME_TIMEOUT_MS = 1000
@@ -54,14 +56,21 @@ export function useLeaderboard() {
       if (isSubmittingScore) return
       setIsSubmittingScore(true)
       try {
+        let body: Record<string, unknown> = { name: playerName.join(''), score }
+        if (sessionId && secret) {
+          const timestamp = Date.now()
+          const nonce = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+            .map(b => b.toString(16).padStart(2, '0'))
+            .join('')
+          const signingPayload = { sessionId, name: playerName.join(''), score, timestamp, nonce }
+          const signature = await computeSha256Hex(`${secret}.${stableStringify(signingPayload)}`)
+          body = { ...signingPayload, signature }
+        }
+
         const response = await fetch('/api/scores', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(
-            sessionId && secret
-              ? { name: playerName.join(''), score, sessionId, secret }
-              : { name: playerName.join(''), score },
-          ),
+          body: JSON.stringify(body),
         })
         const jsonData: unknown = await response.json()
         const parseResult = SubmitScoreResponseSchema.safeParse(jsonData)
