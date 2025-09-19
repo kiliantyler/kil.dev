@@ -1,6 +1,7 @@
 import { env } from '@/env'
 import { type LeaderboardEntry } from '@/types/leaderboard'
 import { stableStringify } from '@/utils/stable-stringify'
+import { isDev } from '@/utils/utils'
 import { redis } from './redis'
 
 type RedisPipelineResult<T> = [Error | null, T]
@@ -80,7 +81,7 @@ export async function addScoreToLeaderboard(entry: LeaderboardEntry): Promise<nu
     return rank !== null ? rank + 1 : 0
   } catch {
     // Fallback to in-memory leaderboard in non-production
-    if (env.NODE_ENV !== 'production') {
+    if (isDev()) {
       return addScoreToMemory(entry)
     }
     throw new Error('Failed to add score to leaderboard')
@@ -116,7 +117,7 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
     return leaderboard
   } catch {
     // Fallback to in-memory leaderboard in non-production
-    if (env.NODE_ENV !== 'production') return getLeaderboardFromMemory()
+    if (isDev()) return getLeaderboardFromMemory()
     return [] // Return empty array on error
   }
 }
