@@ -143,6 +143,14 @@ export function useSnakeGame(options: UseSnakeGameOptions = {}) {
 
       const head: Position = { x: prevSnake[0].x, y: prevSnake[0].y }
 
+      const handleGameOver = (prev: Position[]): Position[] => {
+        setGameOver(true)
+        setIsPlaying(false)
+        playGameOverSound()
+        if (onGameOver) onGameOver(score)
+        return prev
+      }
+
       switch (direction) {
         case 'UP':
           head.y -= 1
@@ -162,20 +170,12 @@ export function useSnakeGame(options: UseSnakeGameOptions = {}) {
 
       // walls
       if (head.x < safeXMin || head.x > safeXMax || head.y < safeYMin || head.y > safeYMax) {
-        setGameOver(true)
-        setIsPlaying(false)
-        playGameOverSound()
-        if (onGameOver) onGameOver(score)
-        return prevSnake
+        return handleGameOver(prevSnake)
       }
 
       // self collision
       if (prevSnake.some(segment => segment.x === head.x && segment.y === head.y)) {
-        setGameOver(true)
-        setIsPlaying(false)
-        playGameOverSound()
-        if (onGameOver) onGameOver(score)
-        return prevSnake
+        return handleGameOver(prevSnake)
       }
 
       const newSnake = [head, ...prevSnake]
