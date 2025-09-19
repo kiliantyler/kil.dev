@@ -2,7 +2,7 @@
 
 import type { ScoreSubmissionResponse } from '@/types/leaderboard'
 import { stableStringify } from '@/utils/stable-stringify'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 
 interface GameSession {
   sessionId: string
@@ -165,11 +165,6 @@ export function useGameSession() {
     },
     [session],
   )
-
-  // Removed noisy cleanup POST on unmount to avoid spurious 400 errors
-  useEffect(() => {
-    return undefined
-  }, [])
 
   return {
     session,
