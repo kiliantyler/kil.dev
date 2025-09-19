@@ -95,7 +95,9 @@ export function useSnakeGame(options: UseSnakeGameOptions = {}) {
     setGameOver(false)
     setScore(0)
     setIsPlaying(true)
-    if (onGameStart) onGameStart()
+    if (onGameStart) {
+      Promise.resolve(onGameStart()).catch(console.error)
+    }
     lastFoodEatenRef.current = null
   }, [generateFood, windowSize, onGameStart])
 
@@ -157,7 +159,9 @@ export function useSnakeGame(options: UseSnakeGameOptions = {}) {
         const newScore = score + points
         playScoreSound(newScore)
         setScore(newScore)
-        if (onFoodEaten) onFoodEaten(currentFood, isGoldenApple, newScore)
+        if (onFoodEaten) {
+          Promise.resolve(onFoodEaten(currentFood, isGoldenApple, newScore)).catch(console.error)
+        }
 
         const foodData = generateFood()
         setFood(foodData.position)
@@ -168,14 +172,17 @@ export function useSnakeGame(options: UseSnakeGameOptions = {}) {
       lastFoodEatenRef.current = null
       newSnake.pop()
 
-      if (onMove)
-        onMove(direction, {
-          snake: newSnake,
-          food,
-          isGoldenApple,
-          score,
-          direction,
-        })
+      if (onMove) {
+        Promise.resolve(
+          onMove(direction, {
+            snake: newSnake,
+            food,
+            isGoldenApple,
+            score,
+            direction,
+          }),
+        ).catch(console.error)
+      }
       return newSnake
     })
   }, [direction, windowSize, isGoldenApple, food, onGameOver, score, generateFood, onMove, onFoodEaten])
