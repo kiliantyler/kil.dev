@@ -20,9 +20,9 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
       capture_exceptions: true,
       debug: false,
     })
-  }, [isDev, posthogKey])
+  }, [canCapture, posthogKey])
 
-  if (isDev) return <>{children}</>
+  if (canCapture) return <>{children}</>
 
   return <PHProvider client={posthog}>{children}</PHProvider>
 }
