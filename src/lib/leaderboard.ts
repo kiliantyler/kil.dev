@@ -37,7 +37,6 @@ export async function addScoreToLeaderboard(entry: LeaderboardEntry): Promise<nu
     // Minimal sequential calls (avoid pipeline tuple parsing)
     await redis.zadd(LEADERBOARD_KEY, { score: entry.score, member: entryData })
     const currentSize = await redis.zcard(LEADERBOARD_KEY)
-    const rankIndex = await redis.zrevrank(LEADERBOARD_KEY, entryData)
 
     // Remove excess entries if we have more than MAX_LEADERBOARD_SIZE
     if (currentSize > MAX_LEADERBOARD_SIZE) {
@@ -46,6 +45,7 @@ export async function addScoreToLeaderboard(entry: LeaderboardEntry): Promise<nu
     }
 
     // Return rank (0-indexed, so add 1) or 0 if rank is null
+    const rankIndex = await redis.zrevrank(LEADERBOARD_KEY, entryData)
     return rankIndex !== null ? rankIndex + 1 : 0
   } catch {
     // Fallback to in-memory leaderboard in non-production
