@@ -2,8 +2,10 @@ import { useKonamiAnimation } from '@/components/providers/konami-animation-prov
 import { type GameBoxDimensions } from '@/utils/grid'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+export type CrtPhase = 'idle' | 'opening' | 'open' | 'closing' | 'closed'
+
 export type CrtAnimationState = {
-  isAnimating: boolean
+  phase: CrtPhase
   centerX: number
   centerY: number
   horizontalWidth: number
@@ -20,7 +22,7 @@ export function useCrtAnimation({ getDimensions }: UseCrtAnimationArgs) {
   const { closeAnimation, finishCloseAnimation, isReturning, showSnake } = useKonamiAnimation()
 
   const [crtAnimation, setCrtAnimation] = useState<CrtAnimationState>({
-    isAnimating: true,
+    phase: 'opening',
     centerX: 0,
     centerY: 0,
     horizontalWidth: 0,
@@ -28,16 +30,18 @@ export function useCrtAnimation({ getDimensions }: UseCrtAnimationArgs) {
     opacity: 0,
     glowIntensity: 0,
   })
-  const crtCloseRef = useRef<{ isClosing: boolean; rafId: number | null }>({ isClosing: false, rafId: null })
-  const [isCrtClosing, setIsCrtClosing] = useState(false)
-  const [isCrtOff, setIsCrtOff] = useState(false)
+  const rafRef = useRef<{ rafId: number | null }>({ rafId: null })
+  const phaseRef = useRef<CrtPhase>('opening')
+
+  useEffect(() => {
+    phaseRef.current = crtAnimation.phase
+  }, [crtAnimation.phase])
 
   const startCrtAnimation = useCallback(() => {
-    setIsCrtOff(false)
     const { centerX, centerY, borderWidth, borderHeight } = getDimensions()
 
     setCrtAnimation({
-      isAnimating: true,
+      phase: 'opening',
       centerX,
       centerY,
       horizontalWidth: 0,
@@ -79,7 +83,7 @@ export function useCrtAnimation({ getDimensions }: UseCrtAnimationArgs) {
       const glowIntensity = glowProgress < 0.5 ? 0.9 : 0.9 * (1 - (glowProgress - 0.5) / 0.5)
 
       setCrtAnimation({
-        isAnimating: progress < 1,
+        phase: progress < 1 ? 'opening' : 'open',
         centerX,
         centerY,
         horizontalWidth: Math.max(horizontalWidth, pointSize),
@@ -93,7 +97,7 @@ export function useCrtAnimation({ getDimensions }: UseCrtAnimationArgs) {
       } else {
         setCrtAnimation(prev => ({
           ...prev,
-          isAnimating: false,
+          phase: 'open',
           horizontalWidth: borderWidth,
           verticalHeight: borderHeight,
           opacity: 1,
@@ -107,7 +111,7 @@ export function useCrtAnimation({ getDimensions }: UseCrtAnimationArgs) {
     const fallbackTimeout = setTimeout(() => {
       setCrtAnimation(prev => ({
         ...prev,
-        isAnimating: false,
+        phase: 'open',
         horizontalWidth: borderWidth,
         verticalHeight: borderHeight,
         opacity: 1,
@@ -119,11 +123,11 @@ export function useCrtAnimation({ getDimensions }: UseCrtAnimationArgs) {
   }, [getDimensions])
 
   const startCrtCloseAnimation = useCallback(() => {
-    if (crtCloseRef.current.isClosing) return
+    if (phaseRef.current === 'closing' || phaseRef.current === 'closed') return
     const { centerX, centerY, borderWidth, borderHeight } = getDimensions()
 
     setCrtAnimation({
-      isAnimating: true,
+      phase: 'closing',
       centerX,
       centerY,
       horizontalWidth: borderWidth,
@@ -136,8 +140,7 @@ export function useCrtAnimation({ getDimensions }: UseCrtAnimationArgs) {
     const horizontalDuration = 700
     const pointDuration = 300
     const startTime = Date.now()
-    crtCloseRef.current.isClosing = true
-    setIsCrtClosing(true)
+
     let hasSignaledReturn = false
 
     const animate = () => {
@@ -175,7 +178,7 @@ export function useCrtAnimation({ getDimensions }: UseCrtAnimationArgs) {
 
       setCrtAnimation(prev => ({
         ...prev,
-        isAnimating: elapsed < total,
+        phase: elapsed < total ? 'closing' : 'closed',
         centerX,
         centerY,
         horizontalWidth: Math.max(currentHorizontalWidth, pointSize),
@@ -185,17 +188,14 @@ export function useCrtAnimation({ getDimensions }: UseCrtAnimationArgs) {
       }))
 
       if (elapsed < total) {
-        crtCloseRef.current.rafId = requestAnimationFrame(animate)
+        rafRef.current.rafId = requestAnimationFrame(animate)
       } else {
-        crtCloseRef.current.isClosing = false
-        crtCloseRef.current.rafId = null
-        setIsCrtClosing(false)
-        setIsCrtOff(true)
+        rafRef.current.rafId = null
         finishCloseAnimation()
       }
     }
 
-    crtCloseRef.current.rafId = requestAnimationFrame(animate)
+    rafRef.current.rafId = requestAnimationFrame(animate)
   }, [getDimensions, finishCloseAnimation, closeAnimation])
 
   useEffect(() => {
@@ -207,7 +207,7 @@ export function useCrtAnimation({ getDimensions }: UseCrtAnimationArgs) {
   }, [startCrtAnimation])
 
   useEffect(() => {
-    const closeState = crtCloseRef.current
+    const closeState = rafRef.current
     return () => {
       const rafId = closeState.rafId
       if (rafId) cancelAnimationFrame(rafId)
@@ -217,8 +217,6 @@ export function useCrtAnimation({ getDimensions }: UseCrtAnimationArgs) {
   return {
     showSnake,
     crtAnimation,
-    isCrtClosing,
-    isCrtOff,
     startCrtAnimation,
     startCrtCloseAnimation,
   }
