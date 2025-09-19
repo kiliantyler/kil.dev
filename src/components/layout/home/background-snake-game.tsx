@@ -9,6 +9,27 @@ import { useLeaderboard } from '@/hooks/use-leaderboard'
 import { useSnakeGame, type Direction, type Position } from '@/hooks/use-snake-game'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 
+type ScoreBadgeProps = {
+  top: number
+  left: number
+  score: number
+}
+
+function ScoreBadge({ top, left, score }: ScoreBadgeProps) {
+  return (
+    <div
+      className="absolute z-50 bg-black/40 text-white px-4 py-2 rounded-lg border border-green-500/30 shadow-lg"
+      style={{ top: `${top}px`, left: `${left}px` }}>
+      <div className="flex items-center gap-2">
+        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+        <span className="text-lg font-bold text-green-400" style={{ fontFamily: 'VT323, monospace' }}>
+          SCORE: <span className="text-white">{score}</span>
+        </span>
+      </div>
+    </div>
+  )
+}
+
 export function BackgroundSnakeGame() {
   const { resolvedTheme } = useTheme()
 
@@ -317,22 +338,7 @@ export function BackgroundSnakeGame() {
         onNameInputKey={onNameInputKey}
       />
 
-      {isPlaying &&
-        (() => {
-          const { borderLeft, borderTop } = gameBox
-          return (
-            <div
-              className="absolute z-50 bg-black/40 text-white px-4 py-2 rounded-lg border border-green-500/30 shadow-lg"
-              style={{ top: `${borderTop + 8}px`, left: `${borderLeft + 8}px` }}>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-lg font-bold text-green-400" style={{ fontFamily: 'VT323, monospace' }}>
-                  SCORE: <span className="text-white">{score}</span>
-                </span>
-              </div>
-            </div>
-          )
-        })()}
+      {isPlaying && <ScoreBadge top={gameBox.borderTop + 8} left={gameBox.borderLeft + 8} score={score} />}
     </>
   )
 }
