@@ -7,7 +7,15 @@ async function main() {
   const outDir = path.join(process.cwd(), 'public', 'pet-gallery')
   await fs.mkdir(outDir, { recursive: true })
 
-  const { blobs } = await list({ prefix: 'pet-gallery/', token: process.env.BLOB_READ_WRITE_TOKEN })
+  const token = process.env.BLOB_READ_WRITE_TOKEN
+  if (!token) {
+    console.warn('BLOB_READ_WRITE_TOKEN missing. Writing empty pet-gallery manifest and skipping sync.')
+    const manifestPath = path.join(outDir, 'manifest.json')
+    await fs.writeFile(manifestPath, JSON.stringify({ images: [] }, null, 2))
+    return
+  }
+
+  const { blobs } = await list({ prefix: 'pet-gallery/', token })
   if (!blobs || blobs.length === 0) {
     console.log('No blobs found under pet-gallery/')
     return
