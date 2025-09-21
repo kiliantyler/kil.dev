@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import PhotoAlbum, { type Photo } from 'react-photo-album'
 import InfiniteScroll from 'react-photo-album/scroll'
 import Lightbox, { type SlideImage } from 'yet-another-react-lightbox'
@@ -35,6 +35,13 @@ function toSlides(images: GalleryImage[]): SlideImage[] {
 }
 
 export function GalleryClient({ images }: GalleryClientProps) {
+  // Reveal client album and hide SSR album when mounted (no layout jump)
+  useEffect(() => {
+    const ssr = document.querySelector('.js-pet-album-ssr') as HTMLElement | null
+    const client = document.querySelector('.js-pet-album-client') as HTMLElement | null
+    if (client) client.classList.remove('hidden')
+    if (ssr) ssr.style.display = 'none'
+  }, [])
   const [lightboxIndex, setLightboxIndex] = useState<number>(-1)
   const nextIndexRef = useRef<number>(0)
 
