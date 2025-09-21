@@ -63,6 +63,9 @@ export function GalleryClient({ images }: GalleryClientProps) {
         photos={initialPhotos}
         fetch={fetchMore}
         onClick={({ index }) => setLightboxIndex(index)}
+        fetchRootMargin="2000px"
+        offscreenRootMargin="12000px"
+        retries={1}
         loading={
           <div
             className="mx-auto my-4 h-6 w-6 animate-spin rounded-full border-2 border-border border-t-transparent"
