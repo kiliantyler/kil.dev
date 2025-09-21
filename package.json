@@ -21,7 +21,7 @@
     "start": "next start",
     "typecheck": "bun run build:theme && bun run build:presence && tsc --noEmit",
     "storybook": "storybook dev -p 6006 --no-open",
-    "build-storybook": "bun run prebuild && storybook build",
+    "build-storybook": "bun run predev && storybook build",
     "sync:pet-gallery": "bun scripts/sync-pet-gallery.ts"
   },
   "dependencies": {
