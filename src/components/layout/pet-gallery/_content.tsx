@@ -61,8 +61,6 @@ async function getPetGalleryImagesFromPublic(): Promise<GalleryImage[]> {
   return images
 }
 
-// Deprecated: local dev fallback kept for reference (unused)
-
 export async function PetGalleryContent() {
   const images = await getPetGalleryImagesFromPublic()
 
