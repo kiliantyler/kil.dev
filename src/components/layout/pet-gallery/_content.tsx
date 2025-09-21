@@ -1,6 +1,6 @@
 import { GalleryClient } from '@/components/layout/pet-gallery/gallery-client'
+import { ServerAlbum } from '@/components/layout/pet-gallery/server-album'
 import { SectionLabel } from '@/components/ui/section-label'
-import { list } from '@vercel/blob'
 import { promises as fs } from 'fs'
 import sizeOf from 'image-size'
 import path from 'path'
@@ -11,57 +11,22 @@ export type GalleryImage = {
   alt: string
   width: number
   height: number
+  blurDataURL?: string
+  srcSet?: Array<{ src: string; width: number; height: number }>
 }
 
 const allowedExtensions = new Set(['jpg', 'jpeg', 'png', 'webp', 'avif', 'gif'])
 
-async function getPetGalleryImagesFromBlob(): Promise<GalleryImage[] | null> {
+// Build-time sync puts files under public/pet-gallery
+async function getPetGalleryImagesFromPublic(): Promise<GalleryImage[]> {
+  const directoryPath = path.join(process.cwd(), 'public', 'pet-gallery')
+  const manifestPath = path.join(directoryPath, 'manifest.json')
+
   try {
-    // Try to find the pre-generated manifest first for accurate dimensions
-    const { blobs: manifestBlobs } = await list({
-      prefix: 'pet-gallery/manifest.json',
-      token: process.env.BLOB_READ_WRITE_TOKEN,
-    })
-
-    const manifestUrl = manifestBlobs[0]?.url
-    if (manifestUrl) {
-      const res = await fetch(manifestUrl, { cache: 'no-store' })
-      if (!res.ok) return null
-      const data = (await res.json()) as { images: GalleryImage[] }
-      if (Array.isArray(data?.images) && data.images.length > 0) return data.images
-    }
-
-    // If no manifest, list blobs under the pet-gallery/ prefix
-    const { blobs } = await list({ prefix: 'pet-gallery/', token: process.env.BLOB_READ_WRITE_TOKEN })
-    if (!blobs || blobs.length === 0) return null
-
-    const images: GalleryImage[] = blobs
-      .filter(b => {
-        const name = b.pathname.split('/').pop() ?? ''
-        const ext = name.split('.').pop()?.toLowerCase()
-        return Boolean(ext && allowedExtensions.has(ext))
-      })
-      .sort((a, b) => (a.pathname < b.pathname ? -1 : 1))
-      .map(b => {
-        const name = b.pathname.split('/').pop() ?? ''
-        const alt = name
-          .replace(/\.[^.]+$/, '')
-          .replace(/[-_]+/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim()
-        // Fallback dimensions if manifest is not available
-        return { fileName: name, url: b.url, alt, width: 1200, height: 800 }
-      })
-
-    return images
-  } catch {
-    return null
-  }
-}
-
-async function getPetGalleryImagesFromLocal(): Promise<GalleryImage[]> {
-  const directoryPath = path.join(process.cwd(), 'src', 'images', 'pet-gallery')
-
+    const manifestRaw = await fs.readFile(manifestPath, 'utf8')
+    const data = JSON.parse(manifestRaw) as { images: GalleryImage[] }
+    if (Array.isArray(data?.images) && data.images.length > 0) return data.images
+  } catch {}
   let entries: string[]
   try {
     entries = await fs.readdir(directoryPath)
@@ -83,10 +48,9 @@ async function getPetGalleryImagesFromLocal(): Promise<GalleryImage[]> {
         .replace(/[-_]+/g, ' ')
         .replace(/\s+/g, ' ')
         .trim()
-      const encoded = encodeURIComponent(fileName)
-      const url = `/api/local-image/pet-gallery/${encoded}`
-      const localPath = path.join(directoryPath, fileName)
-      const fileBuffer = await fs.readFile(localPath)
+      const url = `/pet-gallery/${encodeURIComponent(fileName)}`
+      const filePath = path.join(directoryPath, fileName)
+      const fileBuffer = await fs.readFile(filePath)
       const dim = sizeOf(fileBuffer)
       const width = typeof dim.width === 'number' ? dim.width : 1200
       const height = typeof dim.height === 'number' ? dim.height : 800
@@ -97,9 +61,10 @@ async function getPetGalleryImagesFromLocal(): Promise<GalleryImage[]> {
   return images
 }
 
+// Deprecated: local dev fallback kept for reference (unused)
+
 export async function PetGalleryContent() {
-  const imagesFromBlob = await getPetGalleryImagesFromBlob()
-  const images = imagesFromBlob ?? (await getPetGalleryImagesFromLocal())
+  const images = await getPetGalleryImagesFromPublic()
 
   return (
     <div className="px-10 py-16 md:px-20 lg:px-40">
@@ -111,7 +76,12 @@ export async function PetGalleryContent() {
         {images.length === 0 ? (
           <p className="text-muted-foreground">No images found in the pet gallery.</p>
         ) : (
-          <GalleryClient images={images} />
+          <>
+            <ServerAlbum images={images} />
+            <div className="js-pet-album-client hidden">
+              <GalleryClient images={images} />
+            </div>
+          </>
         )}
       </div>
     </div>
