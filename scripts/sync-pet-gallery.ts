@@ -37,106 +37,117 @@ async function main() {
   })
 
   const sizes = [320, 640, 960]
-  const manifest: {
-    images: Array<{
-      fileName: string
-      url: string
-      width: number
-      height: number
-      alt: string
-      blurDataURL: string
-      srcSet: Array<{ src: string; width: number; height: number }>
-    }>
-  } = { images: [] }
+
+  type ManifestImage = {
+    fileName: string
+    url: string
+    width: number
+    height: number
+    alt: string
+    blurDataURL: string
+    srcSet: Array<{ src: string; width: number; height: number }>
+  }
+
+  // Reuse previous manifest to avoid fetching originals solely for dimensions/blur
+  const manifestPath = path.join(outDir, 'manifest.json')
+  let prevByName = new Map<string, ManifestImage>()
+  try {
+    const prevRaw = await fs.readFile(manifestPath, 'utf8')
+    const prev = JSON.parse(prevRaw) as { images?: ManifestImage[] }
+    if (Array.isArray(prev.images)) {
+      prevByName = new Map(prev.images.map(img => [img.fileName, img]))
+    }
+  } catch {}
+
+  const manifest: { images: ManifestImage[] } = { images: [] }
+
+  const cpuCount = os.cpus()?.length ?? 4
+  const concurrency = Math.min(8, Math.max(2, Math.floor(cpuCount / 2)))
+
+  async function processOriginal(blob: { pathname: string; url: string }): Promise<ManifestImage | null> {
+    const name = blob.pathname.split('/').pop()!
+    const baseName = name.replace(/\.[^.]+$/, '')
+    const ext = (name.split('.').pop() ?? 'webp').toLowerCase()
+    const alt = baseName.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim()
+    const prev = prevByName.get(name)
+
+    let width: number | undefined = prev?.width
+    let height: number | undefined = prev?.height
+    let image: sharp.Sharp | null = null
+
+    const blurPathname = `pet-gallery/${baseName}-blur.webp`
+    const blurExists = blobUrlByPath.has(blurPathname)
+    const missingAnyThumb = sizes.some(t => !blobUrlByPath.has(`pet-gallery/${baseName}-${t}.${ext}`))
+
+    // Only fetch the original if we need metadata or must generate any derivatives
+    if (!width || !height || missingAnyThumb || !blurExists) {
+      const res = await fetch(blob.url, { cache: 'no-store' })
+      if (!res.ok || !res.body) return null
+      const buf = Buffer.from(await res.arrayBuffer())
+      image = sharp(buf)
+      const meta = await image.metadata()
+      width = meta.width ?? 1200
+      height = meta.height ?? 800
+    }
+
+    if (!width || !height) return null
+
+    // Ensure responsive thumbs exist in blob; upload if missing, and reference remote URLs
+    const srcSet: Array<{ src: string; width: number; height: number }> = []
+    for (const target of sizes) {
+      if (target >= width) break
+      const h = Math.round((height * target) / width)
+      const thumbName = `${baseName}-${target}.${ext}`
+      const thumbPathname = `pet-gallery/${thumbName}`
+      let thumbUrl = blobUrlByPath.get(thumbPathname)
+      if (!thumbUrl) {
+        if (!image) {
+          const res = await fetch(blob.url, { cache: 'no-store' })
+          if (!res.ok || !res.body) return null
+          const buf = Buffer.from(await res.arrayBuffer())
+          image = sharp(buf)
+        }
+        const resized = await image
+          .resize({ width: target })
+          .toFormat(ext as keyof sharp.FormatEnum, { quality: 82 })
+          .toBuffer()
+        const uploaded = await put(thumbPathname, resized, { access: 'public', token })
+        thumbUrl = uploaded.url
+        blobUrlByPath.set(thumbPathname, thumbUrl)
+      }
+      srcSet.push({ src: thumbUrl, width: target, height: h })
+    }
+
+    // Blur: reuse previous value if present; skip generation for speed
+    const blurDataURL = prev?.blurDataURL ?? ''
+
+    return {
+      fileName: name,
+      url: blob.url,
+      width,
+      height,
+      alt,
+      blurDataURL,
+      srcSet,
+    }
+  }
 
   let synced = 0
-  for (const blob of originals) {
-    const name = blob.pathname.split('/').pop()!
-    const filePath = path.join(outDir, name)
-    try {
-      const res = await fetch(blob.url, { cache: 'no-store' })
-      if (!res.ok || !res.body) continue
-      const buf = Buffer.from(await res.arrayBuffer())
-      await fs.writeFile(filePath, buf)
-
-      const image = sharp(buf)
-      const meta = await image.metadata()
-      const width = meta.width ?? 1200
-      const height = meta.height ?? 800
-
-      const baseName = name.replace(/\.[^.]+$/, '')
-      const ext = (name.split('.').pop() ?? 'webp').toLowerCase()
-      const srcSet: Array<{ src: string; width: number; height: number }> = []
-
-      // Ensure responsive thumbs exist in blob; upload if missing; always ensure local copy
-      for (const target of sizes) {
-        if (target >= width) break
-        const h = Math.round((height * target) / width)
-        const thumbName = `${baseName}-${target}.${ext}`
-        const thumbPathname = `pet-gallery/${thumbName}`
-        const localThumbPath = path.join(outDir, thumbName)
-
-        if (blobUrlByPath.has(thumbPathname)) {
-          const thumbUrl = blobUrlByPath.get(thumbPathname)!
-          const tRes = await fetch(thumbUrl, { cache: 'no-store' })
-          if (tRes.ok && tRes.body) {
-            const tBuf = Buffer.from(await tRes.arrayBuffer())
-            await fs.writeFile(localThumbPath, tBuf)
-          }
-        } else {
-          const resized = await image
-            .resize({ width: target })
-            .toFormat(ext as keyof sharp.FormatEnum, { quality: 82 })
-            .toBuffer()
-          await fs.writeFile(localThumbPath, resized)
-          await put(thumbPathname, resized, { access: 'public', token })
-          // Make it discoverable on subsequent runs without another network list
-          blobUrlByPath.set(thumbPathname, '')
-        }
-
-        srcSet.push({ src: `/pet-gallery/${thumbName}`, width: target, height: h })
+  for (let i = 0; i < originals.length; i += concurrency) {
+    const slice = originals.slice(i, i + concurrency)
+    const results = await Promise.all(slice.map(processOriginal))
+    for (const item of results) {
+      if (item) {
+        manifest.images.push(item)
+        synced++
       }
-
-      // Blur placeholder: reuse if exists in blob, otherwise create + upload
-      const blurName = `${baseName}-blur.webp`
-      const blurPathname = `pet-gallery/${blurName}`
-      let blurDataURL = ''
-      if (blobUrlByPath.has(blurPathname)) {
-        const blurUrl = blobUrlByPath.get(blurPathname)!
-        const bRes = await fetch(blurUrl, { cache: 'no-store' })
-        if (bRes.ok && bRes.body) {
-          const bBuf = Buffer.from(await bRes.arrayBuffer())
-          blurDataURL = `data:image/webp;base64,${bBuf.toString('base64')}`
-        }
-      } else {
-        const blur = await image.resize(16).webp({ quality: 40 }).toBuffer()
-        blurDataURL = `data:image/webp;base64,${blur.toString('base64')}`
-        await put(blurPathname, blur, { access: 'public', token })
-        blobUrlByPath.set(blurPathname, '')
-      }
-
-      const alt = baseName.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim()
-
-      manifest.images.push({
-        fileName: name,
-        url: `/pet-gallery/${encodeURIComponent(name)}`,
-        width,
-        height,
-        alt,
-        blurDataURL,
-        srcSet,
-      })
-      synced++
-    } catch {
-      // skip on error
     }
   }
 
   // Write manifest
-  const manifestPath = path.join(outDir, 'manifest.json')
   await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2))
 
-  console.log(`Synced ${synced} images to ${outDir} (processed only when missing) and wrote manifest`)
+  console.log(`Synced ${synced} images (processed only when missing) and wrote manifest to ${manifestPath}`)
 }
 
 main().catch(err => {
