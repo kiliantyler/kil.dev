@@ -1,4 +1,4 @@
-import { list } from '@vercel/blob'
+import { list, put } from '@vercel/blob'
 import { promises as fs } from 'fs'
 import path from 'path'
 import sharp from 'sharp'
@@ -22,10 +22,17 @@ async function main() {
   }
 
   const allowed = new Set(['jpg', 'jpeg', 'png', 'webp', 'avif', 'gif'])
-  const images = blobs.filter(b => {
+  const blobUrlByPath = new Map<string, string>()
+  for (const b of blobs) blobUrlByPath.set(b.pathname, b.url)
+
+  // Only treat base/original images as inputs (exclude derived thumbs & blur files)
+  const originals = blobs.filter(b => {
     const name = b.pathname.split('/').pop() ?? ''
     const ext = name.split('.').pop()?.toLowerCase()
-    return Boolean(ext && allowed.has(ext))
+    if (!ext || !allowed.has(ext)) return false
+    if (/-blur\.webp$/i.test(name)) return false
+    if (/-\d+\.[a-z0-9]+$/i.test(name)) return false
+    return true
   })
 
   const sizes = [320, 640, 960]
@@ -41,8 +48,8 @@ async function main() {
     }>
   } = { images: [] }
 
-  let downloaded = 0
-  for (const blob of images) {
+  let synced = 0
+  for (const blob of originals) {
     const name = blob.pathname.split('/').pop()!
     const filePath = path.join(outDir, name)
     try {
