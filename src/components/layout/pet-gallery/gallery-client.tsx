@@ -35,112 +35,87 @@ function toSlides(images: GalleryImage[]): SlideImage[] {
 }
 
 export function GalleryClient({ images }: GalleryClientProps) {
-  const [visibleCount, setVisibleCount] = useState<number>(Math.min(24, images.length))
   const [lightboxIndex, setLightboxIndex] = useState<number>(-1)
-  const sentinelRef = useRef<HTMLDivElement | null>(null)
-  const isLoadingMoreRef = useRef<boolean>(false)
-  const [measuredByUrl, setMeasuredByUrl] = useState<Record<string, { width: number; height: number }>>({})
+  const nextIndexRef = useRef<number>(0)
 
-  const adjustedImages = useMemo(() => {
-    return images.map(img => {
-      const measured = measuredByUrl[img.url]
-      if (measured && measured.width > 0 && measured.height > 0) {
-        return { ...img, width: measured.width, height: measured.height }
-      }
-      return img
-    })
-  }, [images, measuredByUrl])
+  const allPhotos = useMemo(() => toPhotos(images), [images])
+  const slides = useMemo(() => toSlides(images), [images])
 
-  const photos = useMemo(() => toPhotos(adjustedImages.slice(0, visibleCount)), [adjustedImages, visibleCount])
-  const slides = useMemo(() => toSlides(adjustedImages), [adjustedImages])
+  const CHUNK_SIZE = 24
+  const initialPhotos = useMemo(() => {
+    nextIndexRef.current = Math.min(CHUNK_SIZE, allPhotos.length)
+    return allPhotos.slice(0, nextIndexRef.current)
+  }, [allPhotos])
 
-  const handleLoadMore = useCallback(() => {
-    if (visibleCount >= images.length) return
-    if (isLoadingMoreRef.current) return
-    isLoadingMoreRef.current = true
-    const next = Math.min(visibleCount + 24, images.length)
-    setVisibleCount(next)
-    // prevent multiple rapid increments while sentinel stays in view
-    setTimeout(() => {
-      isLoadingMoreRef.current = false
-    }, 100)
-  }, [images.length, visibleCount])
-
-  useEffect(() => {
-    const el = sentinelRef.current
-    if (!el) return
-    if (visibleCount >= images.length) return
-
-    const observer = new IntersectionObserver(entries => {
-      const entry = entries[0]
-      if (entry?.isIntersecting === true) {
-        handleLoadMore()
-      }
-    })
-
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [handleLoadMore, images.length, visibleCount])
-
-  // Client-side measure actual image dimensions for items with fallback dimensions
-  useEffect(() => {
-    const batch = adjustedImages.slice(0, visibleCount)
-    const toMeasure = batch.filter(img => !measuredByUrl[img.url])
-    if (toMeasure.length === 0) return
-
-    toMeasure.forEach(img => {
-      const probe = new Image()
-      probe.decoding = 'async'
-      probe.loading = 'eager'
-      probe.src = img.url
-      probe.onload = () => {
-        if (probe.naturalWidth > 0 && probe.naturalHeight > 0) {
-          setMeasuredByUrl(prev => {
-            if (prev[img.url]) return prev
-            return { ...prev, [img.url]: { width: probe.naturalWidth, height: probe.naturalHeight } }
-          })
-        }
-      }
-    })
-  }, [adjustedImages, measuredByUrl, visibleCount])
+  const fetchMore = useCallback(async () => {
+    const start = nextIndexRef.current
+    if (start >= allPhotos.length) return null
+    const end = Math.min(start + CHUNK_SIZE, allPhotos.length)
+    const batch = allPhotos.slice(start, end)
+    nextIndexRef.current = end
+    return batch
+  }, [allPhotos])
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="[&_img]:rounded-lg [&_img]:shadow-2xl">
+      <InfiniteScroll
+        singleton
+        photos={initialPhotos}
+        fetch={fetchMore}
+        onClick={({ index }) => setLightboxIndex(index)}
+        loading={
+          <div
+            className="mx-auto my-4 h-6 w-6 animate-spin rounded-full border-2 border-border border-t-transparent"
+            aria-label="Loading"
+          />
+        }
+        finished={<div className="mx-auto my-4 text-muted-foreground">No more photos</div>}>
         <PhotoAlbum
           layout="masonry"
-          photos={photos}
+          photos={[] as Photo[]}
           spacing={8}
           padding={0}
+          breakpoints={[480, 768, 1024, 1280]}
           columns={containerWidth => {
             if (containerWidth < 480) return 2
             if (containerWidth < 768) return 3
             if (containerWidth < 1024) return 4
             return 6
           }}
-          onClick={({ index }) => setLightboxIndex(index)}
+          sizes={{
+            size: '100vw',
+            sizes: [
+              { viewport: '(max-width: 479px)', size: 'calc(100vw - 40px)' },
+              { viewport: '(max-width: 767px)', size: 'calc(100vw - 40px)' },
+              { viewport: '(max-width: 1023px)', size: 'calc(100vw - 80px)' },
+              { viewport: '(max-width: 1279px)', size: 'calc(100vw - 160px)' },
+            ],
+          }}
+          componentsProps={containerWidth =>
+            containerWidth === undefined ? { container: { style: { visibility: 'hidden' } } } : {}
+          }
+          render={{
+            image: (props, { index, width, height, photo }) => {
+              const alt = photo.alt ?? 'Pet photo'
+              const src = typeof props.src === 'string' ? props.src : photo.src
+              return (
+                <NextImage
+                  src={src}
+                  alt={alt}
+                  width={Math.max(1, Math.round(width))}
+                  height={Math.max(1, Math.round(height))}
+                  sizes="(min-width: 1280px) 16vw, (min-width: 1024px) 20vw, (min-width: 768px) 25vw, (min-width: 480px) 33vw, 50vw"
+                  className="h-auto w-full rounded-lg shadow-2xl"
+                  style={{ width: '100%', height: 'auto' }}
+                  priority={index < 6}
+                />
+              )
+            },
+          }}
         />
-      </div>
+      </InfiniteScroll>
 
-      {visibleCount < images.length ? (
-        <div className="flex flex-col items-center gap-2">
-          <div
-            ref={sentinelRef}
-            className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-transparent"
-            aria-hidden
-          />
-          <Button
-            variant="outline"
-            type="button"
-            aria-label="Load more images"
-            onClick={handleLoadMore}
-            onKeyDown={e => {
-              if (e.key === 'Enter' || e.key === ' ') handleLoadMore()
-            }}>
-            Load more
-          </Button>
-        </div>
-      ) : null}
+      {/* InfiniteScroll handles loading state; no manual sentinel/button */}
 
       <Lightbox
         open={lightboxIndex >= 0}
