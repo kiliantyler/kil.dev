@@ -1,12 +1,11 @@
+import { GalleryClient } from '@/components/layout/pet-gallery/gallery-client'
 import { SectionLabel } from '@/components/ui/section-label'
-import { cn } from '@/utils/utils'
 import { list } from '@vercel/blob'
 import { promises as fs } from 'fs'
 import sizeOf from 'image-size'
-import Image from 'next/image'
 import path from 'path'
 
-type GalleryImage = {
+export type GalleryImage = {
   fileName: string
   url: string
   alt: string
@@ -112,24 +111,7 @@ export async function PetGalleryContent() {
         {images.length === 0 ? (
           <p className="text-muted-foreground">No images found in the pet gallery.</p>
         ) : (
-          <div
-            role="list"
-            aria-label="Pet gallery grid"
-            className={cn('columns-1 sm:columns-2 md:columns-3 lg:columns-4', '[column-gap:1rem]')}>
-            {images.map(image => (
-              <figure key={image.fileName} role="listitem" className="mb-4 break-inside-avoid">
-                <Image
-                  src={image.url}
-                  alt={image.alt || 'Pet photo'}
-                  loading="lazy"
-                  width={image.width}
-                  height={image.height}
-                  sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
-                  className="h-auto w-full rounded-lg shadow-2xl"
-                />
-              </figure>
-            ))}
-          </div>
+          <GalleryClient images={images} />
         )}
       </div>
     </div>
