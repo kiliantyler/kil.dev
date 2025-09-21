@@ -125,7 +125,7 @@ async function main() {
         blurDataURL,
         srcSet,
       })
-      downloaded++
+      synced++
     } catch {
       // skip on error
     }
@@ -135,7 +135,7 @@ async function main() {
   const manifestPath = path.join(outDir, 'manifest.json')
   await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2))
 
-  console.log(`Synced ${downloaded} images to ${outDir} and wrote manifest with thumbs`)
+  console.log(`Synced ${synced} images to ${outDir} (processed only when missing) and wrote manifest`)
 }
 
 main().catch(err => {
