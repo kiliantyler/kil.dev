@@ -1,4 +1,4 @@
-import { GalleryClient } from '@/components/layout/pet-gallery/gallery-client'
+import { ClientMounted, GalleryClient } from '@/components/layout/pet-gallery/gallery-client'
 import { ServerAlbum } from '@/components/layout/pet-gallery/server-album'
 import { SectionLabel } from '@/components/ui/section-label'
 import { promises as fs } from 'fs'
@@ -76,12 +76,9 @@ export async function PetGalleryContent() {
         {images.length === 0 ? (
           <p className="text-muted-foreground">No images found in the pet gallery.</p>
         ) : (
-          <>
-            <ServerAlbum images={images} />
-            <div className="js-pet-album-client hidden">
-              <GalleryClient images={images} />
-            </div>
-          </>
+          <ClientMounted fallback={<ServerAlbum images={images} />}>
+            <GalleryClient images={images} />
+          </ClientMounted>
         )}
       </div>
     </div>

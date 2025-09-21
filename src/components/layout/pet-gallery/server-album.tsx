@@ -26,7 +26,7 @@ function toPhotos(images: GalleryImage[]): Photo[] {
 export function ServerAlbum({ images, limit = 48 }: ServerAlbumProps) {
   const photos = toPhotos(images.slice(0, limit))
   return (
-    <div className="js-pet-album-ssr [&_img]:rounded-lg [&_img]:shadow-2xl">
+    <div className="[&_img]:rounded-lg [&_img]:shadow-2xl">
       <ServerPhotoAlbum
         layout="masonry"
         photos={photos}
