@@ -1,7 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import PhotoAlbum, { type Photo } from 'react-photo-album'
+import InfiniteScroll from 'react-photo-album/scroll'
 import Lightbox, { type SlideImage } from 'yet-another-react-lightbox'
 import Captions from 'yet-another-react-lightbox/plugins/captions'
 import Fullscreen from 'yet-another-react-lightbox/plugins/fullscreen'
@@ -9,7 +10,7 @@ import Thumbnails from 'yet-another-react-lightbox/plugins/thumbnails'
 import Zoom from 'yet-another-react-lightbox/plugins/zoom'
 
 import { type GalleryImage } from '@/components/layout/pet-gallery/_content'
-import { Button } from '@/components/ui/button'
+import NextImage from 'next/image'
 
 type GalleryClientProps = {
   images: GalleryImage[]
