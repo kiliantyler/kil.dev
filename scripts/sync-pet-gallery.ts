@@ -63,24 +63,55 @@ async function main() {
       const width = meta.width ?? 1200
       const height = meta.height ?? 800
 
-      // Generate blur placeholder
-      const blur = await image.resize(16).webp({ quality: 40 }).toBuffer()
-      const blurDataURL = `data:image/webp;base64,${blur.toString('base64')}`
-
-      // Generate responsive thumbs
       const baseName = name.replace(/\.[^.]+$/, '')
       const ext = (name.split('.').pop() ?? 'webp').toLowerCase()
       const srcSet: Array<{ src: string; width: number; height: number }> = []
+
+      // Ensure responsive thumbs exist in blob; upload if missing; always ensure local copy
       for (const target of sizes) {
         if (target >= width) break
-        const resized = await image
-          .resize({ width: target })
-          .toFormat(ext as keyof sharp.FormatEnum, { quality: 82 })
-          .toBuffer()
-        const thumbName = `${baseName}-${target}.${ext}`
-        await fs.writeFile(path.join(outDir, thumbName), resized)
         const h = Math.round((height * target) / width)
+        const thumbName = `${baseName}-${target}.${ext}`
+        const thumbPathname = `pet-gallery/${thumbName}`
+        const localThumbPath = path.join(outDir, thumbName)
+
+        if (blobUrlByPath.has(thumbPathname)) {
+          const thumbUrl = blobUrlByPath.get(thumbPathname)!
+          const tRes = await fetch(thumbUrl, { cache: 'no-store' })
+          if (tRes.ok && tRes.body) {
+            const tBuf = Buffer.from(await tRes.arrayBuffer())
+            await fs.writeFile(localThumbPath, tBuf)
+          }
+        } else {
+          const resized = await image
+            .resize({ width: target })
+            .toFormat(ext as keyof sharp.FormatEnum, { quality: 82 })
+            .toBuffer()
+          await fs.writeFile(localThumbPath, resized)
+          await put(thumbPathname, resized, { access: 'public', token })
+          // Make it discoverable on subsequent runs without another network list
+          blobUrlByPath.set(thumbPathname, '')
+        }
+
         srcSet.push({ src: `/pet-gallery/${thumbName}`, width: target, height: h })
+      }
+
+      // Blur placeholder: reuse if exists in blob, otherwise create + upload
+      const blurName = `${baseName}-blur.webp`
+      const blurPathname = `pet-gallery/${blurName}`
+      let blurDataURL = ''
+      if (blobUrlByPath.has(blurPathname)) {
+        const blurUrl = blobUrlByPath.get(blurPathname)!
+        const bRes = await fetch(blurUrl, { cache: 'no-store' })
+        if (bRes.ok && bRes.body) {
+          const bBuf = Buffer.from(await bRes.arrayBuffer())
+          blurDataURL = `data:image/webp;base64,${bBuf.toString('base64')}`
+        }
+      } else {
+        const blur = await image.resize(16).webp({ quality: 40 }).toBuffer()
+        blurDataURL = `data:image/webp;base64,${blur.toString('base64')}`
+        await put(blurPathname, blur, { access: 'public', token })
+        blobUrlByPath.set(blurPathname, '')
       }
 
       const alt = baseName.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim()
