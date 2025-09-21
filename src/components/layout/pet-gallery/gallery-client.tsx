@@ -37,10 +37,10 @@ function toSlides(images: GalleryImage[]): SlideImage[] {
 export function GalleryClient({ images }: GalleryClientProps) {
   // Reveal client album and hide SSR album when mounted (no layout jump)
   useEffect(() => {
-    const ssr = document.querySelector('.js-pet-album-ssr') as HTMLElement | null
-    const client = document.querySelector('.js-pet-album-client') as HTMLElement | null
+    const ssr = document.querySelector('.js-pet-album-ssr')
+    const client = document.querySelector('.js-pet-album-client')
     if (client) client.classList.remove('hidden')
-    if (ssr) ssr.style.display = 'none'
+    if (ssr) ssr.classList.add('hidden')
   }, [])
   const [lightboxIndex, setLightboxIndex] = useState<number>(-1)
   const nextIndexRef = useRef<number>(0)

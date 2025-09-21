@@ -60,7 +60,7 @@ async function main() {
         if (target >= width) break
         const resized = await image
           .resize({ width: target })
-          .toFormat(ext as keyof sharp.FormatEnum, { quality: 82 } as any)
+          .toFormat(ext as keyof sharp.FormatEnum, { quality: 82 })
           .toBuffer()
         const thumbName = `${baseName}-${target}.${ext}`
         await fs.writeFile(path.join(outDir, thumbName), resized)
