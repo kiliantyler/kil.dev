@@ -1,5 +1,6 @@
 import { list, put } from '@vercel/blob'
 import { promises as fs } from 'fs'
+import os from 'os'
 import path from 'path'
 import sharp from 'sharp'
 
