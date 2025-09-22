@@ -95,19 +95,20 @@ async function main() {
 
     let width: number | undefined = prev?.width
     let height: number | undefined = prev?.height
-    let image: sharp.Sharp | null = null
+    let originalBuf: Buffer | null = null
 
     const blurPathname = `pet-gallery/${baseName}-blur.webp`
     const blurExists = blobUrlByPath.has(blurPathname)
-    const missingAnyThumb = sizes.some(t => !blobUrlByPath.has(`pet-gallery/${baseName}-${t}.${ext}`))
+    const thumbExt = mapOutputFormat(ext)
+    const missingAnyThumb = sizes.some(t => !blobUrlByPath.has(`pet-gallery/${baseName}-${t}.${thumbExt}`))
 
     // Only fetch the original if we need metadata or must generate any derivatives
     if (!width || !height || missingAnyThumb || !blurExists) {
       const res = await fetch(blob.url, { cache: 'no-store' })
       if (!res.ok || !res.body) return null
       const buf = Buffer.from(await res.arrayBuffer())
-      image = sharp(buf)
-      const meta = await image.metadata()
+      originalBuf = buf
+      const meta = await sharp(buf).metadata()
       width = meta.width ?? 1200
       height = meta.height ?? 800
     }
@@ -119,19 +120,19 @@ async function main() {
     for (const target of sizes) {
       if (target >= width) break
       const h = Math.round((height * target) / width)
-      const thumbName = `${baseName}-${target}.${ext}`
+      const thumbName = `${baseName}-${target}.${thumbExt}`
       const thumbPathname = `pet-gallery/${thumbName}`
       let thumbUrl = blobUrlByPath.get(thumbPathname)
       if (!thumbUrl) {
-        if (!image) {
+        if (!originalBuf) {
           const res = await fetch(blob.url, { cache: 'no-store' })
           if (!res.ok || !res.body) return null
-          const buf = Buffer.from(await res.arrayBuffer())
-          image = sharp(buf)
+          originalBuf = Buffer.from(await res.arrayBuffer())
         }
-        const resized = await image
-          .resize({ width: target })
-          .toFormat(ext as keyof sharp.FormatEnum, { quality: 82 })
+        const encoderOptions = getEncoderOptions(thumbExt)
+        const resized = await sharp(originalBuf)
+          .resize({ width: target, withoutEnlargement: true })
+          .toFormat(thumbExt as keyof sharp.FormatEnum, encoderOptions)
           .toBuffer()
         const uploaded = await put(thumbPathname, resized, { access: 'public', token })
         thumbUrl = uploaded.url
