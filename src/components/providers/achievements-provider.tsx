@@ -1,5 +1,6 @@
 'use client'
 
+import { captureAchievementUnlocked } from '@/hooks/posthog'
 import { ACHIEVEMENTS, ACHIEVEMENTS_COOKIE_NAME, type AchievementId } from '@/lib/achievements'
 import type { ThemeName } from '@/lib/themes'
 import {
@@ -8,6 +9,7 @@ import {
   serializeUnlockedCookie,
   type UnlockedMap,
 } from '@/utils/achievements'
+import { resetReviewState } from '@/utils/review'
 import { getThemeBaseColor } from '@/utils/themes'
 import { cn } from '@/utils/utils'
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
@@ -130,6 +132,9 @@ export function AchievementsProvider({
       queueMicrotask(() => pendingUnlocksRef.current.delete(id))
 
       showToast(id)
+      try {
+        captureAchievementUnlocked(id)
+      } catch {}
 
       // Trigger confetti if achievement has confetti enabled (but only once)
       if (def?.confetti && !pendingConfettiRef.current.has(id)) {
@@ -145,6 +150,9 @@ export function AchievementsProvider({
   const reset = useCallback(() => {
     if (!mountedRef.current) return
     setUnlocked(createEmptyUnlocked())
+    try {
+      resetReviewState()
+    } catch {}
     toast.success('Achievements Reset', {
       description: 'All achievements have been reset.',
       position: 'bottom-right',

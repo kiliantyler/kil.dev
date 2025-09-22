@@ -1,0 +1,30 @@
+import type { AchievementId } from '@/lib/achievements'
+import type { ReviewConfig } from '@/types/review'
+
+export const REVIEW_CONFIG: ReviewConfig = {
+  enabled: true,
+  achievementsThreshold: 7,
+  storageKey: 'kil.dev/review/v1',
+  achievementIdOnSubmit: 'FIVE_STAR_FAN' as AchievementId,
+  copy: {
+    title: 'Rate your experience',
+    intro: "This definitely isn't a desperate plea for validation.",
+    submitCta: 'Submit totally-real rating',
+    snarkOnReturn: [
+      'Welcome back. We saved you a front-row seat to the rating.',
+      'Still waiting on that perfect 5. No pressure. Lots of pressure.',
+      "It's okay. You can do it. Five is just a very round number.",
+      "No really, what's your rating?",
+      "Why won't you just rate this site? I worked hard on it!",
+      "You can't just leave me hanging like this!",
+    ],
+    ratingText: {
+      0: 'Be honest. How many stars are we talking?',
+      1: 'Ouch. What if we pretend you meant 5 and your finger slipped?',
+      2: 'So close to average. Is your mouse allergic to stars 3-5?',
+      3: 'Respectable. Now imagine it… but two better.',
+      4: 'We both know you want to press one more star.',
+      5: 'There it is. Glorious perfection. Hit submit to lock it in.',
+    },
+  },
+}

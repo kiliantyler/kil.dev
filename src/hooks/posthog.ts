@@ -88,3 +88,10 @@ export function captureCompanyLogoClicked(companyId: string, companyUrl: Route) 
     href: companyUrl,
   })
 }
+
+export function captureAchievementUnlocked(achievementId: string) {
+  if (!canCapture) return
+  posthog.capture('achievement_unlocked', {
+    achievementId: achievementId,
+  })
+}
