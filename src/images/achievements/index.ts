@@ -1,6 +1,7 @@
 export { default as AboutAmblerAchievement } from './about-ambler.webp'
 export { default as ConfusedClickAchievement } from './confused-click.webp'
 export { default as ExperienceExplorerAchievement } from './experience-explorer.webp'
+export { default as FiveStarFanAchievement } from './fivestar-fan.webp'
 export { default as GrumpyGlimpseAchievement } from './grumpy-glimpse.webp'
 export { default as KonamiKillerAchievement } from './konami-killer.webp'
 export { default as LadybirdLandingAchievement } from './ladybird-landing.webp'

@@ -125,7 +125,7 @@ export const ACHIEVEMENTS = {
     title: 'Five Star Fan',
     description: 'You graciously bestowed a perfect 5-star rating.',
     icon: '⭐',
-    imageSrc: Images.PlaceholderAchievement,
+    imageSrc: Images.FiveStarFanAchievement,
     imageAlt: 'Five Star Fan',
     cardDescription: 'The stars aligned, literally. Thanks for the totally real, not-at-all coerced review.',
     unlockHint: 'Sometimes, the best rating is the only rating.',
