@@ -189,12 +189,6 @@ export function ThemeToggle() {
     ],
   )
 
-  // Keep for future logic if needed; currently not used
-  // const currentEffective: Theme =
-  //   currentPreference === 'system'
-  //     ? ((systemTheme ?? (resolvedTheme === 'dark' ? 'dark' : 'light')) as Theme)
-  //     : currentPreference
-
   type IconComponent = ComponentType<{ className?: string }>
   type ThemeOption = { label: string; value: Theme; Icon: IconComponent }
 
