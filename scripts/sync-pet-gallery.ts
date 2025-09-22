@@ -58,7 +58,7 @@ async function main() {
     return true
   })
 
-  const sizes = [320, 640, 960]
+  const sizes = [320, 640, 960, 1280]
 
   type ManifestImage = {
     fileName: string
