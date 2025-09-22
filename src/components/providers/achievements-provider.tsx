@@ -1,5 +1,6 @@
 'use client'
 
+import { captureAchievementUnlocked } from '@/hooks/posthog'
 import { ACHIEVEMENTS, ACHIEVEMENTS_COOKIE_NAME, type AchievementId } from '@/lib/achievements'
 import type { ThemeName } from '@/lib/themes'
 import {
@@ -131,6 +132,9 @@ export function AchievementsProvider({
       queueMicrotask(() => pendingUnlocksRef.current.delete(id))
 
       showToast(id)
+      try {
+        captureAchievementUnlocked(id)
+      } catch {}
 
       // Trigger confetti if achievement has confetti enabled (but only once)
       if (def?.confetti && !pendingConfettiRef.current.has(id)) {
