@@ -111,8 +111,11 @@ async function main() {
       const buf = Buffer.from(await res.arrayBuffer())
       originalBuf = buf
       const meta = await sharp(buf).metadata()
-      width = meta.width ?? 1200
-      height = meta.height ?? 800
+      const rawW = meta.width ?? 1200
+      const rawH = meta.height ?? 800
+      const oriented = (meta.orientation ?? 1) >= 5 // 5..8 are 90° rotations
+      width = oriented ? rawH : rawW
+      height = oriented ? rawW : rawH
     }
 
     if (!width || !height) return null
