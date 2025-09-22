@@ -22,6 +22,7 @@ export type ReviewDialogProps = {
   onSelect: (next: 0 | StarValue) => void
   onSubmit: () => void
   copy: ReviewConfig['copy']
+  snark?: string
 }
 
 function Star({ value, active, onSelect }: { value: StarValue; active: boolean; onSelect: (v: StarValue) => void }) {
@@ -51,7 +52,7 @@ function Star({ value, active, onSelect }: { value: StarValue; active: boolean; 
   )
 }
 
-export function ReviewDialog({ open, rating, onSelect, onSubmit, copy }: ReviewDialogProps) {
+export function ReviewDialog({ open, rating, onSelect, onSubmit, copy, snark }: ReviewDialogProps) {
   const starsRef = useRef<Array<HTMLButtonElement | null>>([])
 
   const hint = useMemo(() => {
@@ -95,10 +96,10 @@ export function ReviewDialog({ open, rating, onSelect, onSubmit, copy }: ReviewD
       <AlertDialogContent onEscapeKeyDown={handleEscape as never} onInteractOutside={handleInteractOutside as never}>
         <AlertDialogHeader>
           <AlertDialogTitle>{copy.title}</AlertDialogTitle>
-          <AlertDialogDescription>{copy.intro}</AlertDialogDescription>
+          <AlertDialogDescription>{snark ?? copy.intro}</AlertDialogDescription>
         </AlertDialogHeader>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
           <div
             role="group"
             aria-label="Star rating"
