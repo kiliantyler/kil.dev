@@ -5,10 +5,11 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import React from 'react'
 
+import { useAchievements } from '@/components/providers/achievements-provider'
 import { NAVIGATION } from '@/lib/navmenu'
 import { cn } from '@/utils/utils'
 
-type NavigationItem = (typeof NAVIGATION)[number]
+type SimpleNavItem = { href: Route; label: string }
 
 const NAV_TEXT = {
   base: 'text-foreground dark:text-muted-foreground select-none',
@@ -16,7 +17,7 @@ const NAV_TEXT = {
   active: 'text-white dark:text-primary-foreground',
 } as const
 
-function getActiveIndex(items: readonly NavigationItem[], pathname: string) {
+function getActiveIndex(items: readonly SimpleNavItem[], pathname: string) {
   if (!pathname) return -1
   const index = items.findIndex(item => !item.href.startsWith('#') && item.href === pathname)
   return index
@@ -27,7 +28,31 @@ export function NavLava() {
   const containerRef = React.useRef<HTMLDivElement | null>(null)
   const linkRefs = React.useRef<Record<string, HTMLAnchorElement | null>>({})
   const didInitRef = React.useRef(false)
-  const items = React.useMemo(() => NAVIGATION, [])
+  const baseItems = React.useMemo(() => NAVIGATION, [])
+  const { has } = useAchievements()
+  const [isMounted, setIsMounted] = React.useState(false)
+  React.useEffect(() => setIsMounted(true), [])
+
+  // Read initial DOM data attributes (set pre-hydration) to avoid first-render mismatch
+  const [initialDomFlags] = React.useState(() => {
+    if (typeof document === 'undefined') return { hasAchievements: false, hasPetGallery: false }
+    const root = document.documentElement
+    return {
+      hasAchievements: root.getAttribute('data-has-achievements') === 'true',
+      hasPetGallery: root.getAttribute('data-has-pet-gallery') === 'true',
+    }
+  })
+
+  const allowAchievements = initialDomFlags.hasAchievements || (isMounted && has('RECURSIVE_REWARD'))
+  const allowPetGallery = initialDomFlags.hasPetGallery || (isMounted && has('PET_PARADE'))
+
+  // Items considered for active detection (may include gated links)
+  const activeItems = React.useMemo<SimpleNavItem[]>(() => {
+    const list: SimpleNavItem[] = baseItems.map(({ href, label }) => ({ href, label }))
+    if (allowAchievements) list.push({ href: '/achievements' as Route, label: 'Achievements' })
+    if (allowPetGallery) list.push({ href: '/pet-gallery' as Route, label: 'Pet Gallery' })
+    return list
+  }, [baseItems, allowAchievements, allowPetGallery])
 
   const [indicator, setIndicator] = React.useState<{ left: number; width: number; visible: boolean; animate: boolean }>(
     {
@@ -39,7 +64,7 @@ export function NavLava() {
   )
   const [hoveredKey, setHoveredKey] = React.useState<string | null>(null)
 
-  const activeIndex = React.useMemo(() => getActiveIndex(items, pathname ?? ''), [items, pathname])
+  const activeIndex = React.useMemo(() => getActiveIndex(activeItems, pathname ?? ''), [activeItems, pathname])
 
   const moveIndicatorTo = React.useCallback((key: string, animate: boolean) => {
     const container = containerRef.current
@@ -61,8 +86,8 @@ export function NavLava() {
   // On mount: snap without animation, then enable animations; on route change: animate
   React.useLayoutEffect(() => {
     if (activeIndex >= 0) {
-      if (!items[activeIndex]) return
-      const key = items[activeIndex].href
+      if (!activeItems[activeIndex]) return
+      const key = activeItems[activeIndex].href
       if (!didInitRef.current) {
         moveIndicatorTo(key, false)
         requestAnimationFrame(() => {
@@ -75,17 +100,17 @@ export function NavLava() {
       return
     }
     hideIndicator()
-  }, [activeIndex, moveIndicatorTo, hideIndicator, items])
+  }, [activeIndex, moveIndicatorTo, hideIndicator, activeItems])
 
   const handleMouseLeaveContainer = React.useCallback(() => {
     setHoveredKey(null)
     if (activeIndex >= 0) {
-      if (!items[activeIndex]) return
-      moveIndicatorTo(items[activeIndex].href, true)
+      if (!activeItems[activeIndex]) return
+      moveIndicatorTo(activeItems[activeIndex].href, true)
       return
     }
     hideIndicator()
-  }, [activeIndex, hideIndicator, moveIndicatorTo, items])
+  }, [activeIndex, hideIndicator, moveIndicatorTo, activeItems])
 
   const handleBlurContainer = React.useCallback(
     (event: React.FocusEvent<HTMLDivElement>) => {
@@ -93,13 +118,13 @@ export function NavLava() {
       const next = event.relatedTarget as Node | null
       if (!container || (next && container.contains(next))) return
       setHoveredKey(null)
-      if (activeIndex >= 0 && items[activeIndex]) {
-        moveIndicatorTo(items[activeIndex].href, true)
+      if (activeIndex >= 0 && activeItems[activeIndex]) {
+        moveIndicatorTo(activeItems[activeIndex].href, true)
         return
       }
       hideIndicator()
     },
-    [activeIndex, moveIndicatorTo, hideIndicator, items],
+    [activeIndex, moveIndicatorTo, hideIndicator, activeItems],
   )
 
   const handleKeyDown = React.useCallback(
@@ -172,7 +197,7 @@ export function NavLava() {
           }}
         />
 
-        {items.map(item => {
+        {baseItems.map(item => {
           const isExternal = item.href.startsWith('http')
           const isActive = !item.href.startsWith('#') && item.href === pathname
           return (
