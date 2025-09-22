@@ -76,15 +76,6 @@ export function ReviewDialog({ open, rating, onSelect, onSubmit, copy, snark }: 
     [onSelect, rating],
   )
 
-  // Prevent closing via keyboard/mouse interactions outside
-  const handleEscape = React.useCallback((e: Event) => {
-    e.preventDefault()
-  }, [])
-  const handleInteractOutside = React.useCallback((e: Event) => {
-    e.preventDefault()
-  }, [])
-
-  // Keep focus within dialog when opened (AlertDialog already traps focus)
   useEffect(() => {
     if (!open) return
   }, [open])
@@ -93,7 +84,7 @@ export function ReviewDialog({ open, rating, onSelect, onSubmit, copy, snark }: 
 
   return (
     <AlertDialog open={open}>
-      <AlertDialogContent onEscapeKeyDown={handleEscape as never} onInteractOutside={handleInteractOutside as never}>
+      <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{copy.title}</AlertDialogTitle>
           <AlertDialogDescription>{snark ?? copy.intro}</AlertDialogDescription>
