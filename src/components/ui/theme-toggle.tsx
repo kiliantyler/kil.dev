@@ -407,7 +407,7 @@ export function ThemeToggle() {
           'fixed inset-0 z-[115] transition-opacity duration-200',
           open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
           // Subtle flashy backdrop: tint + blur + vignette-ish gradient
-          'bg-black/40 backdrop-blur-sm',
+          'backdrop-blur-sm bg-black/15 dark:bg-black/40',
         )}
       />
 
