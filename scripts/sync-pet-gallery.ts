@@ -4,6 +4,28 @@ import os from 'os'
 import path from 'path'
 import sharp from 'sharp'
 
+type OutputFormat = 'jpeg' | 'png' | 'webp' | 'avif' | 'gif'
+
+function mapOutputFormat(inputExt: string): OutputFormat {
+  const e = inputExt.toLowerCase()
+  if (e === 'jpg' || e === 'jpeg') return 'jpeg'
+  if (e === 'png') return 'png'
+  if (e === 'avif') return 'avif'
+  if (e === 'webp') return 'webp'
+  if (e === 'gif') return 'webp' // convert animated/static GIFs to webp thumbnails
+  return 'webp'
+}
+
+function getEncoderOptions(
+  format: OutputFormat,
+): sharp.JpegOptions | sharp.PngOptions | sharp.WebpOptions | sharp.AvifOptions | sharp.GifOptions {
+  if (format === 'jpeg') return { quality: 82, mozjpeg: true }
+  if (format === 'png') return { compressionLevel: 8 }
+  if (format === 'webp') return { quality: 80 }
+  if (format === 'avif') return { quality: 50, effort: 4 }
+  return { effort: 4 }
+}
+
 async function main() {
   const outDir = path.join(process.cwd(), 'public', 'pet-gallery')
   await fs.mkdir(outDir, { recursive: true })
