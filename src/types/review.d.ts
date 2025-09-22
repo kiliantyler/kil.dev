@@ -10,7 +10,7 @@ export interface ReviewConfig {
     intro: string
     submitCta: string
     snarkOnReturn: string[]
-    ratingText: Record<1 | 2 | 3 | 4 | 5, string>
+    ratingText: Record<0 | 1 | 2 | 3 | 4 | 5, string>
   }
 }
 

@@ -55,7 +55,7 @@ export function ReviewDialog({ open, rating, onSelect, onSubmit, copy }: ReviewD
   const starsRef = useRef<Array<HTMLButtonElement | null>>([])
 
   const hint = useMemo(() => {
-    const key = (rating === 0 ? 1 : rating) as StarValue
+    const key = (rating === 0 ? 0 : rating) as 0 | StarValue
     return copy.ratingText[key]
   }, [copy.ratingText, rating])
 
@@ -65,21 +65,21 @@ export function ReviewDialog({ open, rating, onSelect, onSubmit, copy }: ReviewD
       e.preventDefault()
       const dir = e.key === 'ArrowRight' ? 1 : -1
       const current = rating === 0 ? 0 : rating
-      let next = current + dir
-      if (next < 1) next = 1
+      let next = (current + dir) as 0 | StarValue
+      if (next < 0) next = 0
       if (next > 5) next = 5
-      onSelect(next as StarValue)
-      const idx = (next as number) - 1
-      starsRef.current[idx]?.focus()
+      onSelect(next)
+      const idx = next === 0 ? 0 : (next as number) - 1
+      if (idx >= 0) starsRef.current[idx]?.focus()
     },
     [onSelect, rating],
   )
 
   // Prevent closing via keyboard/mouse interactions outside
-  const handleEscape = useCallback((e: Event) => {
+  const handleEscape = React.useCallback((e: Event) => {
     e.preventDefault()
   }, [])
-  const handleInteractOutside = useCallback((e: Event) => {
+  const handleInteractOutside = React.useCallback((e: Event) => {
     e.preventDefault()
   }, [])
 
