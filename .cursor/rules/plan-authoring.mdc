@@ -1,0 +1,116 @@
+---
+description: Standard for authoring feature plans in .plans/ (agent-executable, consistent template)
+globs:
+  - '.plans/**/*.md'
+alwaysApply: false
+---
+
+# Plan Authoring Rules
+
+Use this rule whenever writing a new plan document. The goal is to produce an agent‑executable plan that is easy to follow step‑by‑step and aligned with project conventions.
+
+## Location & Naming
+
+- Save plans in the `.plans/` directory
+- Use kebab‑case filenames that describe the feature (e.g., `fake-review-popup.md`)
+
+## Style & Formatting
+
+- Keep prose concise, prefer bullet points
+- Use backticks for files, directories, functions, and classes
+- Use fenced code blocks with language tags for code examples
+- Avoid bare URLs; use Markdown links
+
+## Required Sections (in order)
+
+1. Title: `Feature Name — Plan`
+2. Goals
+3. Non‑Goals
+4. Architecture Overview
+5. Rendering & Static Constraints
+   - If applicable to Next.js routes, explicitly state that server components/pages (e.g., `src/app/layout.tsx`, `src/app/page.tsx`) must remain static and list guardrails: no `dynamic`/`revalidate`, no `cookies()`/`headers()`, keep logic in client components
+6. Data Model & Storage
+7. Config (file path)
+   - Provide types and a function/exports list (signatures only)
+8. UX Behavior
+9. Accessibility
+10. Pseudocode
+11. Step‑by‑Step Actions (Agent‑Executable)
+    - Numbered steps with precise file paths and actions
+    - Include “Unit of work is complete when …” criteria per step
+12. Exit Criteria
+
+## Content Guidance
+
+- Keep all SSR/SSG constraints explicit to avoid accidentally making static pages dynamic
+- Leverage client‑side only state/persistence (e.g., `localStorage`) where appropriate; avoid server actions in server components
+- Prefer shadcn/ui for UI primitives, Tailwind for styling, and follow existing naming conventions
+- Integrate QA checks into the step list; avoid separate “Implementation/QA checklists” when duplicative
+
+## Template
+
+````md
+### <Feature Name> — Plan
+
+#### Goals
+
+- ...
+
+#### Non‑Goals
+
+- ...
+
+### Architecture Overview
+
+- ...
+
+### Rendering & Static Constraints
+
+- <Call out static SSR constraints here if applicable>
+
+### Data Model & Storage
+
+- ...
+
+### Config (<path/to/module.ts>)
+
+```ts
+export type MyConfig = {
+  /* ... */
+}
+export const MY_CONFIG: MyConfig = {
+  /* ... */
+}
+export function doThing(): void
+```
+````
+
+### UX Behavior
+
+- ...
+
+### Accessibility
+
+- ...
+
+### Pseudocode
+
+```ts
+// filenames and key snippets
+```
+
+### Step‑by‑Step Actions (Agent‑Executable)
+
+1. <Action>
+   - <Sub‑tasks>
+   - Unit of work is complete when <condition>
+2. <Action>
+   - ...
+
+### Exit Criteria
+
+- <Concise list of done conditions>
+
+```
+
+```
