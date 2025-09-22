@@ -8,6 +8,7 @@ import {
   serializeUnlockedCookie,
   type UnlockedMap,
 } from '@/utils/achievements'
+import { resetReviewState } from '@/utils/review'
 import { getThemeBaseColor } from '@/utils/themes'
 import { cn } from '@/utils/utils'
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
@@ -145,6 +146,9 @@ export function AchievementsProvider({
   const reset = useCallback(() => {
     if (!mountedRef.current) return
     setUnlocked(createEmptyUnlocked())
+    try {
+      resetReviewState()
+    } catch {}
     toast.success('Achievements Reset', {
       description: 'All achievements have been reset.',
       position: 'bottom-right',
