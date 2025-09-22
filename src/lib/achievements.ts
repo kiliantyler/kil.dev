@@ -120,6 +120,17 @@ export const ACHIEVEMENTS = {
     unlockHint: 'Home is where the Konami is.',
     confetti: true,
   },
+  FIVE_STAR_FAN: {
+    id: 'FIVE_STAR_FAN',
+    title: 'Five Star Fan',
+    description: 'You graciously bestowed a perfect 5-star rating.',
+    icon: '⭐',
+    imageSrc: Images.PlaceholderAchievement,
+    imageAlt: 'Five Star Fan',
+    cardDescription: 'The stars aligned, literally. Thanks for the totally real, not-at-all coerced review.',
+    unlockHint: 'Sometimes, the best rating is the only rating.',
+    confetti: true,
+  },
 } as const satisfies Record<string, AchievementDefinition>
 
 export type AchievementId = keyof typeof ACHIEVEMENTS
