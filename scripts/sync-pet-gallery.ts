@@ -141,8 +141,20 @@ async function main() {
       srcSet.push({ src: thumbUrl, width: target, height: h })
     }
 
-    // Blur: reuse previous value if present; skip generation for speed
-    const blurDataURL = prev?.blurDataURL ?? ''
+    // Blur: reuse previous value if present; otherwise generate a tiny webp
+    let blurDataURL = prev?.blurDataURL ?? ''
+    if (!blurDataURL) {
+      if (!originalBuf) {
+        const res = await fetch(blob.url, { cache: 'no-store' })
+        if (!res.ok || !res.body) return null
+        originalBuf = Buffer.from(await res.arrayBuffer())
+      }
+      const blur = await sharp(originalBuf)
+        .resize({ width: 16, withoutEnlargement: true })
+        .toFormat('webp', { quality: 40 })
+        .toBuffer()
+      blurDataURL = `data:image/webp;base64,${blur.toString('base64')}`
+    }
 
     return {
       fileName: name,
