@@ -3,6 +3,7 @@
 # generated
 /src/utils/theme-bundle.ts
 /src/utils/presence-bundle.ts
+/public/pet-gallery/
 
 # dependencies
 /node_modules

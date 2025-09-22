@@ -7,7 +7,7 @@
     "build": "next build",
     "build:theme": "bun scripts/build-theme-runtime.ts",
     "build:presence": "bun scripts/build-presence-runtime.ts",
-    "prebuild": "bun run build:theme && bun run build:presence",
+    "prebuild": "bun run build:theme && bun run build:presence && bun run sync:pet-gallery",
     "predev": "bun run build:theme && bun run build:presence",
     "check": "eslint . && tsc --noEmit",
     "check:all": "bun run typecheck && bun run format:check && bun run lint",
@@ -21,7 +21,8 @@
     "start": "next start",
     "typecheck": "bun run build:theme && bun run build:presence && tsc --noEmit",
     "storybook": "storybook dev -p 6006 --no-open",
-    "build-storybook": "bun run prebuild && storybook build"
+    "build-storybook": "bun run predev && storybook build",
+    "sync:pet-gallery": "bun scripts/sync-pet-gallery.ts"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "1.1.15",
@@ -50,11 +51,14 @@
     "posthog-node": "5.8.4",
     "react": "19.1.1",
     "react-dom": "19.1.1",
+    "react-photo-album": "3.1.0",
     "react-snowfall": "2.3.0",
+    "sharp": "0.34.4",
     "sonner": "2.0.7",
     "tailwind-merge": "3.3.1",
     "uuid": "13.0.0",
     "vaul": "1.1.2",
+    "yet-another-react-lightbox": "3.25.0",
     "zod": "4.1.9"
   },
   "devDependencies": {
