@@ -30,10 +30,10 @@ function readRaw(): ReviewState | null {
         obj.lastRating === 3 ||
         obj.lastRating === 4 ||
         obj.lastRating === 5
-          ? (obj.lastRating as 0 | 1 | 2 | 3 | 4 | 5)
+          ? obj.lastRating
           : undefined,
       reminderCount:
-        typeof obj.reminderCount === 'number' && Number.isFinite(obj.reminderCount) ? (obj.reminderCount as number) : 0,
+        typeof obj.reminderCount === 'number' && Number.isFinite(obj.reminderCount) ? obj.reminderCount : 0,
     }
     if (state.reminderCount < 0) state.reminderCount = 0
     return state

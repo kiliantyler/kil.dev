@@ -10,16 +10,14 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { buttonVariants } from '@/components/ui/button'
-import type { ReviewConfig } from '@/types/review'
+import type { ReviewConfig, StarValue } from '@/types/review'
 import { cn } from '@/utils/utils'
 import React, { useCallback, useEffect, useMemo, useRef } from 'react'
 
-type StarValue = 1 | 2 | 3 | 4 | 5
-
 export type ReviewDialogProps = {
   open: boolean
-  rating: 0 | StarValue
-  onSelect: (next: 0 | StarValue) => void
+  rating: StarValue
+  onSelect: (next: StarValue) => void
   onSubmit: () => void
   copy: ReviewConfig['copy']
   snark?: string
@@ -56,7 +54,7 @@ export function ReviewDialog({ open, rating, onSelect, onSubmit, copy, snark }: 
   const starsRef = useRef<Array<HTMLButtonElement | null>>([])
 
   const hint = useMemo(() => {
-    const key: 0 | StarValue = rating === 0 ? 0 : rating
+    const key: StarValue = rating
     return copy.ratingText[key]
   }, [copy.ratingText, rating])
 
@@ -65,12 +63,12 @@ export function ReviewDialog({ open, rating, onSelect, onSubmit, copy, snark }: 
       if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
       e.preventDefault()
       const dir = e.key === 'ArrowRight' ? 1 : -1
-      const current = rating === 0 ? 0 : rating
+      const current = rating
       let next = (current + dir) as 0 | StarValue
       if (next < 0) next = 0
       if (next > 5) next = 5
       onSelect(next)
-      const idx = next === 0 ? 0 : (next as number) - 1
+      const idx = (next as number) - 1
       if (idx >= 0) starsRef.current[idx]?.focus()
     },
     [onSelect, rating],
