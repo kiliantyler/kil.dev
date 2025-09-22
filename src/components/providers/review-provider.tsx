@@ -10,6 +10,7 @@ export function ReviewProvider({ children }: { children: React.ReactNode }) {
   const { unlocked, unlock } = useAchievements()
   const [open, setOpen] = useState(false)
   const [rating, setRating] = useState<0 | 1 | 2 | 3 | 4 | 5>(0)
+  const [snark, setSnark] = useState<string | undefined>(undefined)
   const reminderShownRef = useRef(false)
 
   useEffect(() => {
@@ -19,6 +20,13 @@ export function ReviewProvider({ children }: { children: React.ReactNode }) {
       if (shouldShowGate(unlocked)) {
         const state = readReviewState()
         if (!state.triggeredAt) markTriggered()
+
+        // Compute snark BEFORE incrementing so first-time in a session shows no snark
+        const rc = state.reminderCount ?? 0
+        const arr = REVIEW_CONFIG.copy.snarkOnReturn
+        const nextSnark = rc > 0 && arr.length > 0 ? arr[rc % arr.length] : undefined
+        setSnark(nextSnark)
+
         if (!reminderShownRef.current) {
           incrementReminderCount()
           reminderShownRef.current = true
@@ -27,6 +35,7 @@ export function ReviewProvider({ children }: { children: React.ReactNode }) {
         return
       }
       setOpen(false)
+      setSnark(undefined)
     }
 
     // Run after the current event loop turn to include any cascading unlocks
@@ -48,6 +57,7 @@ export function ReviewProvider({ children }: { children: React.ReactNode }) {
     markSubmitted(5)
     unlock(REVIEW_CONFIG.achievementIdOnSubmit)
     setOpen(false)
+    setSnark(undefined)
   }, [rating, unlock])
 
   return (
@@ -59,6 +69,7 @@ export function ReviewProvider({ children }: { children: React.ReactNode }) {
         onSelect={handleSelect}
         onSubmit={handleSubmit}
         copy={REVIEW_CONFIG.copy}
+        snark={snark}
       />
     </>
   )
