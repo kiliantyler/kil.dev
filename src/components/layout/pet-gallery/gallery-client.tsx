@@ -66,7 +66,7 @@ export function GalleryClient({ images }: GalleryClientProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      <InfiniteScroll
+      <InfiniteScroll<PhotoWithBlur>
         singleton
         photos={initialPhotos}
         fetch={fetchMore}
@@ -81,9 +81,9 @@ export function GalleryClient({ images }: GalleryClientProps) {
           />
         }
         finished={<div className="mx-auto my-4 text-muted-foreground">No more photos</div>}>
-        <PhotoAlbum
+        <PhotoAlbum<PhotoWithBlur>
           layout="masonry"
-          photos={[] as Photo[]}
+          photos={[] as PhotoWithBlur[]}
           spacing={8}
           padding={0}
           breakpoints={[480, 768, 1024, 1280]}
