@@ -86,8 +86,8 @@ export function NavLava() {
   // On mount: snap without animation, then enable animations; on route change: animate
   React.useLayoutEffect(() => {
     if (activeIndex >= 0) {
-      if (!items[activeIndex]) return
-      const key = items[activeIndex].href
+      if (!activeItems[activeIndex]) return
+      const key = activeItems[activeIndex].href
       if (!didInitRef.current) {
         moveIndicatorTo(key, false)
         requestAnimationFrame(() => {
@@ -100,17 +100,17 @@ export function NavLava() {
       return
     }
     hideIndicator()
-  }, [activeIndex, moveIndicatorTo, hideIndicator, items])
+  }, [activeIndex, moveIndicatorTo, hideIndicator, activeItems])
 
   const handleMouseLeaveContainer = React.useCallback(() => {
     setHoveredKey(null)
     if (activeIndex >= 0) {
-      if (!items[activeIndex]) return
-      moveIndicatorTo(items[activeIndex].href, true)
+      if (!activeItems[activeIndex]) return
+      moveIndicatorTo(activeItems[activeIndex].href, true)
       return
     }
     hideIndicator()
-  }, [activeIndex, hideIndicator, moveIndicatorTo, items])
+  }, [activeIndex, hideIndicator, moveIndicatorTo, activeItems])
 
   const handleBlurContainer = React.useCallback(
     (event: React.FocusEvent<HTMLDivElement>) => {
@@ -118,13 +118,13 @@ export function NavLava() {
       const next = event.relatedTarget as Node | null
       if (!container || (next && container.contains(next))) return
       setHoveredKey(null)
-      if (activeIndex >= 0 && items[activeIndex]) {
-        moveIndicatorTo(items[activeIndex].href, true)
+      if (activeIndex >= 0 && activeItems[activeIndex]) {
+        moveIndicatorTo(activeItems[activeIndex].href, true)
         return
       }
       hideIndicator()
     },
-    [activeIndex, moveIndicatorTo, hideIndicator, items],
+    [activeIndex, moveIndicatorTo, hideIndicator, activeItems],
   )
 
   const handleKeyDown = React.useCallback(
