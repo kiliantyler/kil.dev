@@ -40,7 +40,9 @@ async function main() {
 
   const { blobs } = await list({ prefix: 'pet-gallery/', token })
   if (!blobs || blobs.length === 0) {
-    console.log('No blobs found under pet-gallery/')
+    console.log('[sync-pet-gallery] No blobs found under pet-gallery/')
+    const manifestPath = path.join(outDir, 'manifest.json')
+    await fs.writeFile(manifestPath, JSON.stringify({ images: [] }, null, 2))
     return
   }
 
