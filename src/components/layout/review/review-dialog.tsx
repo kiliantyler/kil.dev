@@ -56,7 +56,7 @@ export function ReviewDialog({ open, rating, onSelect, onSubmit, copy, snark }: 
   const starsRef = useRef<Array<HTMLButtonElement | null>>([])
 
   const hint = useMemo(() => {
-    const key = (rating === 0 ? 0 : rating) as 0 | StarValue
+    const key: 0 | StarValue = rating === 0 ? 0 : rating
     return copy.ratingText[key]
   }, [copy.ratingText, rating])
 
