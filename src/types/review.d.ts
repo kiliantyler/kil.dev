@@ -1,5 +1,6 @@
 import type { AchievementId } from '@/lib/achievements'
 
+export type StarValue = 0 | 1 | 2 | 3 | 4 | 5
 export interface ReviewConfig {
   enabled: boolean
   achievementsThreshold: number
@@ -10,13 +11,13 @@ export interface ReviewConfig {
     intro: string
     submitCta: string
     snarkOnReturn: string[]
-    ratingText: Record<0 | 1 | 2 | 3 | 4 | 5, string>
+    ratingText: Record<StarValue, string>
   }
 }
 
 export type ReviewState = {
   triggeredAt?: string
   submittedAt?: string
-  lastRating?: 0 | 1 | 2 | 3 | 4 | 5
+  lastRating?: StarValue
   reminderCount: number
 }
