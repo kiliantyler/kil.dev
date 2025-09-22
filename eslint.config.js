@@ -9,7 +9,13 @@ const compat = new FlatCompat({
 
 export default defineConfig(
   {
-    ignores: ['.next', 'next-env.d.ts', 'src/utils/theme-bundle.ts', 'src/utils/presence-bundle.ts'],
+    ignores: [
+      '.next',
+      'next-env.d.ts',
+      'src/utils/theme-bundle.ts',
+      'src/utils/presence-bundle.ts',
+      'storybook-static',
+    ],
   },
   ...compat.extends('next/core-web-vitals'),
   eslintConfigPrettier,

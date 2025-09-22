@@ -43,11 +43,6 @@ export function PetCardBack({ pet }: PetCardBackProps) {
             </dl>
           </div>
           <p className="text-sm leading-relaxed text-foreground">{pet.description}</p>
-          <div className="pt-6">
-            <span aria-hidden className="opacity-0">
-              _
-            </span>
-          </div>
         </div>
       </ScrollArea>
     </Card>
