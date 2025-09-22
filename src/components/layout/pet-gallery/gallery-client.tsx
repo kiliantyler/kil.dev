@@ -16,21 +16,29 @@ type GalleryClientProps = {
   images: GalleryImage[]
 }
 
-function toPhotos(images: GalleryImage[]): Photo[] {
+type PhotoWithBlur = Photo & { blurDataURL?: string }
+
+function toPhotos(images: GalleryImage[]): PhotoWithBlur[] {
   return images.map(img => ({
     src: img.url,
     width: img.width,
     height: img.height,
     alt: img.alt || 'Pet photo',
+    srcSet: img.srcSet,
+    blurDataURL: img.blurDataURL,
   }))
 }
 
-function toSlides(images: GalleryImage[]): SlideImage[] {
+type SlideImageWithBlur = SlideImage & { blurDataURL?: string }
+
+function toSlides(images: GalleryImage[]): SlideImageWithBlur[] {
   return images.map(img => ({
     src: img.url,
     alt: img.alt || 'Pet photo',
     width: img.width,
     height: img.height,
+    srcSet: img.srcSet,
+    blurDataURL: img.blurDataURL,
   }))
 }
 
@@ -110,6 +118,8 @@ export function GalleryClient({ images }: GalleryClientProps) {
                   sizes="(min-width: 1280px) 16vw, (min-width: 1024px) 20vw, (min-width: 768px) 25vw, (min-width: 480px) 33vw, 50vw"
                   className="h-auto w-full rounded-lg shadow-2xl"
                   style={{ width: '100%', height: 'auto' }}
+                  placeholder={photo.blurDataURL ? 'blur' : 'empty'}
+                  blurDataURL={photo.blurDataURL}
                   priority={index < 6}
                 />
               )
