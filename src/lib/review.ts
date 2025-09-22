@@ -14,6 +14,9 @@ export const REVIEW_CONFIG: ReviewConfig = {
       'Welcome back. We saved you a front-row seat to the rating.',
       'Still waiting on that perfect 5. No pressure. Lots of pressure.',
       "It's okay. You can do it. Five is just a very round number.",
+      "No really, what's your rating?",
+      "Why won't you just rate this site? I worked hard on it!",
+      "You can't just leave me hanging like this!",
     ],
     ratingText: {
       0: 'Be honest. How many stars are we talking?',
