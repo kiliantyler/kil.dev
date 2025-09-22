@@ -85,6 +85,14 @@ export function markSubmitted(rating: 5): void {
   writeReviewState({ ...state, submittedAt: now, lastRating: rating })
 }
 
+export function resetReviewState(): void {
+  const w = safeGetWindow()
+  if (!w) return
+  try {
+    w.localStorage.removeItem(REVIEW_CONFIG.storageKey)
+  } catch {}
+}
+
 export function shouldShowGate(unlocked: UnlockedMap): boolean {
   if (!REVIEW_CONFIG.enabled) return false
 
