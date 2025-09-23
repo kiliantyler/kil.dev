@@ -439,7 +439,7 @@ export function ThemeToggle() {
               variant="ghost"
               size="sm"
               className={cn(
-                'transition-all duration-200 ease-out hover:bg-accent/70 justify-start gap-2',
+                'transition-[opacity,transform] duration-200 ease-out hover:bg-accent/70 justify-start gap-2',
                 open ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-2 scale-95',
               )}
               style={{ transitionDelay: `${idx * 60}ms` }}>
