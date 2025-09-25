@@ -9,6 +9,7 @@ import { type AchievementId } from '@/lib/achievements'
 import { HOME_CONTENT } from '@/lib/content'
 import { themes } from '@/lib/themes'
 import { isLadybirdUA } from '@/utils/ladybird'
+import { PROFILE_IMAGE_VARIANT_DATA_ATTRIBUTE } from '@/utils/profile-image-variant-script'
 import { buildPerThemeVariantCss } from '@/utils/theme-css'
 import { getThemeHeadshot } from '@/utils/themes'
 import Image, { type StaticImageData } from 'next/image'
@@ -30,7 +31,11 @@ export function ProfileImage() {
   const [isImageLoaded, setIsImageLoaded] = useState(true)
   const useConfused = mounted && hash === '#YouWereAlreadyHere'
   const [isGrumpy, setIsGrumpy] = useState(false)
-  const [isLadybird, setIsLadybird] = useState(false)
+  const [isLadybird, setIsLadybird] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return isLadybirdUA()
+  })
+  // Amongus variant is handled purely via CSS using the root data attribute
 
   type ProfileVariant = 'grumpy' | 'ladybird' | 'confused' | 'default'
   type NonThemeVariant = Exclude<ProfileVariant, 'default'>
@@ -49,19 +54,29 @@ export function ProfileImage() {
   }
 
   useEffect(() => {
-    if (!isLadybirdUA()) return
-
-    setIsLadybird(true)
-    try {
-      if (typeof window !== 'undefined') {
+    if (isLadybird) {
+      try {
         const alreadyCaptured = window.sessionStorage.getItem('ladybird_detected_event') === '1'
         if (!alreadyCaptured) {
           captureLadybirdDetected(navigator.userAgent || '')
           window.sessionStorage.setItem('ladybird_detected_event', '1')
         }
+      } catch {}
+      return
+    }
+    if (!isLadybirdUA()) return
+
+    setIsLadybird(true)
+    try {
+      const alreadyCaptured = window.sessionStorage.getItem('ladybird_detected_event') === '1'
+      if (!alreadyCaptured) {
+        captureLadybirdDetected(navigator.userAgent || '')
+        window.sessionStorage.setItem('ladybird_detected_event', '1')
       }
     } catch {}
-  }, [])
+  }, [isLadybird])
+
+  // No runtime toggling for Amongus; CSS/attribute handles first paint and hydration
 
   useEffect(() => {
     if (isLadybird) {
@@ -127,11 +142,13 @@ export function ProfileImage() {
   }, [mounted, isEnvDrivenVariant])
 
   const profileImgCss = useMemo(() => {
-    return buildPerThemeVariantCss({
+    const base = buildPerThemeVariantCss({
       baseSelector: '.profile-img',
       variantAttr: 'data-theme',
       display: 'block',
     })
+    const toggle = `\nhtml[${PROFILE_IMAGE_VARIANT_DATA_ATTRIBUTE}="amongus"] .profile-img{display:none!important}\nhtml[${PROFILE_IMAGE_VARIANT_DATA_ATTRIBUTE}="amongus"] .amongus-img{display:block!important}`
+    return base + toggle
   }, [])
 
   return (
@@ -177,6 +194,19 @@ export function ProfileImage() {
             onLoad={() => setIsImageLoaded(true)}
           />
         )}
+
+        {/* Always render Amongus overlay; CSS shows when root has data attribute */}
+        <Image
+          alt={`${HOME_CONTENT.NAME} amongus`}
+          src={Headshots.Amongus}
+          className="amongus-img hidden rounded-lg transition-transform duration-500 ease-(--ease-fluid) translate-y-0 scale-100 transform-gpu group-hover:-translate-y-1 group-hover:scale-105"
+          loading="eager"
+          priority
+          fill
+          sizes="(min-width: 1024px) 500px, 100vw"
+          aria-hidden
+          role="presentation"
+        />
       </div>
     </div>
   )
