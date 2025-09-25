@@ -65,28 +65,14 @@ export function ProfileImage() {
 
   useEffect(() => {
     if (isLadybird) {
-      try {
-        const alreadyCaptured = window.sessionStorage.getItem('ladybird_detected_event') === '1'
-        if (!alreadyCaptured) {
-          captureLadybirdDetected(navigator.userAgent || '')
-          window.sessionStorage.setItem('ladybird_detected_event', '1')
-        }
-      } catch {}
+      captureIfNotAlready()
       return
     }
     if (!isLadybirdUA()) return
 
     setIsLadybird(true)
-    try {
-      const alreadyCaptured = window.sessionStorage.getItem('ladybird_detected_event') === '1'
-      if (!alreadyCaptured) {
-        captureLadybirdDetected(navigator.userAgent || '')
-        window.sessionStorage.setItem('ladybird_detected_event', '1')
-      }
-    } catch {}
+    captureIfNotAlready()
   }, [isLadybird])
-
-  // No runtime toggling for Amongus; CSS/attribute handles first paint and hydration
 
   useEffect(() => {
     if (isLadybird) {
