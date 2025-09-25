@@ -4,7 +4,12 @@ import '@/styles/globals.css'
 import { Background } from '@/components/layout/background'
 import { Footer } from '@/components/layout/footer'
 import { Header } from '@/components/layout/header'
+import { PROFILE_IMAGE_ALT_DOMAINS } from '@/lib/alt-domains'
 import { buildPresenceScript } from '@/utils/achievements'
+import {
+  PROFILE_IMAGE_VARIANT_DATA_ATTRIBUTE,
+  buildProfileImageVariantScript,
+} from '@/utils/profile-image-variant-script'
 import { buildThemeScript } from '@/utils/theme-runtime'
 import { type Metadata } from 'next'
 import { Noto_Sans, Space_Grotesk, VT323 } from 'next/font/google'
@@ -41,6 +46,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       suppressHydrationWarning>
       <head>
         <script id="pre-theme" dangerouslySetInnerHTML={{ __html: buildThemeScript() }} />
+        <script
+          id="pre-profile-image-variant"
+          data-attribute={PROFILE_IMAGE_VARIANT_DATA_ATTRIBUTE}
+          data-domains={PROFILE_IMAGE_ALT_DOMAINS.join(',')}
+          dangerouslySetInnerHTML={{ __html: buildProfileImageVariantScript(PROFILE_IMAGE_ALT_DOMAINS) }}
+        />
         <script
           id="pre-achievements"
           dangerouslySetInnerHTML={{
