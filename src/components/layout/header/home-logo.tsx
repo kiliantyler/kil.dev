@@ -28,15 +28,14 @@ export function HomeLogo() {
       onFocus={handleFocus}
       onBlur={handleBlur}>
       <div>
-        <h2 className="relative text-xl leading-tight font-bold text-foreground whitespace-nowrap">
+        {/* Default logo */}
+        <h2 className="relative text-xl leading-tight font-bold text-foreground whitespace-nowrap logo-default">
           <span aria-hidden="true" className="inline-block -translate-y-[0.125rem]">
             {'{ '}
           </span>
           <span
             aria-hidden="true"
-            className={
-              'inline-block align-top overflow-hidden transition-[max-width] duration-250 ease-out relative max-w-[30ch]'
-            }>
+            className="inline-block align-top overflow-hidden transition-[max-width] duration-250 ease-out relative max-w-[30ch]">
             <span className="inline-block align-top">
               <span className="relative inline-block align-top">
                 <span aria-hidden="true" className="invisible">
