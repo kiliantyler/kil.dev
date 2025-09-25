@@ -17,7 +17,7 @@ export function ImATeapotContent() {
                 fill
                 sizes="(min-width: 1024px) 24rem, (min-width: 768px) 18rem, 13rem"
                 className="object-contain"
-                priority={false}
+                priority={true}
               />
             </div>
           </div>
@@ -37,6 +37,14 @@ export function ImATeapotContent() {
               className="bg-primary hover:bg-primary/90 h-12 min-w-[160px] gap-2 rounded-md px-6 text-base font-bold text-primary-foreground shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
               aria-label="Return to home page">
               <span>Go Home</span>
+            </LinkButton>
+            <LinkButton
+              href="https://good.store/collections/keats-and-co-loose-leaf-tea-and-coffee"
+              external
+              variant="secondary"
+              className="h-12 min-w-[160px] gap-2 rounded-md px-6 text-base font-bold shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+              aria-label="Open Keats & Co loose-leaf tea and coffee collection in a new tab">
+              <span>Shop Tea</span>
             </LinkButton>
           </div>
         </div>
