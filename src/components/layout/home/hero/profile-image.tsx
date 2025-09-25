@@ -46,6 +46,16 @@ export function ProfileImage() {
     confused: Headshots.Confused,
   }
 
+  function captureIfNotAlready() {
+    try {
+      const alreadyCaptured = window.sessionStorage.getItem('ladybird_detected_event') === '1'
+      if (!alreadyCaptured) {
+        captureLadybirdDetected(navigator.userAgent || '')
+        window.sessionStorage.setItem('ladybird_detected_event', '1')
+      }
+    } catch {}
+  }
+
   function computeVariant(isGrumpyFlag: boolean, isLadybirdFlag: boolean, useConfusedFlag: boolean): ProfileVariant {
     if (isGrumpyFlag) return 'grumpy'
     if (isLadybirdFlag) return 'ladybird'
