@@ -16,6 +16,7 @@ export type ThemeConfig = {
   icon: IconComponent
   headshotImage: StaticImageData
   baseColor: BaseColor
+  darkModeNote?: string
   timeRange?: { start: MonthDay; end: MonthDay }
 }
 
