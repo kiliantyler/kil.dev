@@ -6,14 +6,14 @@ import { useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { useThemeTransition } from '@/components/ui/theme-toggle'
 import { captureDarkModeEasterEgg } from '@/hooks/posthog'
-import { buildBaseColorGateCss } from '@/lib/theme-css'
+import { buildPerThemeVariantCss } from '@/lib/theme-css'
+import { themes } from '@/lib/themes'
 
 export function ModeToggleNote() {
   const noteCss = useMemo(() => {
-    return buildBaseColorGateCss({
+    return buildPerThemeVariantCss({
       baseSelector: '.mode-note',
-      darkSelector: '.mode-note--dark',
-      lightSelector: '.mode-note--light',
+      variantAttr: 'data-theme',
       display: 'inline',
     })
   }, [])
@@ -21,8 +21,11 @@ export function ModeToggleNote() {
   return (
     <span className="text-muted-foreground text-xs font-normal">
       <style>{noteCss}</style>
-      <span className="mode-note mode-note--dark">(good choice)</span>
-      <span className="mode-note mode-note--light">(why are you in light mode?)</span>
+      {themes.map(t => (
+        <span className="mode-note" data-theme={t.name} key={t.name}>
+          {t.darkModeNote}
+        </span>
+      ))}
     </span>
   )
 }
