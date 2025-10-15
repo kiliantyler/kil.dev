@@ -26,24 +26,28 @@ export const themes = [
     icon: Sun,
     headshotImage: Headshot,
     baseColor: 'light',
+    darkModeNote: '(why are you in light mode?)',
   },
   {
     name: 'dark',
     icon: Moon,
     headshotImage: Headshot,
     baseColor: 'dark',
+    darkModeNote: '(good choice)',
   },
   {
     name: 'cyberpunk',
     icon: Zap,
     headshotImage: Cyberpunk,
     baseColor: 'dark',
+    darkModeNote: '(cyberpunk is cool, too)',
   },
   {
     name: 'halloween',
     icon: Ghost,
     headshotImage: Halloween,
     baseColor: 'dark',
+    darkModeNote: '(Happy Halloween!)',
     timeRange: { start: { month: 10, day: 15 }, end: { month: 11, day: 1 } },
   },
   {
@@ -51,6 +55,7 @@ export const themes = [
     icon: Leaf,
     headshotImage: Thanksgiving,
     baseColor: 'dark',
+    darkModeNote: '(Happy Thanksgiving!)',
     timeRange: { start: { month: 11, day: 15 }, end: { month: 11, day: 30 } },
   },
 ] as const satisfies ReadonlyArray<ThemeConfig>
