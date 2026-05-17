@@ -2,6 +2,53 @@ import { expect, test, type Page } from '@playwright/test'
 import { simulateKonamiCode } from '../fixtures/achievement-helpers'
 import { abortNoise, clearState, gotoAndWaitForMain } from '../fixtures/test-helpers'
 
+type SnakeCanvasTextEvent = {
+  text: string
+  time: number
+}
+
+type SnakeCanvasTextGlobal = typeof globalThis & {
+  __snakeCanvasTextEvents?: SnakeCanvasTextEvent[]
+  __snakeCanvasTextRecorderInstalled?: boolean
+}
+
+async function installCanvasTextRecorder(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const win = globalThis as SnakeCanvasTextGlobal
+    if (win.__snakeCanvasTextRecorderInstalled) return
+
+    win.__snakeCanvasTextEvents = []
+    win.__snakeCanvasTextRecorderInstalled = true
+
+    const originalFillText = CanvasRenderingContext2D.prototype.fillText
+    CanvasRenderingContext2D.prototype.fillText = function (
+      text: string,
+      x: number,
+      y: number,
+      maxWidth?: number,
+    ): void {
+      const events = win.__snakeCanvasTextEvents ?? []
+      events.push({ text, time: performance.now() })
+      if (events.length > 1000) {
+        events.splice(0, events.length - 1000)
+      }
+      win.__snakeCanvasTextEvents = events
+
+      if (maxWidth === undefined) {
+        return originalFillText.call(this, text, x, y)
+      }
+      return originalFillText.call(this, text, x, y, maxWidth)
+    }
+  })
+}
+
+async function clearCanvasTextEvents(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const win = globalThis as SnakeCanvasTextGlobal
+    win.__snakeCanvasTextEvents = []
+  })
+}
+
 /**
  * Helper to check if game is over
  */
@@ -14,90 +61,51 @@ async function isGameOver(page: Page): Promise<boolean> {
 }
 
 /**
- * Wait for leaderboard to finish loading by checking canvas content stability.
- * The canvas shows "Loading leaderboard..." while loading, then either
- * "LEADERBOARD" (if entries exist) or nothing (if empty).
- * Uses pixel sampling to detect when loading text area stabilizes.
+ * Wait for leaderboard to finish loading by checking the canvas text rendered
+ * in recent game-over frames. A resolved empty leaderboard is valid, but a
+ * frame that is still drawing "Loading leaderboard..." is not.
  */
 async function waitForLeaderboardLoad(page: Page, timeoutMs = 5000): Promise<void> {
-  try {
-    await expect
-      .poll(
-        async () => {
-          // Check if leaderboard has finished loading by detecting canvas content stability
-          // When loading completes, the canvas content in the loading text area stabilizes
-          return await page.evaluate(() => {
-            const canvas = document.querySelector('canvas')
-            if (!canvas) return false
+  await expect
+    .poll(
+      async () => {
+        return await page.evaluate(() => {
+          const win = globalThis as SnakeCanvasTextGlobal
+          const events = win.__snakeCanvasTextEvents ?? []
+          const recentTexts = new Set(
+            events.filter(event => performance.now() - event.time < 250).map(event => event.text),
+          )
 
-            // Ensure game is over before checking leaderboard state
-            if (document.body.classList.contains('snake-game-active')) {
-              return false
-            }
-
-            const ctx = canvas.getContext('2d', { willReadFrequently: true })
-            if (!ctx) return false
-
-            // Sample pixels in the area where "Loading leaderboard..." text is rendered
-            // The text is centered horizontally, at approximately 20% from top (borderTop + 140)
-            const width = canvas.width
-            const height = canvas.height
-            const centerX = Math.floor(width / 2)
-            const textAreaY = Math.floor(height * 0.2)
-
-            // Sample a region around the center where loading/leaderboard text appears
-            const sampleSize = 150
-            const sampleHeight = 40
-            const imageData = ctx.getImageData(
-              centerX - sampleSize / 2,
-              textAreaY - sampleHeight / 2,
-              sampleSize,
-              sampleHeight,
-            )
-            const data = imageData.data
-
-            // Check if canvas has been painted with visible content in this area
-            // This indicates React has rendered the game over overlay (with or without leaderboard)
-            let hasVisibleContent = false
-            for (let i = 0; i < data.length; i += 4) {
-              const r = data[i] ?? 0
-              const g = data[i + 1] ?? 0
-              const b = data[i + 2] ?? 0
-              const a = data[i + 3] ?? 0
-              // Check for visible pixels (sufficient alpha and color)
-              // Green (#10b981) or white text would have high values
-              if (a > 50 && (r > 50 || g > 50 || b > 50)) {
-                hasVisibleContent = true
-                break
-              }
-            }
-
-            // Canvas has content and game is over - leaderboard loading is complete
-            // (either showing "LEADERBOARD" text or empty, but isLoadingLeaderboard is false)
-            return hasVisibleContent
-          })
-        },
-        {
-          timeout: timeoutMs,
-          intervals: [200, 300, 500], // Check more frequently at first, then less often
-        },
-      )
-      .toBe(true)
-  } catch {
-    // Timeout - leaderboard might be legitimately empty or Convex query is slow
-    // This is safe to proceed as empty leaderboard is valid
-    // The test will continue and verify what it can
-  }
+          return (
+            !document.body.classList.contains('snake-game-active') &&
+            recentTexts.has('GAME OVER') &&
+            !recentTexts.has('Loading leaderboard...')
+          )
+        })
+      },
+      {
+        message: 'leaderboard should leave the canvas loading state',
+        timeout: timeoutMs,
+        intervals: [200, 300, 500],
+      },
+    )
+    .toBe(true)
 }
 
 test.describe('Snake Game Leaderboard', () => {
   test.beforeEach(async ({ page }) => {
+    await installCanvasTextRecorder(page)
     await clearState(page)
     await abortNoise(page)
     // Don't disable animations - we need the game to work properly
   })
 
-  test('should display leaderboard with scores', async ({ page }) => {
+  test('should resolve leaderboard loading on game over', async ({ page }) => {
+    const consoleMessages: string[] = []
+    page.on('console', msg => {
+      consoleMessages.push(msg.text())
+    })
+
     await gotoAndWaitForMain(page, '/')
     await page.waitForTimeout(500)
 
@@ -121,8 +129,7 @@ test.describe('Snake Game Leaderboard', () => {
       timeout: 5000,
     })
 
-    // Wait for leaderboard to finish loading (Convex query)
-    // Uses deterministic polling with safe fallback for empty leaderboard
+    await clearCanvasTextEvents(page)
     await waitForLeaderboardLoad(page, 5000)
 
     // Verify leaderboard displays by checking:
@@ -142,5 +149,6 @@ test.describe('Snake Game Leaderboard', () => {
       return canvas !== null && canvas.width > 0 && canvas.height > 0
     })
     expect(canvasRendering).toBe(true)
+    expect(consoleMessages.some(message => message.includes('Game session start response:'))).toBe(false)
   })
 })

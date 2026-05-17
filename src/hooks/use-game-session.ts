@@ -63,7 +63,6 @@ export function useGameSession() {
       })
 
       const data = (await response.json()) as GameStartResponse
-      console.log('Game session start response:', data)
       if (data.success && data.sessionId && data.secret && typeof data.seed === 'number') {
         setSession({ sessionId: data.sessionId, secret: data.secret, seed: data.seed })
         startTimeRef.current = gameStartTimeRef.current // Use game start time, not session start time
