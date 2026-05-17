@@ -15,6 +15,10 @@ fi
 cd "${repo_root}"
 
 if command -v mise >/dev/null 2>&1; then
+  if [[ -f "${repo_root}/mise.toml" ]]; then
+    mise trust "${repo_root}/mise.toml"
+  fi
+
   mise install
 fi
 
