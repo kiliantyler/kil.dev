@@ -244,7 +244,7 @@ export function AchievementsProvider({
           document.documentElement.dataset.achievementsJustUnlocked = 'true'
           globalThis.window.setTimeout(() => {
             delete document.documentElement.dataset.achievementsJustUnlocked
-          }, 1000)
+          }, 1400)
         }
       } catch {}
     }
@@ -289,7 +289,7 @@ export function AchievementsProvider({
           document.documentElement.dataset.petGalleryJustUnlocked = 'true'
           globalThis.window.setTimeout(() => {
             delete document.documentElement.dataset.petGalleryJustUnlocked
-          }, 1000)
+          }, 1400)
         }
       } catch {}
     }
