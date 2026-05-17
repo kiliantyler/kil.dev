@@ -95,6 +95,33 @@ export function NavLava() {
     hideIndicator()
   }, [activeIndex, moveIndicatorTo, hideIndicator, activeItems])
 
+  React.useLayoutEffect(() => {
+    const container = containerRef.current
+    if (!container || typeof ResizeObserver === 'undefined') return
+
+    let frameId = 0
+    const scheduleMeasure = () => {
+      cancelAnimationFrame(frameId)
+      frameId = requestAnimationFrame(() => {
+        const activeKey = activeIndex >= 0 ? activeItems[activeIndex]?.href : null
+        const key = hoveredKey ?? activeKey
+        if (key) {
+          moveIndicatorTo(key, didInitRef.current)
+          return
+        }
+        hideIndicator()
+      })
+    }
+
+    const observer = new ResizeObserver(scheduleMeasure)
+    observer.observe(container)
+
+    return () => {
+      cancelAnimationFrame(frameId)
+      observer.disconnect()
+    }
+  }, [activeIndex, activeItems, hoveredKey, moveIndicatorTo, hideIndicator])
+
   const handleMouseLeaveContainer = React.useCallback(() => {
     setHoveredKey(null)
     if (activeIndex >= 0) {
@@ -132,6 +159,7 @@ export function NavLava() {
       const focusable = anchors.filter(el => {
         if (el.hasAttribute('disabled')) return false
         if (el.getAttribute('aria-hidden') === 'true') return false
+        if (globalThis.getComputedStyle(el).visibility === 'hidden') return false
         const tabIndexAttr = el.getAttribute('tabindex')
         if (tabIndexAttr !== null && Number(tabIndexAttr) < 0) return false
         if (el.offsetParent === null) return false
@@ -287,7 +315,7 @@ function NavLink(props: NavLinkProps) {
       href={href}
       ref={node => registerRef(href, node)}
       className={cn(
-        'relative z-10 rounded-md px-3 py-2 text-sm font-medium transition-colors outline-none',
+        'relative z-10 mx-0.5 rounded-md px-3 py-2 text-sm font-medium transition-colors outline-none',
         NAV_TEXT.base,
         NAV_TEXT.hover,
         isActive && (!hoveredKey || hoveredKey === href) ? NAV_TEXT.active : undefined,

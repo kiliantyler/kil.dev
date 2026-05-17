@@ -1,24 +1,50 @@
-/* Pre-hydration Achievements menu reveal */
-.js-achievements-nav {
-  display: none;
+/* Pre-hydration gated menu reveal */
+.js-achievements-nav,
+.js-pet-gallery-nav {
+  max-width: 0;
+  margin-inline: 0;
+  padding-inline: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-0.375rem) scale(0.96);
+  transform-origin: center;
+  visibility: hidden;
+  white-space: nowrap;
+  transition:
+    max-width 520ms cubic-bezier(0.16, 1, 0.3, 1),
+    margin-inline 520ms cubic-bezier(0.16, 1, 0.3, 1),
+    padding-inline 520ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 240ms ease-out,
+    transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: max-width, margin-inline, padding-inline, opacity, transform;
 }
 
-html[data-has-achievements='true'] .js-achievements-nav {
-  display: inline-flex;
+html[data-has-achievements='true'] .js-achievements-nav,
+html[data-has-pet-gallery='true'] .js-pet-gallery-nav,
+.js-achievements-nav[aria-current='page'],
+.js-pet-gallery-nav[aria-current='page'] {
+  max-width: 10rem;
+  margin-inline: 0.125rem;
+  padding-inline: 0.75rem;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0) scale(1);
+  visibility: visible;
 }
 
 /* Always keep visible while on the current page to avoid nav lava glitches */
 .js-achievements-nav[aria-current='page'],
 .js-pet-gallery-nav[aria-current='page'] {
-  display: inline-flex;
+  pointer-events: auto;
 }
 
 /* Sparkle burst when just unlocked (single session) */
 html[data-has-achievements='true'][data-achievements-just-unlocked='true'] .js-achievements-nav {
   position: relative;
   isolation: isolate;
-  animation: kd-fade-slide-in 220ms ease-out both;
-  will-change: opacity, transform;
+  animation: kd-nav-entry-settle 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  pointer-events: none;
 }
 
 html[data-has-achievements='true'][data-achievements-just-unlocked='true'] .js-achievements-nav::after {
@@ -56,21 +82,12 @@ html[data-has-achievements='true'][data-achievements-just-unlocked='true'] .js-a
   }
 }
 
-/* Pre-hydration Pet Gallery menu reveal */
-.js-pet-gallery-nav {
-  display: none;
-}
-
-html[data-has-pet-gallery='true'] .js-pet-gallery-nav {
-  display: inline-flex;
-}
-
 /* Sparkle burst when PET_PARADE just unlocked (single session) */
 html[data-has-pet-gallery='true'][data-pet-gallery-just-unlocked='true'] .js-pet-gallery-nav {
   position: relative;
   isolation: isolate;
-  animation: kd-fade-slide-in 220ms ease-out both;
-  will-change: opacity, transform;
+  animation: kd-nav-entry-settle 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  pointer-events: none;
 }
 
 html[data-has-pet-gallery='true'][data-pet-gallery-just-unlocked='true'] .js-pet-gallery-nav::after {
@@ -90,23 +107,34 @@ html[data-has-pet-gallery='true'][data-pet-gallery-just-unlocked='true'] .js-pet
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html[data-has-pet-gallery='true'] .js-pet-gallery-nav {
+  .js-achievements-nav,
+  .js-pet-gallery-nav {
+    transition: none;
+  }
+
+  html[data-has-pet-gallery='true'] .js-pet-gallery-nav,
+  html[data-has-achievements='true'] .js-achievements-nav {
     animation: none;
   }
+
   html[data-has-pet-gallery='true'][data-pet-gallery-just-unlocked='true'] .js-pet-gallery-nav::after {
     animation: none;
     content: none;
   }
 }
 
-@keyframes kd-fade-slide-in {
-  from {
+@keyframes kd-nav-entry-settle {
+  0% {
     opacity: 0;
-    transform: translateY(-4px);
+    transform: translateX(-0.375rem) translateY(-0.125rem) scale(0.96);
   }
-  to {
+  60% {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(0.0625rem) translateY(0) scale(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) translateY(0) scale(1);
   }
 }
 
