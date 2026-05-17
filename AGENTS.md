@@ -37,6 +37,18 @@ These instructions apply to the whole repository.
 - For UI or route behavior, run `bun run test:e2e` or targeted Playwright specs.
 - Before claiming the site is production-ready, run `bun run build`.
 
+## Linear Tracking
+
+- Track code, content, configuration, bug, feature, and maintenance work in the Linear project `kil.dev`.
+- Project URL: https://linear.app/ktyler/project/kildev-617c75ebaf38
+- Team: `Ktyler` (`KTY`).
+- Before starting a repository change, search for an existing matching Linear issue in the `kil.dev` project. If none exists, create one with the relevant label and milestone.
+- Reference the Linear issue identifier in branch names, commits, and PRs when practical.
+- Keep issue scope concrete: one bug, feature, cleanup, or verification task per issue unless the user explicitly asks for a broader tracking bucket.
+- Use the existing project labels where they fit: `Frontend`, `Convex`, `Generated assets`, `Analytics`, `Ops`, plus `Bug`, `Feature`, or `Improvement`.
+- Use the existing milestones where they fit: `Experience and content`, `Runtime and data`, `Production confidence`, and `Baseline tracking`.
+- If the Linear plugin is unavailable, continue the work and call out that tracking could not be updated.
+
 ## Frontend Conventions
 
 - Follow the existing component structure under `src/components`.
