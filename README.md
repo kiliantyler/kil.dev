@@ -64,6 +64,18 @@ Notes:
 - `bun run check` – lint + typecheck
 - `bun run check:all` – all checks (type, format, lint)
 
+## Codex and worktrees
+
+Codex app setup lives in `.codex/environments/environment.toml` and exposes Run, Preview, Check, Test, and E2E actions.
+
+To make Git/Codex-created worktrees copy local ignored `.env` files from the source checkout, enable the tracked hooks once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+The hook delegates to `scripts/codex/setup-worktree-local-config.sh`. It copies ignored env files only; it does not commit or synthesize secrets.
+
 ## License
 
 This project is released under **GPL-3.0** (see `LICENSE`).
