@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+common_dir="$(git rev-parse --git-common-dir)"
+source_root="$(cd "${common_dir}/.." && pwd)"
+setup_script="${repo_root}/scripts/codex/setup-worktree-local-config.sh"
+
+if [[ ! -x "${setup_script}" ]]; then
+  exit 0
+fi
+
+CODEX_SOURCE_TREE_PATH="${source_root}" \
+CODEX_WORKTREE_PATH="${repo_root}" \
+  "${setup_script}"

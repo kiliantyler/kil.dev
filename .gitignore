@@ -45,6 +45,9 @@ yarn-error.log*
 .env
 .env*.local
 
+# local worktrees
+.worktrees/
+
 # vercel
 .vercel
 
