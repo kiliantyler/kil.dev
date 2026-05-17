@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import { expectAchievementCookieContains, expectConfettiLikely } from '../../fixtures/achievement-helpers'
 import { abortNoise, clearState, closeThemeMenu, gotoAndWaitForMain, openThemeMenu } from '../../fixtures/test-helpers'
 
@@ -22,6 +22,16 @@ test.describe('THEME_TAPDANCE Achievement', () => {
     expect(total).toBeLessThan(4)
   })
 
+  async function expectAllUnlockedSeasonalThemesVisible(page: Page) {
+    const menu = page.locator('#theme-options')
+    await expect(menu).toHaveAttribute('aria-hidden', 'false')
+    await Promise.all(
+      ['Pride', 'Halloween', 'Thanksgiving', 'Christmas'].map(name =>
+        expect(menu.getByRole('menuitem', { name })).toBeVisible(),
+      ),
+    )
+  }
+
   test('should reset counter if theme is selected', async ({ page }) => {
     await gotoAndWaitForMain(page, '/')
 
@@ -41,39 +51,50 @@ test.describe('THEME_TAPDANCE Achievement', () => {
     await themeOption.click()
     await page.waitForTimeout(500)
 
-    // Now open/close 6 more times (counter should have reset)
-    for (let i = 0; i < 6; i++) {
+    // Now open/close 4 more times (counter should have reset and not unlocked yet)
+    for (let i = 0; i < 4; i++) {
       await openThemeMenu(page)
       await page.waitForTimeout(200)
       await page.locator('button[aria-controls="theme-options"]').first().click()
       await page.waitForTimeout(200)
     }
 
-    // Wait for achievement
-    await page.waitForTimeout(1500)
+    await expect
+      .poll(async () => page.evaluate(() => document.documentElement.dataset.achievementThemeTapdance), {
+        timeout: 100,
+      })
+      .not.toBe('true')
 
-    // Should now be unlocked
+    await openThemeMenu(page)
+
+    await page.waitForFunction(
+      () => {
+        return document.documentElement.dataset.achievementThemeTapdance === 'true'
+      },
+      { timeout: 3000 },
+    )
     await expectAchievementCookieContains(page, 'THEME_TAPDANCE')
   })
 
-  test('should unlock THEME_TAPDANCE after opening/closing theme menu 6 times', async ({ page }) => {
+  test('should unlock THEME_TAPDANCE on the 5th theme menu open and reveal seasonal themes immediately', async ({
+    page,
+  }) => {
     await gotoAndWaitForMain(page, '/')
 
-    // Open and close theme menu 6 times
-    // The counter increments when closing without selecting a theme
-    for (let i = 0; i < 6; i++) {
+    // Open and close theme menu 4 times without selecting a theme.
+    for (let i = 0; i < 4; i++) {
       await openThemeMenu(page)
       // Wait for menu to be fully open
       await page.waitForSelector('#theme-options[aria-hidden="false"]', { state: 'attached', timeout: 1000 })
       await page.waitForTimeout(100) // Small delay to ensure state is stable
-      // Close by toggling the button again, which is how the counter increments
       await page.locator('button[aria-controls="theme-options"]').first().click()
       // Wait for menu to be fully closed before next iteration
       await page.waitForSelector('#theme-options[aria-hidden="true"]', { state: 'attached', timeout: 1000 })
       await page.waitForTimeout(100) // Small delay to ensure state updates are processed
     }
 
-    // Wait for achievement to process - check for data attribute as a reliable indicator
+    await openThemeMenu(page)
+
     await page.waitForFunction(
       () => {
         return document.documentElement.dataset.achievementThemeTapdance === 'true'
@@ -84,6 +105,9 @@ test.describe('THEME_TAPDANCE Achievement', () => {
     // Verify achievement is unlocked
     await expectAchievementCookieContains(page, 'THEME_TAPDANCE')
 
+    // Verify the newly unlocked themes are visible in the menu that is already open.
+    await expectAllUnlockedSeasonalThemesVisible(page)
+
     // Verify confetti was triggered (theme tapdance has confetti)
     await expectConfettiLikely(page)
   })
@@ -91,11 +115,11 @@ test.describe('THEME_TAPDANCE Achievement', () => {
   test('should unlock all seasonal themes after THEME_TAPDANCE', async ({ page }) => {
     await gotoAndWaitForMain(page, '/')
 
-    // Unlock THEME_TAPDANCE by opening/closing menu 6 times
-    for (let i = 0; i < 6; i++) {
+    // Unlock THEME_TAPDANCE by opening the menu 5 times
+    for (let i = 0; i < 5; i++) {
       await openThemeMenu(page)
       await page.waitForTimeout(200)
-      await closeThemeMenu(page)
+      if (i < 4) await closeThemeMenu(page)
       await page.waitForTimeout(200)
     }
 

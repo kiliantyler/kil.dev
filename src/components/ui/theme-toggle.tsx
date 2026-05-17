@@ -29,6 +29,8 @@ import {
 } from 'react'
 import { ThemeOptionsPanel, ThemeOptionsSheet } from './theme-options-panel'
 
+const THEME_TAPDANCE_OPEN_THRESHOLD = 5
+
 function SystemIcon({ className }: Readonly<{ className?: string }>) {
   // Avoid hydration mismatch: default to Seasonal icon until mounted
   const { seasonalOverlaysEnabled } = useTheme()
@@ -45,6 +47,7 @@ export function ThemeToggle() {
   const { unlocked, has, unlock } = useAchievements()
 
   const currentPreference: Theme = theme ?? 'system'
+  const themeTapdanceUnlocked = has('THEME_TAPDANCE')
 
   const [tooltipHold, setTooltipHold] = useState(false)
   const [toggleCount, setToggleCount] = useState(0)
@@ -106,7 +109,7 @@ export function ThemeToggle() {
       setToggleCount(0)
 
       // Check if the theme is available
-      const availableThemes = getAvailableThemes() as readonly Theme[]
+      const availableThemes = getAvailableThemes(undefined, themeTapdanceUnlocked) as readonly Theme[]
 
       // Only proceed if the theme is available
       if (!availableThemes.includes(nextPref)) {
@@ -159,7 +162,16 @@ export function ThemeToggle() {
       }
       setOpen(false)
     },
-    [currentPreference, injectCircleBlur, resolvedTheme, setTheme, startTransition, systemTheme, setOpen],
+    [
+      currentPreference,
+      injectCircleBlur,
+      resolvedTheme,
+      setTheme,
+      startTransition,
+      systemTheme,
+      setOpen,
+      themeTapdanceUnlocked,
+    ],
   )
 
   type IconComponent = ComponentType<{ className?: string }>
@@ -168,8 +180,7 @@ export function ThemeToggle() {
   const iconByTheme = useMemo<Partial<Record<Theme, IconComponent>>>(() => ({ system: SystemIcon }), [])
 
   const allOptions: ThemeOption[] = useMemo(() => {
-    const themeList: readonly Theme[] = getAvailableThemes() as readonly Theme[]
-    const achievementUnlocked = has('THEME_TAPDANCE')
+    const themeList: readonly Theme[] = getAvailableThemes(undefined, themeTapdanceUnlocked) as readonly Theme[]
     const hasUnlockedMatrix = isMatrixThemeUnlocked()
     const hasUnlockedDotcom = isDotcomThemeUnlocked()
     const filteredList = themeList.filter(t => {
@@ -180,14 +191,14 @@ export function ThemeToggle() {
       if (entry?.hiddenFromMenu && !((hasUnlockedMatrix && t === 'matrix') || (hasUnlockedDotcom && t === 'dotcom')))
         return false
       const gated = Boolean(entry?.requiresAchievement)
-      return achievementUnlocked || !gated
+      return themeTapdanceUnlocked || !gated
     })
     return filteredList.map((t): ThemeOption => {
       const label: string = getThemeLabel(t)
       const resolvedIcon: IconComponent = iconByTheme[t] ?? getThemeIcon(t, SystemIcon)
       return { label, value: t, Icon: resolvedIcon }
     })
-  }, [iconByTheme, has])
+  }, [iconByTheme, themeTapdanceUnlocked])
 
   // Compute dynamic width based on the longest theme label (in ch units)
   const menuWidthCh = useMemo(() => {
@@ -204,7 +215,9 @@ export function ThemeToggle() {
       const entry = themes.find(e => e.name === opt.value) as ThemeConfig | undefined
       return entry && !('timeRange' in entry)
     })
-    const seasonalActiveNames = new Set((getAvailableThemes() as readonly Theme[]).filter(t => t !== 'system'))
+    const seasonalActiveNames = new Set(
+      (getAvailableThemes(undefined, themeTapdanceUnlocked) as readonly Theme[]).filter(t => t !== 'system'),
+    )
     const seasonalActive = allOptions.filter(opt => {
       if (opt.value === 'system') return false
       const entry = themes.find(e => e.name === opt.value) as ThemeConfig | undefined
@@ -219,7 +232,7 @@ export function ThemeToggle() {
         ? list.filter(opt => opt.value !== 'system')
         : list.filter(opt => opt.value !== currentPreference)
     return list
-  }, [allOptions, currentPreference])
+  }, [allOptions, currentPreference, themeTapdanceUnlocked])
 
   // focus behavior handled in useThemeMenuState
 
@@ -249,33 +262,27 @@ export function ThemeToggle() {
             aria-expanded={open}
             aria-controls="theme-options"
             onClick={() => {
-              setOpen(o => {
-                const next = !o
+              const next = !open
 
-                // When opening the menu, reset theme selection tracking
-                if (!o && next) {
-                  setThemeSelected(false)
-                }
+              // When opening the menu, reset theme selection tracking
+              if (next) {
+                setThemeSelected(false)
+                const newCount = toggleCount + 1
 
-                // When closing the menu, only increment if no theme was selected
-                if (o && !next && !themeSelected) {
-                  const newCount = toggleCount + 1
-                  setToggleCount(newCount)
-
-                  // Unlock achievement after 6 toggles
-                  if (newCount >= 6 && !has('THEME_TAPDANCE')) {
-                    unlock('THEME_TAPDANCE')
-                    setToggleCount(0) // Reset counter after unlocking
-                  }
-                }
-
-                // If a theme was selected, reset the counter
-                if (o && !next && themeSelected) {
+                if (newCount >= THEME_TAPDANCE_OPEN_THRESHOLD && !themeTapdanceUnlocked) {
+                  unlock('THEME_TAPDANCE')
                   setToggleCount(0)
+                } else {
+                  setToggleCount(newCount)
                 }
+              }
 
-                return next
-              })
+              // If a theme was selected, reset the counter
+              if (!next && themeSelected) {
+                setToggleCount(0)
+              }
+
+              setOpen(next)
             }}
             onKeyDown={handleTriggerKeyDown}
             className={cn(
