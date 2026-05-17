@@ -5,7 +5,7 @@ import PhotoAlbum, { type Photo } from 'react-photo-album'
 import InfiniteScroll from 'react-photo-album/scroll'
 import type { SlideImage } from 'yet-another-react-lightbox'
 
-import { type GalleryImage } from '@/components/layout/pet-gallery/_content'
+import type { GalleryImage } from '@/components/layout/pet-gallery/_content'
 import NextImage from 'next/image'
 
 // Lazy load lightbox and plugins only when needed

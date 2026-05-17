@@ -423,7 +423,7 @@ export function SecretConsole({ onRequestClose }: { onRequestClose: () => void }
         style={{ height: `${height}vh` }}>
         <div
           ref={scrollRef}
-          className="flex flex-col justify-end gap-1 overflow-y-auto p-4 no-scrollbar"
+          className="flex no-scrollbar flex-col justify-end gap-1 overflow-y-auto p-4"
           style={{ height: `calc(${height}vh - 4rem)` }}>
           {entries.map((e, i) => (
             <div key={i} className={e.type === 'in' ? 'text-green-300' : 'whitespace-pre-wrap text-green-400'}>

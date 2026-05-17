@@ -70,7 +70,7 @@ export function ThemeMenu({
           {leftSlot ? <div className="relative shrink-0 pt-1">{leftSlot}</div> : null}
           <div className="max-h-[48vh] flex-1 overflow-hidden">
             <motion.div
-              className="flex flex-col gap-1 overflow-x-hidden overflow-y-auto pr-1 no-scrollbar"
+              className="flex no-scrollbar flex-col gap-1 overflow-x-hidden overflow-y-auto pr-1"
               initial="hidden"
               animate={open ? 'show' : 'hidden'}
               variants={menuVariants}>
