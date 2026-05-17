@@ -23,3 +23,4 @@ if command -v mise >/dev/null 2>&1; then
 fi
 
 bun install --frozen-lockfile
+bunx next typegen
