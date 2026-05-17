@@ -17,9 +17,9 @@ export function SnakeGameConvexProvider({ children }: { children: React.ReactNod
     return new ConvexReactClient(convexUrl)
   }, [])
 
-  // If Convex is not configured, render children without the provider
+  // If Convex is not configured, do not mount children that may call Convex hooks.
   if (!convex) {
-    return <>{children}</>
+    return null
   }
 
   return <ConvexProvider client={convex}>{children}</ConvexProvider>

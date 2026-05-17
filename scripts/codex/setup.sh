@@ -23,4 +23,4 @@ if command -v mise >/dev/null 2>&1; then
 fi
 
 bun install --frozen-lockfile
-bunx next typegen
+SKIP_ENV_VALIDATION=1 bunx next typegen

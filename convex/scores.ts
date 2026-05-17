@@ -1,8 +1,22 @@
 import { v } from 'convex/values'
-import { internalMutation, mutation, query } from './_generated/server'
+import { internalMutation, mutation, query, type DatabaseReader } from './_generated/server'
 
 const MAX_LEADERBOARD_SIZE = 10
 const SCORE_QUALIFICATION_THRESHOLD = 100
+
+export function sortScoresForLeaderboard<T extends { score: number; _creationTime: number }>(scores: T[]): T[] {
+  const sorted = [...scores]
+  // eslint-disable-next-line unicorn/no-array-sort
+  return sorted.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score
+    return a._creationTime - b._creationTime
+  })
+}
+
+const fetchSortedScores = async (db: DatabaseReader) => {
+  const allScores = await db.query('scores').withIndex('by_score').order('desc').collect()
+  return sortScoresForLeaderboard(allScores)
+}
 
 // Internal version for use in actions
 export const addScore = internalMutation({
@@ -18,14 +32,7 @@ export const addScore = internalMutation({
       score: args.score,
     })
 
-    // Get all scores ordered by score desc
-    const allScores = await ctx.db.query('scores').withIndex('by_score').order('desc').collect()
-
-    // Sort by score desc, then _creationTime asc for tie-breaking (earlier = better)
-    allScores.sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score
-      return a._creationTime - b._creationTime
-    })
+    const allScores = await fetchSortedScores(ctx.db)
 
     // Find the rank of this score (1-indexed)
     const rankIndex = allScores.findIndex(s => s._id === id)
@@ -50,14 +57,7 @@ export const addScorePublic = mutation({
       score: args.score,
     })
 
-    // Get all scores ordered by score desc
-    const allScores = await ctx.db.query('scores').withIndex('by_score').order('desc').collect()
-
-    // Sort by score desc, then _creationTime asc for tie-breaking (earlier = better)
-    allScores.sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score
-      return a._creationTime - b._creationTime
-    })
+    const allScores = await fetchSortedScores(ctx.db)
 
     // Find the rank of this score (1-indexed)
     const rankIndex = allScores.findIndex(s => s._id === id)
@@ -79,14 +79,7 @@ export const getLeaderboard = query({
     }),
   ),
   handler: async ctx => {
-    // Get all scores ordered by score desc
-    const allScores = await ctx.db.query('scores').withIndex('by_score').order('desc').collect()
-
-    // Sort by score desc, then _creationTime asc for tie-breaking (earlier = better)
-    allScores.sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score
-      return a._creationTime - b._creationTime
-    })
+    const allScores = await fetchSortedScores(ctx.db)
 
     // Return top 10 with id as string and _creationTime as timestamp for API compatibility
     return allScores.slice(0, MAX_LEADERBOARD_SIZE).map(score => ({
@@ -107,14 +100,7 @@ export const checkQualification = query({
     threshold: v.number(),
   }),
   handler: async (ctx, args) => {
-    // Get all scores ordered by score desc
-    const allScores = await ctx.db.query('scores').withIndex('by_score').order('desc').collect()
-
-    // Sort by score desc, then _creationTime asc for tie-breaking (earlier = better)
-    allScores.sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score
-      return a._creationTime - b._creationTime
-    })
+    const allScores = await fetchSortedScores(ctx.db)
 
     // If less than 10 scores, check against minimum threshold
     if (allScores.length < MAX_LEADERBOARD_SIZE) {
