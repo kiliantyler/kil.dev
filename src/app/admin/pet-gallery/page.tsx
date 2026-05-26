@@ -1,10 +1,8 @@
 import { AdminShell } from '@/components/admin/admin-shell'
 import { PetGalleryAdminClient } from '@/components/admin/pet-gallery/pet-gallery-admin-client'
-import { requireAdminSession } from '@/lib/admin-auth'
 import { getPetGalleryAdminWorkspaceStateAction } from './actions'
 
 export default async function AdminPetGalleryPage() {
-  await requireAdminSession()
   const initialState = await getPetGalleryAdminWorkspaceStateAction()
 
   return (

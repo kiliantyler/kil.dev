@@ -1,6 +1,6 @@
 import { requireAdminAuthEnv } from '@/env'
 import { getSignInUrl } from '@workos-inc/authkit-nextjs'
-import { NextResponse, type NextRequest } from 'next/server'
+import { connection, NextResponse, type NextRequest } from 'next/server'
 
 function readSafeReturnTo(request: NextRequest) {
   const requestUrl = request.nextUrl ?? new URL(request.url)
@@ -17,6 +17,7 @@ function readSafeReturnTo(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  await connection()
   const { PET_GALLERY_WORKOS_ORG_ID } = requireAdminAuthEnv()
   const signInUrl = await getSignInUrl({
     organizationId: PET_GALLERY_WORKOS_ORG_ID,

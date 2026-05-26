@@ -23,7 +23,7 @@ import {
 type UploadFiles = typeof uploadFiles
 type CreatePhotoDraft = typeof createPetGalleryPhotoDraftAction
 
-export type PetGalleryUploadWorkflowDeps = {
+type PetGalleryUploadWorkflowDeps = {
   uploadFiles: UploadFiles
   createPhotoDraft: CreatePhotoDraft
   cleanupFiles: (variantKeys: string[]) => Promise<unknown>
@@ -66,7 +66,7 @@ function cleanupFailureMessage(result: unknown): string | null {
   return error
 }
 
-export async function sha256Hex(file: File) {
+async function sha256Hex(file: File) {
   const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer())
   return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('')
 }
@@ -78,11 +78,11 @@ export async function readImageDimensions(file: File) {
   return dimensions
 }
 
-export function filenameStem(filename: string) {
+function filenameStem(filename: string) {
   return filename.replace(/\.[^.]+$/, '')
 }
 
-export function toUploadFile(file: File, encoded: EncodedPetGalleryVariant) {
+function toUploadFile(file: File, encoded: EncodedPetGalleryVariant) {
   return new File([encoded.blob], `${filenameStem(file.name)}-${encoded.kind}.${encoded.extension}`, {
     type: encoded.mimeType,
     lastModified: file.lastModified,

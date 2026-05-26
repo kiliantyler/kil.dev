@@ -60,13 +60,13 @@ export type PetGalleryAdminWorkspaceState = {
 export type PhotoFilter = 'all' | 'untagged' | 'hidden' | string
 export type PhotoSort = 'manual' | 'filename' | 'caption' | 'animal'
 
-export const TEST_BYPASS_ANIMALS: AdminWorkspaceAnimal[] = [
+const TEST_BYPASS_ANIMALS: AdminWorkspaceAnimal[] = [
   { docId: 'animals:aspen', stableId: 'aspen', name: 'Aspen', species: 'dog', order: 1, hidden: false },
   { docId: 'animals:sunny', stableId: 'sunny', name: 'Sunny', species: 'cat', order: 2, hidden: false },
   { docId: 'animals:mochi', stableId: 'mochi', name: 'Mochi', species: 'cat', order: 3, hidden: false },
 ]
 
-export const TEST_BYPASS_PHOTOS: AdminWorkspacePhoto[] = [
+const TEST_BYPASS_PHOTOS: AdminWorkspacePhoto[] = [
   {
     docId: 'photos:aspen',
     stableId: 'photo-aspen',
@@ -160,7 +160,7 @@ export function validateNewAnimalName(name: string, animals: AdminWorkspaceAnima
   return stableId
 }
 
-export function createMockVariants(stableId: string): PetGalleryImageVariants {
+function createMockVariants(stableId: string): PetGalleryImageVariants {
   const base = {
     url: `/ogi/headshot.jpg?petGalleryMock=${stableId}`,
     key: `pet-gallery/${stableId}.webp`,

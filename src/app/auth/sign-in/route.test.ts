@@ -1,9 +1,16 @@
+import type * as NextServer from 'next/server'
 import { describe, expect, it, vi } from 'vitest'
 
 const getSignInUrl = vi.fn()
+const connection = vi.fn()
 
 vi.mock('@workos-inc/authkit-nextjs', () => ({
   getSignInUrl,
+}))
+
+vi.mock('next/server', async importActual => ({
+  ...(await importActual<typeof NextServer>()),
+  connection,
 }))
 
 const BASE_ENV = {
@@ -41,6 +48,7 @@ describe('AuthKit sign-in route', () => {
       request('http://localhost:3000/auth/sign-in?returnTo=/admin/pet-gallery?tab=photos'),
     )
 
+    expect(connection).toHaveBeenCalledWith()
     expect(getSignInUrl).toHaveBeenCalledWith({
       organizationId: 'org_allowed',
       returnTo: '/admin/pet-gallery?tab=photos',

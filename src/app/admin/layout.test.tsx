@@ -2,9 +2,14 @@ import { Suspense } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
 const requireAdminSession = vi.fn()
+const connection = vi.fn()
 
 vi.mock('@/lib/admin-auth', () => ({
   requireAdminSession,
+}))
+
+vi.mock('next/server', () => ({
+  connection,
 }))
 
 vi.mock('@/components/providers/authkit-provider', () => ({
@@ -29,6 +34,7 @@ describe('AdminLayout', () => {
     const { AdminAuthGate } = await import('./layout')
     const result = await AdminAuthGate({ children: <div data-testid="admin-child" /> })
 
+    expect(connection).toHaveBeenCalledWith()
     expect(requireAdminSession).toHaveBeenCalledWith()
     expect(result).toEqual(
       <section>

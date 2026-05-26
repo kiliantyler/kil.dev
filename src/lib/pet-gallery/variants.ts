@@ -6,7 +6,7 @@ export type PetGalleryVariantPlan = {
   height: number
 }
 
-export type DecodedPetGalleryImage = {
+type DecodedPetGalleryImage = {
   image: unknown
   width: number
   height: number

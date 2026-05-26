@@ -33,7 +33,7 @@ export type PetGalleryImageVariants = {
   [Kind in PetGalleryVariantKind]: PetGalleryImageVariant & { kind: Kind }
 }
 
-export type PublicPetGalleryImageVariant = {
+type PublicPetGalleryImageVariant = {
   kind: PetGalleryVariantKind
   url: string
   width: number
