@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { PETS } from '@/lib/pets'
+import { PETS, formatPetTypeSummary } from '@/lib/pets'
+import { QUICK_FACTS } from '@/lib/quickfacts'
 
 describe('PETS', () => {
   it('includes Gwen in the about page pet list with her details', () => {
@@ -17,4 +18,11 @@ describe('PETS', () => {
     )
   })
 
+  it('formats the current pet type counts for quick facts', () => {
+    expect(formatPetTypeSummary(PETS)).toBe('3 dogs, 3 cats')
+  })
+
+  it('drives the Pets quick fact from the pet type counts', () => {
+    expect(QUICK_FACTS.find(fact => fact.label === 'Pets')?.value).toBe('3 dogs, 3 cats')
+  })
 })

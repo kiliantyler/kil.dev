@@ -5,6 +5,7 @@ export const PETS: Pet[] = [
   {
     id: 'lux',
     name: 'Lux',
+    type: 'dog',
     breed: 'Golden Retriever',
     birthday: '2022-06-09',
     gender: 'Female',
@@ -15,6 +16,7 @@ export const PETS: Pet[] = [
   {
     id: 'tali',
     name: 'Tali',
+    type: 'dog',
     breed: 'Mixed (Basenji/Australian Shepherd)',
     birthday: '2015-09-24',
     gender: 'Female',
@@ -26,6 +28,7 @@ export const PETS: Pet[] = [
   {
     id: 'gwen',
     name: 'Gwen',
+    type: 'dog',
     breed: 'Golden Retriever',
     birthday: '2025-10-18',
     gender: 'Female',
@@ -37,6 +40,7 @@ export const PETS: Pet[] = [
   {
     id: 'gozer',
     name: 'Gozer',
+    type: 'cat',
     breed: 'Gozarian',
     birthday: '2016-04-15',
     gender: 'Female',
@@ -47,6 +51,7 @@ export const PETS: Pet[] = [
   {
     id: 'lilith',
     name: 'Lilith',
+    type: 'cat',
     breed: 'Witch Familiar',
     birthday: '2021-04-13',
     gender: 'Female',
@@ -58,6 +63,7 @@ export const PETS: Pet[] = [
   {
     id: 'azazel',
     name: 'Azazel',
+    type: 'cat',
     breed: 'Chonk',
     birthday: '2021-04-13',
     gender: 'Male',
@@ -67,3 +73,15 @@ export const PETS: Pet[] = [
     imageAlt: 'Azazel the Chonk',
   },
 ]
+
+export function formatPetTypeSummary(pets: Pet[]): string {
+  const dogCount = pets.filter(pet => pet.type === 'dog').length
+  const catCount = pets.filter(pet => pet.type === 'cat').length
+
+  return [formatPetTypeCount(dogCount, 'dog'), formatPetTypeCount(catCount, 'cat')].filter(Boolean).join(', ')
+}
+
+function formatPetTypeCount(count: number, type: Pet['type']): string | null {
+  if (count === 0) return null
+  return `${count} ${type}${count === 1 ? '' : 's'}`
+}
