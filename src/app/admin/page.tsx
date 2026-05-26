@@ -2,8 +2,11 @@ import { AdminShell } from '@/components/admin/admin-shell'
 import { LinkButton } from '@/components/ui/link-button'
 import { Images } from 'lucide-react'
 import type { Route } from 'next'
+import { connection } from 'next/server'
 
-export default function AdminPage() {
+export default async function AdminPage() {
+  await connection()
+
   return (
     <AdminShell title="Admin" description="Private tools for kil.dev.">
       <div className="flex">

@@ -46,22 +46,48 @@ function shouldSetSecureCookie(request: NextRequest, sameSite: string) {
   return requestUrl.protocol === 'https:' || process.env.NODE_ENV === 'production'
 }
 
-function serializeWorkOSSessionCookie(request: NextRequest, encryptedSession: string) {
+function getWorkOSSessionCookieOptions(request: NextRequest) {
   const sameSite = readCookieSameSite()
+  const options = {
+    path: '/',
+    httpOnly: true,
+    sameSite,
+    maxAge: readCookieMaxAge(),
+    secure: shouldSetSecureCookie(request, sameSite),
+    domain: process.env.WORKOS_COOKIE_DOMAIN?.trim() || undefined,
+  } as const
+
+  return options
+}
+
+function serializeWorkOSSessionCookie(request: NextRequest, encryptedSession: string) {
+  const options = getWorkOSSessionCookieOptions(request)
   const parts = [
     `${WORKOS_SESSION_COOKIE}=${encryptedSession}`,
     'Path=/',
     'HttpOnly',
-    `SameSite=${sameSite.charAt(0).toUpperCase()}${sameSite.slice(1)}`,
-    `Max-Age=${readCookieMaxAge()}`,
+    `SameSite=${options.sameSite.charAt(0).toUpperCase()}${options.sameSite.slice(1)}`,
+    `Max-Age=${options.maxAge}`,
   ]
 
-  const domain = process.env.WORKOS_COOKIE_DOMAIN?.trim()
-  if (domain) parts.push(`Domain=${domain}`)
-
-  if (shouldSetSecureCookie(request, sameSite)) parts.push('Secure')
+  if (options.domain) parts.push(`Domain=${options.domain}`)
+  if (options.secure) parts.push('Secure')
 
   return parts.join('; ')
+}
+
+function setWorkOSSessionCookie(response: Response, request: NextRequest, encryptedSession: string) {
+  if ('cookies' in response) {
+    const cookies = response.cookies as {
+      set?: (name: string, value: string, options: ReturnType<typeof getWorkOSSessionCookieOptions>) => void
+    }
+    if (typeof cookies.set === 'function') {
+      cookies.set(WORKOS_SESSION_COOKIE, encryptedSession, getWorkOSSessionCookieOptions(request))
+      return
+    }
+  }
+
+  response.headers.append('Set-Cookie', serializeWorkOSSessionCookie(request, encryptedSession))
 }
 
 async function sealAuthKitCookieSession(session: AuthKitCookieSession) {
@@ -89,10 +115,7 @@ export async function GET(request: NextRequest) {
   })(request)
 
   if (cookieSession) {
-    response.headers.append(
-      'Set-Cookie',
-      serializeWorkOSSessionCookie(request, await sealAuthKitCookieSession(cookieSession)),
-    )
+    setWorkOSSessionCookie(response, request, await sealAuthKitCookieSession(cookieSession))
   }
 
   return response
