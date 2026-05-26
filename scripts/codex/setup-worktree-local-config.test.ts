@@ -69,6 +69,7 @@ describe('setup-worktree-local-config.sh', () => {
     expect(run('git init repo', tempRoot).status).toBe(0)
     expect(run('git config user.email test@example.com', repoRoot).status).toBe(0)
     expect(run('git config user.name Test', repoRoot).status).toBe(0)
+    expect(run('git config commit.gpgsign false', repoRoot).status).toBe(0)
     expect(run('git config core.hooksPath .githooks', repoRoot).status).toBe(0)
     expect(run('mkdir -p scripts/codex .githooks', repoRoot).status).toBe(0)
 
