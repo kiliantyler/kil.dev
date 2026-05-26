@@ -1,7 +1,6 @@
 import type { AuthConfig } from 'convex/server'
 
 function readOptionalAuthConfigEnv(key: string) {
-  if (!Object.prototype.hasOwnProperty.call(process.env, key)) return
   const value = process.env[key]?.trim()
   return value || undefined
 }
