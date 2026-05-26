@@ -49,6 +49,33 @@ describe('Convex WorkOS auth config', () => {
     ])
   })
 
+  it('reads WorkOS client ID from Convex auth config process environment shape', async () => {
+    const originalEnv = process.env
+    process.env = Object.assign(Object.create({ WORKOS_CLIENT_ID: 'client_test_inherited' }), {}) as NodeJS.ProcessEnv
+
+    try {
+      const { getWorkOSAuthConfigProviders } = await import('./auth')
+
+      expect(getWorkOSAuthConfigProviders()).toEqual([
+        {
+          type: 'customJwt',
+          issuer: 'https://api.workos.com/',
+          algorithm: 'RS256',
+          jwks: 'https://api.workos.com/sso/jwks/client_test_inherited',
+          applicationID: 'client_test_inherited',
+        },
+        {
+          type: 'customJwt',
+          issuer: 'https://api.workos.com/user_management/client_test_inherited',
+          algorithm: 'RS256',
+          jwks: 'https://api.workos.com/sso/jwks/client_test_inherited',
+        },
+      ])
+    } finally {
+      process.env = originalEnv
+    }
+  })
+
   it('builds Convex auth providers when the optional WorkOS action secret is missing', async () => {
     vi.stubEnv('WORKOS_CLIENT_ID', 'client_test_valid')
     vi.stubEnv('WORKOS_API_KEY', 'sk_test_valid')
