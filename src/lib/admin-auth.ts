@@ -5,6 +5,8 @@ import {
   isAdminTestBypassEnvEnabled,
 } from '@/lib/admin-test-bypass'
 import { withAuth } from '@workos-inc/authkit-nextjs'
+import { unsealData } from 'iron-session'
+import { createRemoteJWKSet, decodeJwt, jwtVerify } from 'jose'
 import { cookies, headers } from 'next/headers'
 import { notFound, redirect } from 'next/navigation'
 
@@ -47,9 +49,18 @@ type AdminAuthCandidate = {
   accessToken: unknown
 }
 
+type AuthKitCookieSession = {
+  accessToken?: unknown
+  refreshToken?: unknown
+  user?: unknown
+  impersonator?: unknown
+  authenticationMethod?: unknown
+}
+
 const TEST_ADMIN_EMAIL = 'admin-e2e@example.invalid'
 const TEST_ADMIN_ORG_ID = 'org_test_pet_gallery_e2e'
 const TEST_ADMIN_USER_ID = 'user_test_pet_gallery_e2e'
+const workOSJwksByClientId = new Map<string, ReturnType<typeof createRemoteJWKSet>>()
 
 function normalizeEmail(email: string | null | undefined): string | null {
   const trimmed = email?.trim().toLowerCase()
@@ -84,8 +95,7 @@ function hasUsableAccessToken(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0
 }
 
-async function readAdminAuthCandidate(): Promise<AdminAuthCandidate> {
-  const session = await withAuth()
+function toAdminAuthCandidate(session: AuthKitSession): AdminAuthCandidate {
   const user = session.user as AuthKitUser | null
   const email = normalizeEmail(user?.email)
   const workosUserId = typeof user?.id === 'string' && user.id.trim() ? user.id.trim() : null
@@ -100,6 +110,85 @@ async function readAdminAuthCandidate(): Promise<AdminAuthCandidate> {
     workosOrgId,
     accessToken,
   }
+}
+
+function readWorkOSSessionCookieName() {
+  return process.env.WORKOS_COOKIE_NAME?.trim() || 'wos-session'
+}
+
+function readWorkOSJwks(clientId: string) {
+  const existing = workOSJwksByClientId.get(clientId)
+  if (existing) return existing
+
+  const jwks = createRemoteJWKSet(new URL(`https://api.workos.com/sso/jwks/${clientId}`))
+  workOSJwksByClientId.set(clientId, jwks)
+  return jwks
+}
+
+async function readVerifiedCookieSession(env: AdminAuthEnv): Promise<AuthKitSession | null> {
+  let requestCookies: Awaited<ReturnType<typeof cookies>>
+  try {
+    requestCookies = await cookies()
+  } catch {
+    return null
+  }
+
+  const cookie = requestCookies.get(readWorkOSSessionCookieName())
+  if (!cookie?.value) return null
+
+  let sealedSession: AuthKitCookieSession
+  try {
+    sealedSession = await unsealData<AuthKitCookieSession>(cookie.value, {
+      password: env.WORKOS_COOKIE_PASSWORD,
+    })
+  } catch {
+    return null
+  }
+
+  if (!asRecord(sealedSession)) return null
+  if (!hasUsableAccessToken(sealedSession.accessToken)) return null
+
+  try {
+    await jwtVerify(sealedSession.accessToken, readWorkOSJwks(env.WORKOS_CLIENT_ID))
+  } catch {
+    return null
+  }
+
+  const claims = decodeJwt(sealedSession.accessToken)
+  return {
+    sessionId: typeof claims.sid === 'string' ? claims.sid : undefined,
+    user: (sealedSession.user ?? null) as AuthKitSession['user'],
+    organizationId: typeof claims.org_id === 'string' ? claims.org_id : undefined,
+    role: typeof claims.role === 'string' ? claims.role : undefined,
+    roles: Array.isArray(claims.roles) ? claims.roles.filter((role): role is string => typeof role === 'string') : [],
+    permissions: Array.isArray(claims.permissions)
+      ? claims.permissions.filter((permission): permission is string => typeof permission === 'string')
+      : [],
+    entitlements: Array.isArray(claims.entitlements)
+      ? claims.entitlements.filter((entitlement): entitlement is string => typeof entitlement === 'string')
+      : [],
+    featureFlags: Array.isArray(claims.feature_flags)
+      ? claims.feature_flags.filter((featureFlag): featureFlag is string => typeof featureFlag === 'string')
+      : [],
+    impersonator: sealedSession.impersonator as AuthKitSession['impersonator'],
+    accessToken: sealedSession.accessToken,
+  } as AuthKitSession
+}
+
+async function readAdminAuthCandidate(env: AdminAuthEnv): Promise<AdminAuthCandidate> {
+  let session: AuthKitSession
+  try {
+    session = await withAuth()
+  } catch (error) {
+    const cookieSession = await readVerifiedCookieSession(env)
+    if (cookieSession) return toAdminAuthCandidate(cookieSession)
+    throw error
+  }
+
+  if (session.user) return toAdminAuthCandidate(session)
+
+  const cookieSession = await readVerifiedCookieSession(env)
+  return toAdminAuthCandidate(cookieSession ?? session)
 }
 
 function toAdminAuthContext(candidate: AdminAuthCandidate, env: AdminAuthEnv): AdminAuthContext | null {
@@ -191,7 +280,8 @@ export function displayNameForAdminUser(user: AuthKitUser): string | undefined {
 }
 
 export async function requireAdminAuthContext(): Promise<AdminAuthContext> {
-  const context = toAdminAuthContext(await readAdminAuthCandidate(), requireAdminAuthEnv())
+  const env = requireAdminAuthEnv()
+  const context = toAdminAuthContext(await readAdminAuthCandidate(env), env)
   if (!context) throw new AdminUnauthorizedError()
 
   return context
@@ -203,7 +293,7 @@ export async function requireAdminSession() {
     if (testAdmin) return testAdmin
 
     const env = requireAdminAuthEnv()
-    const candidate = await readAdminAuthCandidate()
+    const candidate = await readAdminAuthCandidate(env)
     const context = toAdminAuthContext(candidate, env)
     if (context) return context
 

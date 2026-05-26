@@ -4,6 +4,8 @@ import { ADMIN_TEST_BYPASS_COOKIE, ADMIN_TEST_BYPASS_COOKIE_VALUE } from './admi
 const withAuth = vi.fn()
 const cookieGet = vi.fn()
 const headersGet = vi.fn()
+const unsealData = vi.fn()
+const jwtVerify = vi.fn()
 const notFound = vi.fn(() => {
   throw new Error('not-found')
 })
@@ -27,6 +29,16 @@ const BASE_ENV = {
 
 vi.mock('@workos-inc/authkit-nextjs', () => ({
   withAuth,
+}))
+
+vi.mock('iron-session', () => ({
+  unsealData,
+}))
+
+vi.mock('jose', () => ({
+  createRemoteJWKSet: vi.fn(() => 'jwks'),
+  decodeJwt: vi.fn(() => ({ sid: 'session_cookie', org_id: 'org_allowed' })),
+  jwtVerify,
 }))
 
 vi.mock('next/headers', () => ({
@@ -68,6 +80,8 @@ describe('requireAdminSession', () => {
     withAuth.mockReset()
     cookieGet.mockReset()
     headersGet.mockReset()
+    unsealData.mockReset()
+    jwtVerify.mockReset()
     vi.clearAllMocks()
   })
 
@@ -122,6 +136,30 @@ describe('requireAdminSession', () => {
     const { requireAdminAuthContext } = await importAdminAuth()
 
     await expect(requireAdminAuthContext()).rejects.toThrow('Admin access denied')
+  })
+
+  it('falls back to a verified WorkOS session cookie when middleware auth headers are missing', async () => {
+    withAuth.mockResolvedValue({ user: null })
+    cookieGet.mockImplementation((name: string) =>
+      name === 'wos-session' ? { name: 'wos-session', value: 'sealed-session' } : undefined,
+    )
+    unsealData.mockResolvedValue({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+      user: { id: 'user_admin', email: 'Admin@Example.Test' },
+    })
+    const { requireAdminAuthContext } = await importAdminAuth()
+
+    await expect(requireAdminAuthContext()).resolves.toEqual(
+      expect.objectContaining({
+        email: 'admin@example.test',
+        workosUserId: 'user_admin',
+        workosOrgId: 'org_allowed',
+        accessToken: 'access-token',
+      }),
+    )
+    expect(unsealData).toHaveBeenCalledWith('sealed-session', { password: 'a'.repeat(32) })
+    expect(jwtVerify).toHaveBeenCalledWith('access-token', 'jwks')
   })
 
   it('rejects a signed-in WorkOS user with the wrong email', async () => {
