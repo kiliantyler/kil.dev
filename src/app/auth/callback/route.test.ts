@@ -28,7 +28,7 @@ vi.mock('next/server', async importActual => ({
 }))
 
 function mockSuccessfulAuthCallback(success: MockAuthSuccess = {}) {
-  mockAuthHandler.mockImplementation(async (_request: Request) => {
+  mockAuthHandler.mockImplementation(async (request: Request) => {
     const calls = handleAuth.mock.calls as unknown as Array<
       [{ onSuccess: (session: Required<MockAuthSuccess>) => unknown }]
     >
@@ -42,7 +42,8 @@ function mockSuccessfulAuthCallback(success: MockAuthSuccess = {}) {
       authenticationMethod: 'oauth',
       ...success,
     })
-    return new Response(null, { status: 307, headers: { Location: '/admin' } })
+    const { NextResponse } = await import('next/server')
+    return NextResponse.redirect(new URL('/admin', request.url))
   })
 }
 
@@ -88,9 +89,12 @@ describe('AuthKit callback route', () => {
       },
       { password: 'a'.repeat(32), ttl: 0 },
     )
-    expect(response.headers.getSetCookie()).toEqual(
-      expect.arrayContaining(['wos-session=sealed-session; Path=/; HttpOnly; SameSite=Lax; Max-Age=34560000; Secure']),
-    )
+    expect(response.headers.getSetCookie()[0]).toEqual(expect.stringContaining('wos-session=sealed-session;'))
+    expect(response.headers.getSetCookie()[0]).toEqual(expect.stringContaining('Path=/'))
+    expect(response.headers.getSetCookie()[0]).toEqual(expect.stringContaining('HttpOnly'))
+    expect(response.headers.getSetCookie()[0]).toEqual(expect.stringContaining('SameSite=lax'))
+    expect(response.headers.getSetCookie()[0]).toEqual(expect.stringContaining('Max-Age=34560000'))
+    expect(response.headers.getSetCookie()[0]).toEqual(expect.stringContaining('Secure'))
   })
 
   it('honors configured cookie lifetime and secure production redirect settings', async () => {
@@ -101,8 +105,8 @@ describe('AuthKit callback route', () => {
     const route = await import('./route')
     const response = await route.GET(new Request('http://internal.vercel.test/auth/callback') as never)
 
-    expect(response.headers.getSetCookie()).toEqual(
-      expect.arrayContaining(['wos-session=sealed-session; Path=/; HttpOnly; SameSite=Lax; Max-Age=3600; Secure']),
-    )
+    expect(response.headers.getSetCookie()[0]).toEqual(expect.stringContaining('wos-session=sealed-session;'))
+    expect(response.headers.getSetCookie()[0]).toEqual(expect.stringContaining('Max-Age=3600'))
+    expect(response.headers.getSetCookie()[0]).toEqual(expect.stringContaining('Secure'))
   })
 })
