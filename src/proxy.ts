@@ -1,31 +1,13 @@
-import { authkitProxy } from '@workos-inc/authkit-nextjs'
+import { authkit, handleAuthkitHeaders } from '@workos-inc/authkit-nextjs'
 import type { NextFetchEvent, NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 import {
   ADMIN_TEST_BYPASS_COOKIE,
   ADMIN_TEST_BYPASS_COOKIE_VALUE,
   isAdminTestBypassEnvEnabled,
 } from './lib/admin-test-bypass'
 
-const UPLOADTHING_PATH = '/api/uploadthing/:path*'
-const ADMIN_PATH = '/admin/:path*'
-const ADMIN_SIGN_IN_PATH = '/auth/sign-in'
-const ADMIN_CALLBACK_PATH = '/auth/callback'
-const UNAUTHENTICATED_PATHS = [UPLOADTHING_PATH, ADMIN_PATH, ADMIN_SIGN_IN_PATH, ADMIN_CALLBACK_PATH]
 const NO_STORE_CACHE_CONTROL = 'private, no-store, no-cache, must-revalidate, max-age=0'
-
-const protectedProxy = authkitProxy({
-  middlewareAuth: {
-    enabled: true,
-    unauthenticatedPaths: UNAUTHENTICATED_PATHS,
-  },
-})
-
-const testAdminBypassProxy = authkitProxy({
-  middlewareAuth: {
-    enabled: true,
-    unauthenticatedPaths: UNAUTHENTICATED_PATHS,
-  },
-})
 
 function isAdminPath(pathname: string) {
   return pathname === '/admin' || pathname.startsWith('/admin/')
@@ -37,6 +19,16 @@ function isTestAdminBypassRequest(request: NextRequest) {
     isAdminPath(request.nextUrl.pathname) &&
     request.cookies.get(ADMIN_TEST_BYPASS_COOKIE)?.value === ADMIN_TEST_BYPASS_COOKIE_VALUE
   )
+}
+
+function readWorkOSSessionCookieName() {
+  return process.env.WORKOS_COOKIE_NAME?.trim() || 'wos-session'
+}
+
+function adminSignInUrl(request: NextRequest) {
+  const url = new URL('/auth/sign-in', request.url)
+  url.searchParams.set('returnTo', `${request.nextUrl.pathname}${request.nextUrl.search}`)
+  return url
 }
 
 function appendVaryCookie(response: Response) {
@@ -62,21 +54,23 @@ function applyNoStoreHeaders<T>(response: T): T {
   return response
 }
 
-function isPromiseLike<T>(value: T | PromiseLike<T>): value is PromiseLike<T> {
-  return !!value && typeof (value as PromiseLike<T>).then === 'function'
-}
-
-export default function proxy(request: NextRequest, event: NextFetchEvent) {
-  const response = isTestAdminBypassRequest(request)
-    ? testAdminBypassProxy(request, event)
-    : protectedProxy(request, event)
-  if (isPromiseLike(response)) {
-    return response.then(applyNoStoreHeaders)
+export default async function proxy(request: NextRequest, _event: NextFetchEvent) {
+  if (isTestAdminBypassRequest(request)) {
+    return applyNoStoreHeaders(NextResponse.next())
   }
 
-  return applyNoStoreHeaders(response)
+  if (isAdminPath(request.nextUrl.pathname) && !request.cookies.has(readWorkOSSessionCookieName())) {
+    return applyNoStoreHeaders(NextResponse.redirect(adminSignInUrl(request)))
+  }
+
+  const { session, headers } = await authkit(request)
+  if (isAdminPath(request.nextUrl.pathname) && !session.user) {
+    return applyNoStoreHeaders(handleAuthkitHeaders(request, headers, { redirect: adminSignInUrl(request) }))
+  }
+
+  return applyNoStoreHeaders(handleAuthkitHeaders(request, headers))
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/auth/:path*', '/api/uploadthing/:path*'],
+  matcher: ['/admin/:path*', '/api/uploadthing/:path*'],
 }
