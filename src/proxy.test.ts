@@ -26,6 +26,16 @@ describe('auth proxy', () => {
     }
   }
 
+  function expectNoStoreHeaders(response: unknown) {
+    expect(response).toBeInstanceOf(Response)
+    const headers = (response as Response).headers
+    expect(headers.get('Cache-Control')).toBe('private, no-store, no-cache, must-revalidate, max-age=0')
+    expect(headers.get('Pragma')).toBe('no-cache')
+    expect(headers.get('Expires')).toBe('0')
+    expect(headers.get('x-middleware-cache')).toBe('no-cache')
+    expect(headers.get('Vary')).toBe('Cookie')
+  }
+
   it('lets UploadThing and the admin layout handle their own authentication boundaries', async () => {
     vi.resetModules()
     const proxy = await import('./proxy')
@@ -52,13 +62,14 @@ describe('auth proxy', () => {
     vi.stubEnv('VERCEL_ENV', 'development')
     const proxy = await import('./proxy')
 
-    proxy.default(request('/admin') as never, undefined as never)
+    const response = await proxy.default(request('/admin') as never, undefined as never)
 
     expect(protectedProxyHandler).toHaveBeenCalledWith(
       expect.objectContaining({ nextUrl: { pathname: '/admin' } }),
       undefined,
     )
     expect(bypassProxyHandler).not.toHaveBeenCalled()
+    expectNoStoreHeaders(response)
     vi.unstubAllEnvs()
   })
 
@@ -69,13 +80,17 @@ describe('auth proxy', () => {
     vi.stubEnv('VERCEL_ENV', 'development')
     const proxy = await import('./proxy')
 
-    proxy.default(request('/admin/pet-gallery', ADMIN_TEST_BYPASS_COOKIE_VALUE) as never, undefined as never)
+    const response = await proxy.default(
+      request('/admin/pet-gallery', ADMIN_TEST_BYPASS_COOKIE_VALUE) as never,
+      undefined as never,
+    )
 
     expect(bypassProxyHandler).toHaveBeenCalledWith(
       expect.objectContaining({ nextUrl: { pathname: '/admin/pet-gallery' } }),
       undefined,
     )
     expect(protectedProxyHandler).not.toHaveBeenCalled()
+    expectNoStoreHeaders(response)
     vi.unstubAllEnvs()
   })
 
@@ -92,13 +107,31 @@ describe('auth proxy', () => {
     if (vercelEnv) vi.stubEnv('VERCEL_ENV', vercelEnv)
     const proxy = await import('./proxy')
 
-    proxy.default(request('/admin/pet-gallery', ADMIN_TEST_BYPASS_COOKIE_VALUE) as never, undefined as never)
+    const response = await proxy.default(
+      request('/admin/pet-gallery', ADMIN_TEST_BYPASS_COOKIE_VALUE) as never,
+      undefined as never,
+    )
 
     expect(protectedProxyHandler).toHaveBeenCalledWith(
       expect.objectContaining({ nextUrl: { pathname: '/admin/pet-gallery' } }),
       undefined,
     )
     expect(bypassProxyHandler).not.toHaveBeenCalled()
+    expectNoStoreHeaders(response)
     vi.unstubAllEnvs()
+  })
+
+  it('preserves existing Vary values when disabling cache for auth responses', async () => {
+    protectedProxyHandler.mockReturnValueOnce(new Response('protected', { headers: { Vary: 'Accept-Encoding' } }))
+    vi.resetModules()
+    const proxy = await import('./proxy')
+
+    const response = await proxy.default(request('/auth/callback') as never, undefined as never)
+
+    expect(response).toBeInstanceOf(Response)
+    expect((response as Response).headers.get('Vary')).toBe('Accept-Encoding, Cookie')
+    expect((response as Response).headers.get('Cache-Control')).toBe(
+      'private, no-store, no-cache, must-revalidate, max-age=0',
+    )
   })
 })
