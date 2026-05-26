@@ -11,7 +11,7 @@ export function AboutMeQuickFacts() {
       </div>
       <div>
         <p className="text-sm tracking-wide text-muted-foreground uppercase">Quick facts</p>
-        <dl className="grid gap-3">
+        <dl className="grid gap-3 md:grid-cols-2 lg:grid-cols-1">
           {QUICK_FACTS.map(fact => (
             <QuickFact key={fact.label} fact={fact} />
           ))}

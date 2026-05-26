@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { calculateAgeYears, cn, formatDateFull, formatMonthYear, isDev, isSafari } from '../utils'
+import { calculateAgeYears, cn, formatAgeLabel, formatDateFull, formatMonthYear, isDev, isSafari } from '../utils'
 
 describe('cn', () => {
   it('merges tailwind classes correctly', () => {
@@ -111,6 +111,20 @@ describe('calculateAgeYears', () => {
     const birth = '2030-01-01'
     const now = new Date('2024-06-15')
     expect(calculateAgeYears(birth, now)).toBe(0)
+  })
+})
+
+describe('formatAgeLabel', () => {
+  it('formats ages under one year in months', () => {
+    expect(formatAgeLabel('2025-10-18', new Date(2026, 4, 26))).toBe('7 months')
+  })
+
+  it('formats one month with a singular label', () => {
+    expect(formatAgeLabel('2026-04-18', new Date(2026, 4, 26))).toBe('1 month')
+  })
+
+  it('keeps ages of at least one year in years', () => {
+    expect(formatAgeLabel('2022-06-09', new Date(2026, 4, 26))).toBe('3 years')
   })
 })
 

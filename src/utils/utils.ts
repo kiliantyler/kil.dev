@@ -42,6 +42,21 @@ export function calculateAgeYears(value: string | undefined, now: Date = new Dat
   return Math.max(0, years)
 }
 
+export function formatAgeLabel(value: string | undefined, now: Date = new Date()): string | null {
+  const birth = parseLocalDateYmd(value)
+  if (!birth) return null
+
+  const years = calculateAgeYears(value, now)
+  if (years === null) return null
+  if (years > 0) return `${years} ${years === 1 ? 'year' : 'years'}`
+
+  let months = (now.getFullYear() - birth.getFullYear()) * 12 + now.getMonth() - birth.getMonth()
+  if (now.getDate() < birth.getDate()) months--
+  months = Math.max(0, months)
+
+  return `${months} ${months === 1 ? 'month' : 'months'}`
+}
+
 /**
  * Detects if the current browser is Safari
  * @returns true if the browser is Safari, false otherwise
