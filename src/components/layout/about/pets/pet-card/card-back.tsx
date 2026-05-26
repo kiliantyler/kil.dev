@@ -3,7 +3,7 @@
 import { Card } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import type { Pet } from '@/types/pets'
-import { calculateAgeYears, formatDateFull } from '@/utils/utils'
+import { formatAgeLabel, formatDateFull } from '@/utils/utils'
 import { useEffect, useState } from 'react'
 
 function formatBirthday(dateString: string) {
@@ -48,14 +48,14 @@ export function PetCardBack({ pet }: PetCardBackProps) {
 }
 
 function BirthdayWithAge({ birthday }: Readonly<{ birthday: string }>) {
-  const [ageYears, setAgeYears] = useState<number | null>(null)
+  const [ageLabel, setAgeLabel] = useState<string | null>(null)
   useEffect(() => {
-    setAgeYears(calculateAgeYears(birthday))
+    setAgeLabel(formatAgeLabel(birthday))
   }, [birthday])
   return (
     <>
       {formatBirthday(birthday)}
-      {ageYears === null ? null : ` (${ageYears} ${ageYears === 1 ? 'year' : 'years'})`}
+      {ageLabel === null ? null : ` (${ageLabel})`}
     </>
   )
 }
