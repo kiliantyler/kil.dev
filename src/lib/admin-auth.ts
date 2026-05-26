@@ -215,7 +215,7 @@ function toAdminAuthContext(candidate: AdminAuthCandidate, env: AdminAuthEnv): A
   }
 }
 
-function shouldReauthenticateConfiguredAdminForOrganization(candidate: AdminAuthCandidate, env: AdminAuthEnv) {
+function shouldRefreshConfiguredAdminOrganizationSession(candidate: AdminAuthCandidate, env: AdminAuthEnv) {
   return (
     !!candidate.user &&
     !!candidate.workosUserId &&
@@ -240,6 +240,11 @@ async function getAdminReturnPathname() {
 async function redirectToConfiguredAdminSignIn(): Promise<never> {
   const returnTo = encodeURIComponent(await getAdminReturnPathname())
   redirect(`/auth/sign-in?returnTo=${returnTo}` as Parameters<typeof redirect>[0])
+}
+
+async function redirectToConfiguredAdminOrganizationRefresh(): Promise<never> {
+  const returnTo = encodeURIComponent(await getAdminReturnPathname())
+  redirect(`/auth/complete?returnTo=${returnTo}` as Parameters<typeof redirect>[0])
 }
 
 async function readTestAdminBypass(): Promise<AdminSessionContext | null> {
@@ -301,8 +306,8 @@ export async function requireAdminSession() {
       await redirectToConfiguredAdminSignIn()
     }
 
-    if (shouldReauthenticateConfiguredAdminForOrganization(candidate, env)) {
-      await redirectToConfiguredAdminSignIn()
+    if (shouldRefreshConfiguredAdminOrganizationSession(candidate, env)) {
+      await redirectToConfiguredAdminOrganizationRefresh()
     }
 
     throw new AdminUnauthorizedError()

@@ -112,22 +112,22 @@ describe('requireAdminSession', () => {
     expect(notFound).not.toHaveBeenCalled()
   })
 
-  it('redirects a configured admin in the wrong organization through org-scoped sign-in', async () => {
+  it('redirects a configured admin in the wrong organization through org session completion', async () => {
     headersGet.mockReturnValue('http://localhost:3000/admin/pet-gallery')
     withAuth.mockResolvedValue(validAdminSession({ organizationId: 'org_other' }))
     const { requireAdminSession } = await importAdminAuth()
 
-    await expect(requireAdminSession()).rejects.toThrow('redirect:/auth/sign-in?returnTo=%2Fadmin%2Fpet-gallery')
-    expect(redirect).toHaveBeenCalledWith('/auth/sign-in?returnTo=%2Fadmin%2Fpet-gallery')
+    await expect(requireAdminSession()).rejects.toThrow('redirect:/auth/complete?returnTo=%2Fadmin%2Fpet-gallery')
+    expect(redirect).toHaveBeenCalledWith('/auth/complete?returnTo=%2Fadmin%2Fpet-gallery')
     expect(notFound).not.toHaveBeenCalled()
   })
 
-  it('redirects a configured admin without an organization through org-scoped sign-in', async () => {
+  it('redirects a configured admin without an organization through org session completion', async () => {
     withAuth.mockResolvedValue(validAdminSession({ organizationId: undefined }))
     const { requireAdminSession } = await importAdminAuth()
 
-    await expect(requireAdminSession()).rejects.toThrow('redirect:/auth/sign-in?returnTo=%2Fadmin')
-    expect(redirect).toHaveBeenCalledWith('/auth/sign-in?returnTo=%2Fadmin')
+    await expect(requireAdminSession()).rejects.toThrow('redirect:/auth/complete?returnTo=%2Fadmin')
+    expect(redirect).toHaveBeenCalledWith('/auth/complete?returnTo=%2Fadmin')
     expect(notFound).not.toHaveBeenCalled()
   })
 
