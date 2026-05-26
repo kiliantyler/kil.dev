@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import React from 'react'
 
+import { LavaFallbackIndicator, LavaIndicator, type LavaIndicatorState } from '@/components/ui/lava-indicator'
 import { usePresenceGates } from '@/hooks/use-presence-gates'
 import { NAVIGATION } from '@/lib/navmenu'
 import { cn } from '@/utils/utils'
@@ -46,14 +47,12 @@ export function NavLava() {
     return list
   }, [baseItems, allowAchievements, allowPetGallery, pathname])
 
-  const [indicator, setIndicator] = React.useState<{ left: number; width: number; visible: boolean; animate: boolean }>(
-    {
-      left: 0,
-      width: 0,
-      visible: false,
-      animate: false,
-    },
-  )
+  const [indicator, setIndicator] = React.useState<LavaIndicatorState>({
+    left: 0,
+    width: 0,
+    visible: false,
+    animate: false,
+  })
   const [hoveredKey, setHoveredKey] = React.useState<string | null>(null)
 
   const activeIndex = React.useMemo(() => getActiveIndex(activeItems, pathname ?? ''), [activeItems, pathname])
@@ -190,32 +189,7 @@ export function NavLava() {
         onKeyDown={handleKeyDown}
         role="menubar"
         aria-orientation="horizontal">
-        {/* Sliding indicator: trail (slower, blurred) */}
-        <span
-          aria-hidden="true"
-          className={cn(
-            'pointer-events-none absolute top-1 bottom-1 z-0 rounded-md bg-primary/40 shadow-sm blur-[1.5px] will-change-[left,width]',
-            indicator.animate && 'transition-[left,width,opacity] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]',
-            indicator.visible ? 'opacity-100' : 'opacity-0',
-          )}
-          style={{
-            left: indicator.left,
-            width: indicator.width,
-          }}
-        />
-        {/* Sliding indicator: main (faster, crisp) */}
-        <span
-          aria-hidden="true"
-          className={cn(
-            'pointer-events-none absolute top-1 bottom-1 z-10 rounded-md bg-primary shadow-sm backdrop-blur-sm will-change-[left,width]',
-            indicator.animate && 'transition-[left,width,opacity] duration-450 ease-[cubic-bezier(0.2,0.8,0.16,1)]',
-            indicator.visible ? 'opacity-100' : 'opacity-0',
-          )}
-          style={{
-            left: indicator.left,
-            width: indicator.width,
-          }}
-        />
+        <LavaIndicator indicator={indicator} />
 
         {baseItems.map(item => {
           const isExternal = item.href.startsWith('http')
@@ -336,18 +310,7 @@ function NavLink(props: NavLinkProps) {
         target: '_blank' as const,
         rel: 'noopener noreferrer',
       })}>
-      {showFallback && (
-        <>
-          <span
-            aria-hidden="true"
-            className="absolute top-0 right-1 bottom-0 left-1 z-0 rounded-md bg-primary/40 shadow-sm blur-[1.5px]"
-          />
-          <span
-            aria-hidden="true"
-            className="absolute top-0 right-1 bottom-0 left-1 z-0 rounded-md bg-primary shadow-sm backdrop-blur-sm"
-          />
-        </>
-      )}
+      {showFallback && <LavaFallbackIndicator />}
       <span className="relative z-10">
         {label}
         {showUnderline && (

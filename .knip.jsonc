@@ -3,9 +3,11 @@
   "entry": [
     "src/app/**/(page|layout|template|default|head|error|global-error|not-found|loading).{ts,tsx,js,jsx,mdx}",
     "src/app/**/(route|sitemap|robots).{ts,js}",
+    "convex/**/*.{ts,js}",
     "scripts/**/*.{ts,js}"
   ],
   "project": [
+    "convex/**/*.{ts,js}",
     "src/**/*.{ts,tsx,js,jsx,d.ts}",
     "scripts/**/*.{ts,js}",
     "src/styles/**/*.{css,scss,sass,less,styl,stylus,postcss}",

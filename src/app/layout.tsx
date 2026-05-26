@@ -15,6 +15,7 @@ import { type Metadata } from 'next'
 import { Noto_Sans, Space_Grotesk, VT323 } from 'next/font/google'
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://kil.dev'),
   title: 'Kilian Tyler | Site Reliability Engineer',
   description: 'Kilian Tyler is a Site Reliability Engineer',
   icons: [{ rel: 'icon', url: '/favicon.ico' }],
