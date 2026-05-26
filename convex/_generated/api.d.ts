@@ -9,10 +9,16 @@
  */
 
 import type * as _utils from "../_utils.js";
+import type * as auth from "../auth.js";
 import type * as dev_seedScores from "../dev/seedScores.js";
 import type * as gameSessions from "../gameSessions.js";
+import type * as http from "../http.js";
+import type * as petGallery from "../petGallery.js";
+import type * as petGalleryIndexes from "../petGalleryIndexes.js";
+import type * as petGalleryValidators from "../petGalleryValidators.js";
 import type * as scoreSubmission from "../scoreSubmission.js";
 import type * as scores from "../scores.js";
+import type * as workOSAuthKitActions from "../workOSAuthKitActions.js";
 
 import type {
   ApiFromModules,
@@ -22,10 +28,16 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   _utils: typeof _utils;
+  auth: typeof auth;
   "dev/seedScores": typeof dev_seedScores;
   gameSessions: typeof gameSessions;
+  http: typeof http;
+  petGallery: typeof petGallery;
+  petGalleryIndexes: typeof petGalleryIndexes;
+  petGalleryValidators: typeof petGalleryValidators;
   scoreSubmission: typeof scoreSubmission;
   scores: typeof scores;
+  workOSAuthKitActions: typeof workOSAuthKitActions;
 }>;
 
 /**
@@ -54,4 +66,6 @@ export declare const internal: FilterApi<
   FunctionReference<any, "internal">
 >;
 
-export declare const components: {};
+export declare const components: {
+  workOSAuthKit: import("@convex-dev/workos-authkit/_generated/component.js").ComponentApi<"workOSAuthKit">;
+};

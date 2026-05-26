@@ -12,7 +12,7 @@ These instructions apply to the whole repository.
   - `src/utils/theme-bundle.ts`
   - `src/utils/presence-bundle.ts`
   - `public/pet-gallery/`
-- The generated runtime files are produced by `bun run build:runtimes`; pet gallery data is produced by `bun run sync:pet-gallery`.
+- The generated runtime files are produced by `bun run build:runtimes`; pet gallery media is managed through UploadThing and Convex via `/admin/pet-gallery`.
 
 ## Local Setup
 
