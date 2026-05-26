@@ -19,4 +19,9 @@ describe('package scripts', () => {
   it('test:all reuses the generated-runtime-aware test script', () => {
     expect(packageJson.scripts['test:all']).toBe('bun run test && playwright test')
   })
+
+  it('prebuild does not sync pet gallery media into production builds', () => {
+    expect(packageJson.scripts.prebuild).toBe('bun run build:runtimes')
+    expect(packageJson.scripts.prebuild).not.toContain('sync:pet-gallery')
+  })
 })

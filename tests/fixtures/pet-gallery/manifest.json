@@ -1,0 +1,15 @@
+{
+  "generatedAt": "2026-05-17T00:00:00.000Z",
+  "images": [
+    {
+      "fileName": "fixture-photo.jpg",
+      "url": "/pet-gallery/originals/fixture-photo.jpg",
+      "blobUrl": "https://blob.example/fixture-photo.jpg",
+      "alt": "Fixture pet photo",
+      "width": 1200,
+      "height": 800,
+      "originalWidth": 1200,
+      "originalHeight": 800
+    }
+  ]
+}
