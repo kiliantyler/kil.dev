@@ -13,10 +13,31 @@ const config: NextConfig = {
     minimumCacheTTL: 31536000, // 1 year
     formats: ['image/avif', 'image/webp'],
     dangerouslyAllowSVG: true,
+    localPatterns: [
+      {
+        pathname: '/api/image/**',
+      },
+      {
+        pathname: '/api/local-image/**',
+      },
+      {
+        pathname: '/ogi/headshot.jpg',
+      },
+    ],
     remotePatterns: [
       {
         protocol: 'https',
         hostname: 'fjuww9floqc2ihpu.public.blob.vercel-storage.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'utfs.io',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.ufs.sh',
         pathname: '/**',
       },
     ],

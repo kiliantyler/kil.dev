@@ -1,5 +1,8 @@
 import { COOKIE_KEYS, LOCAL_STORAGE_KEYS } from '@/lib/storage-keys'
 import { expect, type Locator, type Page } from '@playwright/test'
+import { getE2EBaseURL } from './base-url'
+
+export const E2E_BASE_URL = getE2EBaseURL()
 
 /**
  * Clear all state (localStorage, sessionStorage, cookies) to ensure test isolation
@@ -85,7 +88,7 @@ export async function disableSeasonalOverlays(page: Page) {
       {
         name: COOKIE_KEYS.SEASONAL_OVERLAYS_ENABLED,
         value: '0',
-        url: 'http://localhost:3000',
+        url: E2E_BASE_URL,
         path: '/',
         sameSite: 'Lax',
       },
@@ -161,7 +164,8 @@ export async function gotoAndWaitForMain(page: Page, url: string) {
  */
 export async function clickAndWaitForURLThenMain(page: Page, element: Locator, url: string | RegExp) {
   await expect(element).toBeVisible()
-  await Promise.all([page.waitForURL(url), element.click()])
+  await element.click()
+  await expect(page).toHaveURL(url)
   await page.waitForLoadState('domcontentloaded')
   await waitForMain(page)
   // Use a shorter timeout for hydration since we've already waited for main

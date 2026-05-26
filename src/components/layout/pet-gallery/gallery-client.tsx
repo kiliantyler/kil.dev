@@ -5,8 +5,9 @@ import PhotoAlbum, { type Photo } from 'react-photo-album'
 import InfiniteScroll from 'react-photo-album/scroll'
 import type { SlideImage } from 'yet-another-react-lightbox'
 
-import type { GalleryImage } from '@/components/layout/pet-gallery/_content'
-import NextImage from 'next/image'
+import { getPetGalleryPhotoAlt } from '@/lib/pet-gallery/public-data'
+import { buildPetGallerySrcSet, getPetGalleryImageLoading } from '@/lib/pet-gallery/srcset'
+import type { PublicPetGalleryPhoto } from '@/lib/pet-gallery/types'
 
 // Lazy load lightbox and plugins only when needed
 function loadLightbox() {
@@ -30,43 +31,40 @@ function loadLightbox() {
 type LightboxModules = Awaited<ReturnType<typeof loadLightbox>>
 
 type GalleryClientProps = {
-  images: GalleryImage[]
+  photos: PublicPetGalleryPhoto[]
 }
 
-type PhotoWithBlur = Photo & { blurDataURL?: string }
+type GalleryPhoto = Omit<Photo, 'srcSet'> & {
+  galleryPhoto: PublicPetGalleryPhoto
+}
 
-function toPhotos(images: GalleryImage[]): PhotoWithBlur[] {
-  return images.map(img => ({
-    src: img.url,
-    width: img.width,
-    height: img.height,
-    alt: img.alt || 'Pet photo',
-    srcSet: img.srcSet,
-    blurDataURL: img.blurDataURL,
+function toPhotos(photos: PublicPetGalleryPhoto[]): GalleryPhoto[] {
+  return photos.map(photo => ({
+    src: photo.variants.card.url,
+    width: photo.variants.card.width,
+    height: photo.variants.card.height,
+    alt: getPetGalleryPhotoAlt(photo),
+    galleryPhoto: photo,
   }))
 }
 
-type SlideImageWithBlur = SlideImage & { blurDataURL?: string }
-
-function toSlides(images: GalleryImage[]): SlideImageWithBlur[] {
-  return images.map(img => ({
-    src: img.url,
-    alt: img.alt || 'Pet photo',
-    width: img.width,
-    height: img.height,
-    srcSet: img.srcSet,
-    blurDataURL: img.blurDataURL,
+function toSlides(photos: PublicPetGalleryPhoto[]): SlideImage[] {
+  return photos.map(photo => ({
+    src: photo.variants.full.url,
+    alt: getPetGalleryPhotoAlt(photo),
+    width: photo.variants.full.width,
+    height: photo.variants.full.height,
   }))
 }
 
-export function GalleryClient({ images }: GalleryClientProps) {
+export function GalleryClient({ photos }: GalleryClientProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number>(-1)
   const [lightboxReady, setLightboxReady] = useState(false)
   const [LightboxComponent, setLightboxComponent] = useState<LightboxModules | null>(null)
   const nextIndexRef = useRef<number>(0)
 
-  const allPhotos = useMemo(() => toPhotos(images), [images])
-  const slides = useMemo(() => toSlides(images), [images])
+  const allPhotos = useMemo(() => toPhotos(photos), [photos])
+  const slides = useMemo(() => toSlides(photos), [photos])
 
   // Load lightbox when user first opens it
   useEffect(() => {
@@ -84,7 +82,7 @@ export function GalleryClient({ images }: GalleryClientProps) {
     }
   }, [lightboxIndex, lightboxReady])
 
-  const CHUNK_SIZE = 24
+  const CHUNK_SIZE = 12
   const initialCount = useMemo(() => Math.min(CHUNK_SIZE, allPhotos.length), [allPhotos])
   useEffect(() => {
     nextIndexRef.current = initialCount
@@ -102,13 +100,13 @@ export function GalleryClient({ images }: GalleryClientProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      <InfiniteScroll<PhotoWithBlur>
+      <InfiniteScroll<GalleryPhoto>
         singleton
         photos={initialPhotos}
         fetch={fetchMore}
         onClick={({ index }) => setLightboxIndex(index)}
-        fetchRootMargin="2000px"
-        offscreenRootMargin="12000px"
+        fetchRootMargin="400px"
+        offscreenRootMargin="400px"
         retries={1}
         loading={
           <div
@@ -117,9 +115,9 @@ export function GalleryClient({ images }: GalleryClientProps) {
           />
         }
         finished={<div className="mx-auto my-4 text-muted-foreground">No more photos</div>}>
-        <PhotoAlbum<PhotoWithBlur>
+        <PhotoAlbum<GalleryPhoto>
           layout="masonry"
-          photos={[] as PhotoWithBlur[]}
+          photos={[] as GalleryPhoto[]}
           spacing={8}
           padding={0}
           breakpoints={[480, 768, 1024, 1280]}
@@ -142,21 +140,18 @@ export function GalleryClient({ images }: GalleryClientProps) {
             containerWidth === undefined ? { container: { style: { visibility: 'hidden' } } } : {}
           }
           render={{
-            image: (props, { index, width, height, photo }) => {
+            image: (_props, { index, width, height, photo }) => {
               const alt = photo.alt ?? 'Pet photo'
-              const src = typeof props.src === 'string' ? props.src : photo.src
               return (
-                <NextImage
-                  src={src}
+                <ResponsiveGalleryImage
+                  photo={photo}
                   alt={alt}
                   width={Math.max(1, Math.round(width))}
                   height={Math.max(1, Math.round(height))}
                   sizes="(min-width: 1280px) 16vw, (min-width: 1024px) 20vw, (min-width: 768px) 25vw, (min-width: 480px) 33vw, 50vw"
-                  className="h-auto w-full rounded-lg shadow-2xl"
+                  className="h-auto w-full rounded-lg bg-muted object-cover shadow-2xl"
                   style={{ width: '100%', height: 'auto' }}
-                  placeholder={photo.blurDataURL ? 'blur' : 'empty'}
-                  blurDataURL={photo.blurDataURL}
-                  priority={index < 6}
+                  loading={getPetGalleryImageLoading(index)}
                 />
               )
             },
@@ -189,6 +184,44 @@ export function GalleryClient({ images }: GalleryClientProps) {
 }
 
 import { useIsClient } from '@/hooks/use-is-client'
+
+function ResponsiveGalleryImage({
+  alt,
+  className,
+  height,
+  loading,
+  photo,
+  sizes,
+  style,
+  width,
+}: {
+  alt: string
+  className?: string
+  height: number
+  loading: 'eager' | 'lazy'
+  photo: GalleryPhoto
+  sizes: string
+  style: React.CSSProperties
+  width: number
+}) {
+  const variants = photo.galleryPhoto.variants
+
+  return (
+    // eslint-disable-next-line next/no-img-element
+    <img
+      src={variants.card.url}
+      srcSet={buildPetGallerySrcSet(photo.galleryPhoto)}
+      alt={alt}
+      width={width}
+      height={height}
+      sizes={sizes}
+      className={className}
+      style={style}
+      loading={loading}
+      fetchPriority={loading === 'eager' ? 'high' : 'auto'}
+    />
+  )
+}
 
 export function ClientMounted({ children, fallback }: { children: React.ReactNode; fallback?: React.ReactNode }) {
   const isClient = useIsClient()

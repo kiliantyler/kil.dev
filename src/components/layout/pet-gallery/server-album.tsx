@@ -1,35 +1,30 @@
 import type { Photo } from 'react-photo-album'
 import ServerPhotoAlbum from 'react-photo-album/server'
 
-import type { GalleryImage } from '@/components/layout/pet-gallery/_content'
+import { getPetGalleryPhotoAlt } from '@/lib/pet-gallery/public-data'
+import type { PublicPetGalleryPhoto } from '@/lib/pet-gallery/types'
 
 type ServerAlbumProps = {
-  images: GalleryImage[]
+  photos: PublicPetGalleryPhoto[]
   limit?: number
 }
 
-type ManifestSrcSet = { src: string; width: number; height: number }
-
-function toPhotos(images: GalleryImage[]): Photo[] {
-  return images.map(img => {
-    const entries = Array.isArray(img.srcSet) ? (img.srcSet as ManifestSrcSet[]) : []
-    return {
-      src: img.url,
-      width: img.width,
-      height: img.height,
-      alt: img.alt || 'Pet photo',
-      srcSet: entries.map(e => ({ src: e.src, width: e.width, height: e.height })),
-    }
-  })
+function toPhotos(photos: PublicPetGalleryPhoto[]): Photo[] {
+  return photos.map(photo => ({
+    src: photo.variants.card.url,
+    width: photo.variants.card.width,
+    height: photo.variants.card.height,
+    alt: getPetGalleryPhotoAlt(photo),
+  }))
 }
 
-export function ServerAlbum({ images, limit = 48 }: ServerAlbumProps) {
-  const photos = toPhotos(images.slice(0, limit))
+export function ServerAlbum({ photos, limit = 48 }: ServerAlbumProps) {
+  const albumPhotos = toPhotos(photos.slice(0, limit))
   return (
     <div className="[&_img]:rounded-lg [&_img]:shadow-2xl">
       <ServerPhotoAlbum
         layout="masonry"
-        photos={photos}
+        photos={albumPhotos}
         spacing={8}
         padding={0}
         breakpoints={[480, 768, 1024, 1280]}
