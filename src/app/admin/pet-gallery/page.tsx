@@ -1,8 +1,10 @@
 import { AdminShell } from '@/components/admin/admin-shell'
 import { PetGalleryAdminClient } from '@/components/admin/pet-gallery/pet-gallery-admin-client'
+import { connection } from 'next/server'
 import { getPetGalleryAdminWorkspaceStateAction } from './actions'
 
 export default async function AdminPetGalleryPage() {
+  await connection()
   const initialState = await getPetGalleryAdminWorkspaceStateAction()
 
   return (

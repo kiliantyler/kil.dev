@@ -2,9 +2,11 @@ import { AdminShell } from '@/components/admin/admin-shell'
 import { ClientMounted, GalleryClient } from '@/components/layout/pet-gallery/gallery-client'
 import { ServerAlbum } from '@/components/layout/pet-gallery/server-album'
 import { buildPublicPetGallerySnapshot } from '@/lib/pet-gallery/snapshot'
+import { connection } from 'next/server'
 import { getPetGalleryAdminWorkspaceStateAction } from '../actions'
 
 export default async function AdminPetGalleryPreviewPage() {
+  await connection()
   const state = await getPetGalleryAdminWorkspaceStateAction()
   const snapshot = buildPublicPetGallerySnapshot({
     photos: state.photos,
