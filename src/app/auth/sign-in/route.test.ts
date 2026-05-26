@@ -54,6 +54,10 @@ describe('AuthKit sign-in route', () => {
       returnTo: '/admin/pet-gallery?tab=photos',
     })
     expect(response.headers.get('location')).toBe('https://workos.example.test/sign-in')
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store, no-cache, must-revalidate, max-age=0')
+    expect(response.headers.get('Pragma')).toBe('no-cache')
+    expect(response.headers.get('Expires')).toBe('0')
+    expect(response.headers.get('Vary')).toBe('Cookie')
   })
 
   it.each([
