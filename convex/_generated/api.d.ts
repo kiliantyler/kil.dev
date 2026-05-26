@@ -10,6 +10,7 @@
 
 import type * as _utils from "../_utils.js";
 import type * as auth from "../auth.js";
+import type * as authConfigProviders from "../authConfigProviders.js";
 import type * as dev_seedScores from "../dev/seedScores.js";
 import type * as gameSessions from "../gameSessions.js";
 import type * as http from "../http.js";
@@ -29,6 +30,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   _utils: typeof _utils;
   auth: typeof auth;
+  authConfigProviders: typeof authConfigProviders;
   "dev/seedScores": typeof dev_seedScores;
   gameSessions: typeof gameSessions;
   http: typeof http;
