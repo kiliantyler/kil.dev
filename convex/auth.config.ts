@@ -1,4 +1,4 @@
-import { getWorkOSAuthConfigProviders } from './auth'
+import { getWorkOSAuthConfigProviders } from './authConfigProviders'
 
 const authConfig = {
   providers: getWorkOSAuthConfigProviders(),

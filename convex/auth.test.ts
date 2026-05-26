@@ -25,14 +25,28 @@ describe('Convex WorkOS auth config', () => {
     expect(getWorkOSAuthConfigProviders()).toEqual([])
   })
 
-  it('omits Convex auth providers when only the WorkOS client ID is configured', async () => {
+  it('builds Convex auth providers when only the WorkOS client ID is configured', async () => {
     vi.stubEnv('WORKOS_CLIENT_ID', 'client_test_valid')
     vi.stubEnv('WORKOS_API_KEY', '')
     vi.stubEnv('WORKOS_WEBHOOK_SECRET', '')
     vi.stubEnv('WORKOS_ACTION_SECRET', '')
     const { getWorkOSAuthConfigProviders } = await import('./auth')
 
-    expect(getWorkOSAuthConfigProviders()).toEqual([])
+    expect(getWorkOSAuthConfigProviders()).toEqual([
+      {
+        type: 'customJwt',
+        issuer: 'https://api.workos.com/',
+        algorithm: 'RS256',
+        jwks: 'https://api.workos.com/sso/jwks/client_test_valid',
+        applicationID: 'client_test_valid',
+      },
+      {
+        type: 'customJwt',
+        issuer: 'https://api.workos.com/user_management/client_test_valid',
+        algorithm: 'RS256',
+        jwks: 'https://api.workos.com/sso/jwks/client_test_valid',
+      },
+    ])
   })
 
   it('builds Convex auth providers when the optional WorkOS action secret is missing', async () => {

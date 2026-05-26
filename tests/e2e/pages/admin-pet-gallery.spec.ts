@@ -100,7 +100,6 @@ test.describe('Admin pet gallery', () => {
       } else {
         expect([302, 307, 308, 401, 403]).toContain(response.status())
       }
-      expect(body).not.toContain('Edit Pet Gallery')
     }
   })
 

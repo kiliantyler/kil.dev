@@ -1,7 +1,7 @@
 import { AuthKit } from '@convex-dev/workos-authkit'
-import type { AuthConfig } from 'convex/server'
 import { components, internal } from './_generated/api'
 import type { DataModel } from './_generated/dataModel'
+export { getWorkOSAuthConfigProviders } from './authConfigProviders'
 
 const REQUIRED_AUTHKIT_ENV = ['WORKOS_CLIENT_ID', 'WORKOS_API_KEY', 'WORKOS_WEBHOOK_SECRET'] as const
 
@@ -21,12 +21,5 @@ const authKitFunctionDefinitions = new AuthKit<DataModel>(components.workOSAuthK
   webhookSecret: process.env.WORKOS_WEBHOOK_SECRET || 'whsec_placeholder_for_function_definition',
   actionSecret: process.env.WORKOS_ACTION_SECRET || 'action_secret_placeholder_for_function_definition',
 })
-
-export function getWorkOSAuthConfigProviders(): AuthConfig['providers'] {
-  if (getMissingWorkOSAuthKitEnv().length > 0) {
-    return []
-  }
-  return getAuthKit().getAuthConfigProviders()
-}
 
 export const { backfillUsers } = authKitFunctionDefinitions.utils()
