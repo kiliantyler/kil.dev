@@ -9,18 +9,20 @@ import {
 const UPLOADTHING_PATH = '/api/uploadthing/:path*'
 const ADMIN_PATH = '/admin/:path*'
 const ADMIN_SIGN_IN_PATH = '/auth/sign-in'
+const ADMIN_CALLBACK_PATH = '/auth/callback'
+const UNAUTHENTICATED_PATHS = [UPLOADTHING_PATH, ADMIN_PATH, ADMIN_SIGN_IN_PATH, ADMIN_CALLBACK_PATH]
 
 const protectedProxy = authkitProxy({
   middlewareAuth: {
     enabled: true,
-    unauthenticatedPaths: [UPLOADTHING_PATH, ADMIN_PATH, ADMIN_SIGN_IN_PATH],
+    unauthenticatedPaths: UNAUTHENTICATED_PATHS,
   },
 })
 
 const testAdminBypassProxy = authkitProxy({
   middlewareAuth: {
     enabled: true,
-    unauthenticatedPaths: [UPLOADTHING_PATH, ADMIN_PATH, ADMIN_SIGN_IN_PATH],
+    unauthenticatedPaths: UNAUTHENTICATED_PATHS,
   },
 })
 

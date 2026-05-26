@@ -33,13 +33,13 @@ describe('auth proxy', () => {
     expect(authkitProxy).toHaveBeenNthCalledWith(1, {
       middlewareAuth: {
         enabled: true,
-        unauthenticatedPaths: ['/api/uploadthing/:path*', '/admin/:path*', '/auth/sign-in'],
+        unauthenticatedPaths: ['/api/uploadthing/:path*', '/admin/:path*', '/auth/sign-in', '/auth/callback'],
       },
     })
     expect(authkitProxy).toHaveBeenNthCalledWith(2, {
       middlewareAuth: {
         enabled: true,
-        unauthenticatedPaths: ['/api/uploadthing/:path*', '/admin/:path*', '/auth/sign-in'],
+        unauthenticatedPaths: ['/api/uploadthing/:path*', '/admin/:path*', '/auth/sign-in', '/auth/callback'],
       },
     })
     expect(proxy.config.matcher).toEqual(['/admin/:path*', '/auth/:path*', '/api/uploadthing/:path*'])
