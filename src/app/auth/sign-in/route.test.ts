@@ -56,18 +56,21 @@ describe('AuthKit sign-in route', () => {
     expect(response.headers.get('location')).toBe('https://workos.example.test/sign-in')
   })
 
-  it.each(['https://evil.example.test/admin', '//evil.example.test/admin', '/projects'])(
-    'falls back to /admin for unsafe return path %s',
-    async returnTo => {
-      getSignInUrl.mockResolvedValue('https://workos.example.test/sign-in')
-      const route = await importRoute()
+  it.each([
+    'https://evil.example.test/admin',
+    '//evil.example.test/admin',
+    '/projects',
+    '/administrator',
+    '/admin/../pet-gallery',
+  ])('falls back to /admin for unsafe return path %s', async returnTo => {
+    getSignInUrl.mockResolvedValue('https://workos.example.test/sign-in')
+    const route = await importRoute()
 
-      await route.GET(request(`http://localhost:3000/auth/sign-in?returnTo=${encodeURIComponent(returnTo)}`))
+    await route.GET(request(`http://localhost:3000/auth/sign-in?returnTo=${encodeURIComponent(returnTo)}`))
 
-      expect(getSignInUrl).toHaveBeenCalledWith({
-        organizationId: 'org_allowed',
-        returnTo: '/admin',
-      })
-    },
-  )
+    expect(getSignInUrl).toHaveBeenCalledWith({
+      organizationId: 'org_allowed',
+      returnTo: '/admin',
+    })
+  })
 })

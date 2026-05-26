@@ -5,11 +5,12 @@ import { connection, NextResponse, type NextRequest } from 'next/server'
 function readSafeReturnTo(request: NextRequest) {
   const requestUrl = request.nextUrl ?? new URL(request.url)
   const returnTo = requestUrl.searchParams.get('returnTo')
-  if (!returnTo || !returnTo.startsWith('/admin')) return '/admin'
+  if (!returnTo) return '/admin'
 
   try {
     const parsed = new URL(returnTo, requestUrl.origin)
     if (parsed.origin !== requestUrl.origin) return '/admin'
+    if (parsed.pathname !== '/admin' && !parsed.pathname.startsWith('/admin/')) return '/admin'
     return `${parsed.pathname}${parsed.search}`
   } catch {
     return '/admin'
