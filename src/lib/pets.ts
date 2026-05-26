@@ -24,6 +24,17 @@ export const PETS: Pet[] = [
     imageAlt: 'Tali the Mixed Breed (Basenji/Australian Shepherd)',
   },
   {
+    id: 'gwen',
+    name: 'Gwen',
+    breed: 'Golden Retriever',
+    birthday: '2025-10-18',
+    gender: 'Female',
+    description:
+      "A sweet girl who thinks she is a tornado. When she isn't sleeping she is chewing on her big sister, Lux.",
+    image: Pets.Gwen,
+    imageAlt: 'Gwen the Golden Retriever',
+  },
+  {
     id: 'gozer',
     name: 'Gozer',
     breed: 'Gozarian',
