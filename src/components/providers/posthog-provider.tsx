@@ -3,9 +3,32 @@
 import { isDev } from '@/utils/utils'
 import { useEffect, useState } from 'react'
 
+const US_POSTHOG_UI_HOST = 'https://us.posthog.com'
+const EU_POSTHOG_UI_HOST = 'https://eu.posthog.com'
+
+export function buildPostHogInitOptions(posthogHost: string) {
+  const apiHost = posthogHost.trim()
+
+  return {
+    api_host: apiHost,
+    ui_host: getPostHogUiHost(apiHost),
+    defaults: '2025-05-24' as const,
+    capture_exceptions: true,
+    debug: false,
+  }
+}
+
+function getPostHogUiHost(apiHost: string) {
+  if (apiHost === '/vibecheck' || apiHost === 'https://us.i.posthog.com') return US_POSTHOG_UI_HOST
+  if (apiHost === 'https://eu.i.posthog.com') return EU_POSTHOG_UI_HOST
+
+  return apiHost
+}
+
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
   const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY
-  const canCapture = !isDev() && !!posthogKey
+  const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST
+  const canCapture = !isDev() && !!posthogKey && !!posthogHost
   const [isInitialized, setIsInitialized] = useState(false)
 
   useEffect(() => {
@@ -19,11 +42,7 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
       import('posthog-js')
         .then(({ default: posthog }) => {
           posthog.init(posthogKey, {
-            api_host: '/vibecheck',
-            ui_host: 'https://us.posthog.com',
-            defaults: '2025-05-24',
-            capture_exceptions: true,
-            debug: false,
+            ...buildPostHogInitOptions(posthogHost),
             // Additional performance optimizations
             loaded: () => {
               setIsInitialized(true)
@@ -51,7 +70,7 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
         clearTimeout(timeoutId)
       }
     }
-  }, [canCapture, posthogKey, isInitialized])
+  }, [canCapture, posthogKey, posthogHost, isInitialized])
 
   return <>{children}</>
 }
