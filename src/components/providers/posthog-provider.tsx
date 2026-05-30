@@ -1,5 +1,6 @@
 'use client'
 
+import { shouldInitializePostHog } from '@/lib/posthog-config'
 import { isDev } from '@/utils/utils'
 import { useEffect, useState } from 'react'
 
@@ -28,11 +29,16 @@ function getPostHogUiHost(apiHost: string) {
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
   const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY
   const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST
-  const canCapture = !isDev() && !!posthogKey && !!posthogHost
+  const canCapture = shouldInitializePostHog({
+    isDevRuntime: isDev(),
+    posthogDisabled: process.env.NEXT_PUBLIC_POSTHOG_DISABLED,
+    posthogHost,
+    posthogKey,
+  })
   const [isInitialized, setIsInitialized] = useState(false)
 
   useEffect(() => {
-    if (!canCapture || isInitialized) return
+    if (!canCapture || isInitialized || !posthogKey || !posthogHost) return
 
     let idleId: number | undefined
     let timeoutId: ReturnType<typeof setTimeout> | undefined
