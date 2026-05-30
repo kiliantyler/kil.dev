@@ -8,12 +8,13 @@ const missingAuthKitEnv = getMissingWorkOSAuthKitEnv()
 if (missingAuthKitEnv.length === 0) {
   getAuthKit().registerRoutes(http)
 } else {
-  const missingEnvHandler = httpAction(
-    async () =>
-      new Response(`WorkOS AuthKit environment is not configured: ${missingAuthKitEnv.join(', ')}`, {
-        status: 503,
-      }),
-  )
+  const missingEnvHandler = httpAction(async () => {
+    console.error(`WorkOS AuthKit environment is not configured: ${missingAuthKitEnv.join(', ')}`)
+
+    return new Response('WorkOS AuthKit environment is not configured', {
+      status: 503,
+    })
+  })
 
   http.route({
     path: '/workos/webhook',

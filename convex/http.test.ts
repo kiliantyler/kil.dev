@@ -40,9 +40,7 @@ describe('Convex WorkOS HTTP routes', () => {
 
     const handler = httpAction.mock.calls[0]?.[0]
     const response = await handler?.()
-    await expect(response?.text()).resolves.toBe(
-      'WorkOS AuthKit environment is not configured: WORKOS_CLIENT_ID, WORKOS_WEBHOOK_SECRET',
-    )
+    await expect(response?.text()).resolves.toBe('WorkOS AuthKit environment is not configured')
     expect(response?.status).toBe(503)
   })
 
