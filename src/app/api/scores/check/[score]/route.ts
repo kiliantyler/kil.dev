@@ -7,15 +7,11 @@ export async function GET(_request: Request, context: { params: Promise<{ score?
   try {
     const { score: scoreParam } = await context.params
 
-    if (!scoreParam) {
-      return NextResponse.json({ success: false, message: 'Score parameter is required' }, { status: 400 })
-    }
-
-    const score = Number.parseInt(scoreParam, 10)
-
-    if (Number.isNaN(score) || score < 0) {
+    if (!scoreParam || !/^\d+$/.test(scoreParam)) {
       return NextResponse.json({ success: false, message: 'Invalid score value' }, { status: 400 })
     }
+
+    const score = Number(scoreParam)
 
     const { qualifies, threshold } = await checkScoreQualification(score)
 
