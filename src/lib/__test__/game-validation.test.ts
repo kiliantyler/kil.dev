@@ -1,5 +1,44 @@
+import { stableStringify } from '@/utils/stable-stringify'
 import { createHash } from 'node:crypto'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const action = vi.fn()
+const mutation = vi.fn()
+const query = vi.fn()
+
+vi.mock('@/env', () => ({
+  env: {
+    NEXT_PUBLIC_CONVEX_URL: 'https://example.convex.cloud',
+    CONVEX_DEPLOY_KEY: '',
+  },
+  requireConvexGameWriteSecret: () => 'server-secret',
+}))
+
+vi.mock('convex/browser', () => ({
+  ConvexHttpClient: vi.fn(function ConvexHttpClient() {
+    return {
+      action,
+      mutation,
+      query,
+      setAuth: vi.fn(),
+    }
+  }),
+}))
+
+vi.mock('../../../convex/_generated/api', () => ({
+  api: {
+    serverGameWrites: {
+      getGameSessionForServer: 'serverGameWrites.getGameSessionForServer',
+      createGameSession: 'serverGameWrites.createGameSession',
+      updateGameSession: 'serverGameWrites.updateGameSession',
+    },
+    gameSessions: {
+      getSessionPublic: 'gameSessions.getSessionPublic',
+      createSessionWithId: 'gameSessions.createSessionWithId',
+      updateSession: 'gameSessions.updateSession',
+    },
+  },
+}))
 
 // Helper function extracted from game-validation.ts for testing
 function computeSignatureHex(secret: string, payloadString: string): string {
@@ -137,5 +176,89 @@ describe('Session Configuration', () => {
     expect(SESSION_KEY_PREFIX).toContain('game')
     expect(NONCE_KEY_PREFIX).toContain('game')
     expect(SESSION_KEY_PREFIX).not.toBe(NONCE_KEY_PREFIX)
+  })
+})
+
+describe('Convex game session writes', () => {
+  beforeEach(() => {
+    action.mockReset()
+    mutation.mockReset()
+    query.mockReset()
+  })
+
+  it('creates sessions through the authenticated server write bridge', async () => {
+    action.mockResolvedValue('session-id')
+    const { createGameSession } = await import('../game-validation')
+
+    const session = await createGameSession()
+
+    expect(session.sessionId).toBe('session-id')
+    expect(session.secret).toHaveLength(64)
+    expect(typeof session.seed).toBe('number')
+    expect(action).toHaveBeenCalledWith('serverGameWrites.createGameSession', {
+      writeSecret: 'server-secret',
+      sessionSecret: session.secret,
+      seed: session.seed,
+    })
+    expect(mutation).not.toHaveBeenCalledWith('gameSessions.createSessionWithId', expect.anything())
+  })
+
+  it('reads full sessions through the authenticated server write bridge', async () => {
+    action.mockResolvedValue({
+      id: 'session-id',
+      secret: 'session-secret',
+      seed: 123,
+      createdAt: 456,
+      isActive: false,
+      validatedScore: 100,
+    })
+    const { validateScoreSubmissionBySession } = await import('../game-validation')
+
+    const result = await validateScoreSubmissionBySession('session-id', 100)
+
+    expect(result).toEqual({ success: true, validatedScore: 100 })
+    expect(action).toHaveBeenCalledWith('serverGameWrites.getGameSessionForServer', {
+      writeSecret: 'server-secret',
+      sessionId: 'session-id',
+    })
+    expect(query).not.toHaveBeenCalledWith('gameSessions.getSessionPublic', expect.anything())
+  })
+
+  it('updates sessions through the authenticated server write bridge', async () => {
+    const events = [
+      { t: 0, k: 'UP' as const },
+      { t: 40, k: 'RIGHT' as const },
+      { t: 80, k: 'DOWN' as const },
+    ]
+    const foods = [{ t: 120, g: false }]
+    const durationMs = 600
+    const finalScore = 10
+    const sessionId = 'session-id'
+    const secret = 'session-secret'
+    const signature = computeSignatureHex(secret, stableStringify({ sessionId, finalScore, events, foods, durationMs }))
+    action.mockImplementation(async reference => {
+      if (reference === 'serverGameWrites.getGameSessionForServer') {
+        return {
+          id: sessionId,
+          secret,
+          seed: 123,
+          createdAt: 456,
+          isActive: true,
+        }
+      }
+      return null
+    })
+    const { endGameSession } = await import('../game-validation')
+
+    const result = await endGameSession(sessionId, signature, finalScore, events, foods, durationMs)
+
+    expect(result).toEqual({ success: true, validatedScore: finalScore })
+    expect(action).toHaveBeenCalledWith('serverGameWrites.updateGameSession', {
+      writeSecret: 'server-secret',
+      sessionId,
+      isActive: false,
+      validatedScore: finalScore,
+    })
+    expect(mutation).not.toHaveBeenCalledWith('gameSessions.updateSession', expect.anything())
   })
 })

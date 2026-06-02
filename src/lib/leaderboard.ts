@@ -1,4 +1,4 @@
-import { env } from '@/env'
+import { env, requireConvexGameWriteSecret } from '@/env'
 import type { LeaderboardEntry } from '@/types/leaderboard'
 import { ConvexHttpClient } from 'convex/browser'
 
@@ -26,10 +26,9 @@ export async function addScoreToLeaderboard(entry: LeaderboardEntry): Promise<nu
     // Dynamically import to avoid issues before Convex types are generated
     const apiModule = await import('../../convex/_generated/api')
     const api = apiModule.api
-    // Use internal mutation via action - this will be called from API route
-    // For now, keep using the HTTP client approach
     console.log('Adding score to Convex:', { name: entry.name, score: entry.score })
-    const rank = await client.mutation(api.scores.addScorePublic, {
+    const rank = await client.action(api.serverGameWrites.addScore, {
+      writeSecret: requireConvexGameWriteSecret(),
       name: entry.name,
       score: entry.score,
     })

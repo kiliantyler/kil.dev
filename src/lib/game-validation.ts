@@ -1,4 +1,4 @@
-import { env } from '@/env'
+import { env, requireConvexGameWriteSecret } from '@/env'
 import { stableStringify } from '@/utils/stable-stringify'
 import { ConvexHttpClient } from 'convex/browser'
 import { createHash, randomBytes } from 'node:crypto'
@@ -59,7 +59,7 @@ function validateSessionId(sessionId: string): sessionId is Id<'gameSessions'> {
 }
 
 /**
- * Type matching the return type of getSessionPublic query.
+ * Type matching the return type of the server session action.
  * This matches the return validator defined in convex/gameSessions.ts
  */
 type SessionQueryResult = {
@@ -112,8 +112,9 @@ async function getSession(sessionId: string): Promise<GameSession | undefined> {
     const apiModule = await import('../../convex/_generated/api')
     const api = apiModule.api
 
-    // Call query - ConvexHttpClient returns unknown, so we validate the result
-    const queryResult: unknown = await client.query(api.gameSessions.getSessionPublic, {
+    // ConvexHttpClient returns unknown, so we validate the result.
+    const queryResult: unknown = await client.action(api.serverGameWrites.getGameSessionForServer, {
+      writeSecret: requireConvexGameWriteSecret(),
       sessionId,
     })
 
@@ -155,7 +156,8 @@ async function updateSession(session: GameSession): Promise<void> {
     const apiModule = await import('../../convex/_generated/api')
     const api = apiModule.api
 
-    await client.mutation(api.gameSessions.updateSession, {
+    await client.action(api.serverGameWrites.updateGameSession, {
+      writeSecret: requireConvexGameWriteSecret(),
       sessionId,
       isActive: session.isActive,
       validatedScore: session.validatedScore,
@@ -176,9 +178,9 @@ export async function createGameSession(): Promise<{ sessionId: string; secret: 
   const apiModule = await import('../../convex/_generated/api')
   const api = apiModule.api
 
-  // Call mutation that creates session and returns the ID
-  const sessionId = await client.mutation(api.gameSessions.createSessionWithId, {
-    secret,
+  const sessionId = await client.action(api.serverGameWrites.createGameSession, {
+    writeSecret: requireConvexGameWriteSecret(),
+    sessionSecret: secret,
     seed,
   })
 
