@@ -11,6 +11,7 @@ const BASE_ENV = {
   WORKOS_ACTION_SECRET: 'action_secret_test_valid_value',
   WORKOS_COOKIE_PASSWORD: 'a'.repeat(32),
   NEXT_PUBLIC_WORKOS_REDIRECT_URI: 'http://localhost:3000/auth/callback',
+  CONVEX_GAME_WRITE_SECRET: 'game-write-secret-test-value',
   PET_GALLERY_WORKOS_ORG_ID: 'org_test_valid_value',
   PET_GALLERY_ADMIN_EMAIL: 'admin@example.test',
   UPLOADTHING_TOKEN: 'uploadthing-token-valid-value',
@@ -88,6 +89,35 @@ describe('env', () => {
 
     expect(env.WORKOS_WEBHOOK_SECRET).toBe('whsec_test_other_value')
     expect(env.WORKOS_ACTION_SECRET).toBe('action_secret_test_other_value')
+  })
+
+  it('exposes the Convex game write secret for server-only write actions', async () => {
+    const { env, requireConvexGameWriteSecret } = await importEnvWith({
+      CONVEX_GAME_WRITE_SECRET: 'game-write-secret-test-value',
+    })
+
+    expect(env.CONVEX_GAME_WRITE_SECRET).toBe('game-write-secret-test-value')
+    expect(requireConvexGameWriteSecret()).toBe('game-write-secret-test-value')
+  })
+
+  it('fails closed when the Convex game write secret is missing', async () => {
+    const { requireConvexGameWriteSecret } = await importEnvWith({
+      CONVEX_GAME_WRITE_SECRET: '',
+    })
+
+    expect(() => requireConvexGameWriteSecret()).toThrow(
+      'Missing Convex game write environment variables: CONVEX_GAME_WRITE_SECRET',
+    )
+  })
+
+  it('fails closed when the Convex game write secret still has a placeholder', async () => {
+    const { requireConvexGameWriteSecret } = await importEnvWith({
+      CONVEX_GAME_WRITE_SECRET: 'replace-with-game-write-secret',
+    })
+
+    expect(() => requireConvexGameWriteSecret()).toThrow(
+      'Replace Convex game write placeholder environment variables: CONVEX_GAME_WRITE_SECRET',
+    )
   })
 
   it('fails closed when a required admin auth env var still has a placeholder', async () => {

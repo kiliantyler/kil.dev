@@ -7,6 +7,7 @@ export const env = createEnv({
     BLOB_READ_WRITE_TOKEN: z.string().optional(),
     CONVEX_DEPLOYMENT: z.string().optional(),
     CONVEX_DEPLOY_KEY: z.string().optional(),
+    CONVEX_GAME_WRITE_SECRET: z.string().optional(),
     PET_GALLERY_CONVEX_ACCESS_TOKEN: z.string().optional(),
     WORKOS_API_KEY: z.string().optional(),
     WORKOS_CLIENT_ID: z.string().optional(),
@@ -29,6 +30,7 @@ export const env = createEnv({
     BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
     CONVEX_DEPLOYMENT: process.env.CONVEX_DEPLOYMENT,
     CONVEX_DEPLOY_KEY: process.env.CONVEX_DEPLOY_KEY,
+    CONVEX_GAME_WRITE_SECRET: process.env.CONVEX_GAME_WRITE_SECRET,
     PET_GALLERY_CONVEX_ACCESS_TOKEN: process.env.PET_GALLERY_CONVEX_ACCESS_TOKEN,
     WORKOS_API_KEY: process.env.WORKOS_API_KEY,
     WORKOS_CLIENT_ID: process.env.WORKOS_CLIENT_ID,
@@ -78,6 +80,27 @@ export function requireAdminAuthEnv() {
     PET_GALLERY_WORKOS_ORG_ID: required.PET_GALLERY_WORKOS_ORG_ID ?? '',
     PET_GALLERY_ADMIN_EMAIL: required.PET_GALLERY_ADMIN_EMAIL ?? '',
   }
+}
+
+export function requireConvexGameWriteSecret() {
+  const required = {
+    CONVEX_GAME_WRITE_SECRET: env.CONVEX_GAME_WRITE_SECRET,
+  }
+  const missing = Object.entries(required)
+    .filter(([, value]) => !value)
+    .map(([key]) => key)
+  const placeholders = Object.entries(required)
+    .filter(([, value]) => value?.includes('placeholder') || value?.startsWith('replace-with-'))
+    .map(([key]) => key)
+
+  if (missing.length > 0) {
+    throw new Error(`Missing Convex game write environment variables: ${missing.join(', ')}`)
+  }
+  if (placeholders.length > 0) {
+    throw new Error(`Replace Convex game write placeholder environment variables: ${placeholders.join(', ')}`)
+  }
+
+  return required.CONVEX_GAME_WRITE_SECRET ?? ''
 }
 
 export function requirePetGalleryAdminEnv() {
