@@ -166,4 +166,27 @@ describe('verify deploy env', () => {
       'Verified CONVEX_GAME_WRITE_SECRET in Vercel and Convex deployment warm-squid-123.',
     )
   })
+
+  it('does not run nested Convex env reads when CONVEX_DEPLOY_KEY selects the deployment', () => {
+    const log = vi.fn()
+    const execFile = createExecFile(`${secret}\n`)
+
+    const result = verifyDeployEnv({
+      env: {
+        VERCEL: '1',
+        VERCEL_ENV: 'production',
+        CONVEX_DEPLOY_KEY: 'prod-deploy-key',
+        NEXT_PUBLIC_CONVEX_URL: 'https://resolute-ptarmigan-441.convex.cloud',
+        CONVEX_GAME_WRITE_SECRET: secret,
+      },
+      execFile,
+      log,
+    })
+
+    expect(result).toEqual({ checked: true, deployment: 'resolute-ptarmigan-441' })
+    expect(execFile).not.toHaveBeenCalled()
+    expect(log).toHaveBeenCalledWith(
+      'Verified CONVEX_GAME_WRITE_SECRET in the Vercel build environment for Convex deployment resolute-ptarmigan-441. Convex deploy key will select the deployment during deploy.',
+    )
+  })
 })

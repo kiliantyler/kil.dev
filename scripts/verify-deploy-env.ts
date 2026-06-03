@@ -73,9 +73,16 @@ export function verifyDeployEnv(options: VerifyDeployEnvOptions = {}) {
     throw new Error('Missing Convex deployment target; cannot verify Convex game write secret')
   }
 
+  if (env.CONVEX_DEPLOY_KEY) {
+    log(
+      `Verified ${GAME_WRITE_SECRET} in the Vercel build environment for Convex deployment ${deployment}. Convex deploy key will select the deployment during deploy.`,
+    )
+    return { checked: true as const, deployment }
+  }
+
   let convexEnvList: string
   try {
-    const convexCliEnv = { ...process.env }
+    const convexCliEnv = { ...process.env, ...env }
     delete convexCliEnv.CONVEX_DEPLOYMENT
     convexEnvList = execFile('bunx', ['convex', 'env', 'list', '--deployment', deployment], {
       encoding: 'utf8',
