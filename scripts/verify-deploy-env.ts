@@ -28,8 +28,24 @@ export function shouldVerifyDeployEnv(env: Env = process.env) {
   return env.KIL_DEV_ENFORCE_DEPLOY_ENV === '1' || env.VERCEL === '1'
 }
 
+function getDeploymentFromConvexUrl(url: string | undefined) {
+  if (!url) return
+  try {
+    const hostname = new URL(url).hostname
+    const suffix = hostname.endsWith('.convex.cloud') ? '.convex.cloud' : '.convex.site'
+    if (!hostname.endsWith(suffix)) return
+    return hostname.slice(0, -suffix.length)
+  } catch {
+    return
+  }
+}
+
 export function getConvexDeploymentTarget(env: Env = process.env) {
   if (env.CONVEX_DEPLOYMENT) return env.CONVEX_DEPLOYMENT
+  const deploymentFromUrl =
+    getDeploymentFromConvexUrl(env.NEXT_PUBLIC_CONVEX_URL) ??
+    getDeploymentFromConvexUrl(env.NEXT_PUBLIC_CONVEX_SITE_URL)
+  if (deploymentFromUrl) return deploymentFromUrl
   if (env.VERCEL_ENV === 'production') return 'prod'
   return
 }
@@ -54,7 +70,7 @@ export function verifyDeployEnv(options: VerifyDeployEnvOptions = {}) {
 
   const deployment = getConvexDeploymentTarget(env)
   if (!deployment) {
-    throw new Error('Missing CONVEX_DEPLOYMENT; cannot verify Convex game write secret')
+    throw new Error('Missing Convex deployment target; cannot verify Convex game write secret')
   }
 
   let convexEnvList: string

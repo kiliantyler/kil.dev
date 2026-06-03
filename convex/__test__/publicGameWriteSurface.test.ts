@@ -23,10 +23,11 @@ function readSourceFiles(root: string): string {
 function readConvexExports(modulePath: string): Record<string, ConvexFunctionKind> {
   const source = readFileSync(resolve(convexRoot, modulePath), 'utf8')
   return Object.fromEntries(
-    source
-      .matchAll(
+    Array.from(
+      source.matchAll(
         /export const (?<name>\w+) = (?<kind>action|internalAction|internalMutation|internalQuery|mutation|query)\(/g,
-      )
+      ),
+    )
       .map(match => [match.groups?.name, match.groups?.kind] as const)
       .filter((entry): entry is readonly [string, ConvexFunctionKind] => Boolean(entry[0]) && Boolean(entry[1])),
   )
