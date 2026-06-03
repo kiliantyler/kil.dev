@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createGameSession } from '@/lib/game-validation'
 import { POST } from './route'
@@ -14,6 +14,10 @@ function startGame() {
 }
 
 describe('POST /api/game/start', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   beforeEach(() => {
     mockedCreateGameSession.mockReset()
     mockedCreateGameSession.mockResolvedValue({
@@ -39,7 +43,7 @@ describe('POST /api/game/start', () => {
   })
 
   it('returns a server error when session creation fails', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
     mockedCreateGameSession.mockRejectedValue(new Error('Convex unavailable'))
 
     const response = await startGame()
@@ -50,6 +54,5 @@ describe('POST /api/game/start', () => {
       success: false,
       message: 'Failed to start game session',
     })
-    consoleError.mockRestore()
   })
 })
