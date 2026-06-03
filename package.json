@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "prebuild": "bun run build:runtimes",
+    "prebuild": "bun scripts/verify-deploy-env.ts && bun run build:runtimes",
     "build": "next build",
     "build:runtimes": "bun scripts/build-runtimes.ts",
     "check": "bun run build:runtimes && oxlint --deny-warnings . && tsc --noEmit",
