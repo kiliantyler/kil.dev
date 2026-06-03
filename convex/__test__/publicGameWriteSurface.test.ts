@@ -5,6 +5,8 @@ import { describe, expect, it } from 'vitest'
 const convexRoot = resolve(import.meta.dirname, '..')
 const srcRoot = resolve(convexRoot, '../src')
 
+type ConvexFunctionKind = 'action' | 'internalAction' | 'internalMutation' | 'internalQuery' | 'mutation' | 'query'
+
 function readSourceFiles(root: string): string {
   return readdirSync(root)
     .flatMap(entry => {
@@ -18,11 +20,50 @@ function readSourceFiles(root: string): string {
     .join('\n')
 }
 
+function readConvexExports(modulePath: string): Record<string, ConvexFunctionKind> {
+  const source = readFileSync(resolve(convexRoot, modulePath), 'utf8')
+  return Object.fromEntries(
+    source
+      .matchAll(
+        /export const (?<name>\w+) = (?<kind>action|internalAction|internalMutation|internalQuery|mutation|query)\(/g,
+      )
+      .map(match => [match.groups?.name, match.groups?.kind] as const)
+      .filter((entry): entry is readonly [string, ConvexFunctionKind] => Boolean(entry[0]) && Boolean(entry[1])),
+  )
+}
+
 describe('public game write surface', () => {
   it('does not call scoreSubmission from browser or app source', () => {
     const source = readSourceFiles(srcRoot)
 
     expect(source).not.toContain('api.scoreSubmission')
+  })
+
+  it('keeps sensitive game session exports internal except the public read', () => {
+    expect(readConvexExports('gameSessions.ts')).toEqual({
+      cleanupExpiredSessions: 'internalMutation',
+      createSessionWithId: 'internalMutation',
+      getSession: 'internalQuery',
+      getSessionPublic: 'query',
+      updateSession: 'internalMutation',
+    })
+  })
+
+  it('keeps score writes internal and exposes only public reads', () => {
+    expect(readConvexExports('scores.ts')).toEqual({
+      addScore: 'internalMutation',
+      checkQualification: 'query',
+      getLeaderboard: 'query',
+    })
+  })
+
+  it('keeps the public game write bridge limited to secret-gated server actions', () => {
+    expect(readConvexExports('serverGameWrites.ts')).toEqual({
+      addScore: 'action',
+      createGameSession: 'action',
+      getGameSessionForServer: 'action',
+      updateGameSession: 'action',
+    })
   })
 
   it('keeps verifyAndSubmitScore out of public actions', () => {
