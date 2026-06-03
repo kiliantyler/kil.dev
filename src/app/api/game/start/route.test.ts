@@ -27,6 +27,7 @@ describe('POST /api/game/start', () => {
     const response = await startGame()
 
     expect(response.status).toBe(200)
+    expect(mockedCreateGameSession).toHaveBeenCalledTimes(1)
     expect(response.headers.get('Cache-Control')).toBe('no-store')
     await expect(response.json()).resolves.toEqual({
       success: true,
