@@ -4,10 +4,9 @@ import { CheckScoreResponseSchema } from '@/lib/api-schemas'
 import type { LeaderboardEntry } from '@/types/leaderboard'
 import { computeSha256Hex } from '@/utils/crypto'
 import { stableStringify } from '@/utils/stable-stringify'
-import { useAction, useQuery } from 'convex/react'
+import { useQuery } from 'convex/react'
 import { useCallback, useState } from 'react'
 import { api } from '../../convex/_generated/api'
-import type { Id } from '../../convex/_generated/dataModel'
 
 const SUBMIT_HIDE_NAME_TIMEOUT_MS = 1000
 
@@ -18,9 +17,6 @@ export function useLeaderboard() {
   // Transform Convex data to match LeaderboardEntry interface
   const leaderboard: LeaderboardEntry[] = convexLeaderboard
   const isLoadingLeaderboard = convexLeaderboard === undefined
-
-  // Use Convex action for score submission with signature verification
-  const submitScoreAction = useAction(api.scoreSubmission.verifyAndSubmitScore)
 
   const [isSubmittingScore, setIsSubmittingScore] = useState(false)
   const [showNameInput, setShowNameInput] = useState(false)
@@ -71,16 +67,18 @@ export function useLeaderboard() {
         const signingPayload = { sessionId, name: playerName.join(''), score, timestamp }
         const signature = await computeSha256Hex(`${secret}.${stableStringify(signingPayload)}`)
 
-        // Convert sessionId string to Convex Id type
-        const sessionIdAsId = sessionId as Id<'gameSessions'>
-
-        const result = await submitScoreAction({
-          sessionId: sessionIdAsId,
-          name: playerName.join(''),
-          score,
-          timestamp,
-          signature,
+        const response = await fetch('/api/scores', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: playerName.join(''),
+            score,
+            sessionId,
+            timestamp,
+            signature,
+          }),
         })
+        const result = (await response.json()) as { success: boolean; message?: string }
 
         if (result.success) {
           // Leaderboard will automatically update via Convex subscription
@@ -102,7 +100,7 @@ export function useLeaderboard() {
         setIsSubmittingScore(false)
       }
     },
-    [isSubmittingScore, playerName, submitScoreAction],
+    [isSubmittingScore, playerName],
   )
 
   // Merge optimistic score into leaderboard if present

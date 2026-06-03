@@ -1,9 +1,9 @@
 import { v } from 'convex/values'
-import { internalQuery, mutation, query } from './_generated/server'
+import { internalMutation, internalQuery, query } from './_generated/server'
 
 const SESSION_TTL_MS = 60 * 60 * 1000 // 1 hour
 
-export const createSessionWithId = mutation({
+export const createSessionWithId = internalMutation({
   args: {
     secret: v.string(),
     seed: v.number(),
@@ -58,7 +58,6 @@ export const getSession = internalQuery({
   },
 })
 
-// Public version for backward compatibility
 export const getSessionPublic = query({
   args: {
     sessionId: v.id('gameSessions'),
@@ -66,7 +65,6 @@ export const getSessionPublic = query({
   returns: v.union(
     v.object({
       id: v.string(),
-      secret: v.string(),
       seed: v.number(),
       createdAt: v.number(),
       isActive: v.boolean(),
@@ -85,7 +83,6 @@ export const getSessionPublic = query({
 
     return {
       id: session._id.toString(),
-      secret: session.secret,
       seed: session.seed,
       createdAt: session.createdAt,
       isActive: session.isActive,
@@ -94,7 +91,7 @@ export const getSessionPublic = query({
   },
 })
 
-export const updateSession = mutation({
+export const updateSession = internalMutation({
   args: {
     sessionId: v.id('gameSessions'),
     isActive: v.boolean(),
@@ -122,7 +119,7 @@ export const updateSession = mutation({
 
 // Scheduled function to clean up expired sessions
 // Run this periodically (e.g., every hour) via Convex dashboard or CLI
-export const cleanupExpiredSessions = mutation({
+export const cleanupExpiredSessions = internalMutation({
   args: {},
   returns: v.object({
     deleted: v.number(),

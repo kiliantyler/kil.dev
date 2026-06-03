@@ -21,7 +21,11 @@ describe('package scripts', () => {
   })
 
   it('prebuild does not sync pet gallery media into production builds', () => {
-    expect(packageJson.scripts.prebuild).toBe('bun run build:runtimes')
+    expect(packageJson.scripts.prebuild).toBe('bun scripts/verify-deploy-env.ts && bun run build:runtimes')
     expect(packageJson.scripts.prebuild).not.toContain('sync:pet-gallery')
+  })
+
+  it('prebuild verifies deploy environment before production builds', () => {
+    expect(packageJson.scripts.prebuild).toContain('bun scripts/verify-deploy-env.ts')
   })
 })

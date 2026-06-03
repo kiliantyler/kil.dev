@@ -19,6 +19,7 @@ import type * as petGalleryIndexes from "../petGalleryIndexes.js";
 import type * as petGalleryValidators from "../petGalleryValidators.js";
 import type * as scoreSubmission from "../scoreSubmission.js";
 import type * as scores from "../scores.js";
+import type * as serverGameWrites from "../serverGameWrites.js";
 import type * as workOSAuthKitActions from "../workOSAuthKitActions.js";
 
 import type {
@@ -39,6 +40,7 @@ declare const fullApi: ApiFromModules<{
   petGalleryValidators: typeof petGalleryValidators;
   scoreSubmission: typeof scoreSubmission;
   scores: typeof scores;
+  serverGameWrites: typeof serverGameWrites;
   workOSAuthKitActions: typeof workOSAuthKitActions;
 }>;
 

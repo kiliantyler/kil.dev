@@ -1,5 +1,39 @@
 import type { LeaderboardEntry } from '@/types/leaderboard'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const mutation = vi.fn()
+const action = vi.fn()
+
+vi.mock('@/env', () => ({
+  env: {
+    NEXT_PUBLIC_CONVEX_URL: 'https://example.convex.cloud',
+    CONVEX_DEPLOY_KEY: '',
+  },
+  requireConvexGameWriteSecret: () => 'server-secret',
+}))
+
+vi.mock('convex/browser', () => ({
+  ConvexHttpClient: vi.fn(function ConvexHttpClient() {
+    return {
+      action,
+      mutation,
+      query: vi.fn(),
+      setAuth: vi.fn(),
+    }
+  }),
+}))
+
+vi.mock('../../../convex/_generated/api', () => ({
+  api: {
+    serverGameWrites: {
+      addScore: 'serverGameWrites.addScore',
+    },
+    scores: {
+      addScorePublic: 'scores.addScorePublic',
+      checkQualification: 'scores.checkQualification',
+    },
+  },
+}))
 
 // Helper function extracted for testing
 function parseNumericScore(raw: string | number): number | null {
@@ -177,5 +211,27 @@ describe('Leaderboard Constants', () => {
     const MAX_LEADERBOARD_SIZE = 10
     expect(MAX_LEADERBOARD_SIZE).toBeGreaterThan(0)
     expect(MAX_LEADERBOARD_SIZE).toBeLessThan(100)
+  })
+})
+
+describe('addScoreToLeaderboard', () => {
+  beforeEach(() => {
+    mutation.mockReset()
+    action.mockReset()
+  })
+
+  it('submits scores through the authenticated server write bridge', async () => {
+    action.mockResolvedValue(4)
+    const { addScoreToLeaderboard } = await import('../leaderboard')
+
+    const rank = await addScoreToLeaderboard({ name: 'AAA', score: 500, timestamp: 1, id: 'score-id' })
+
+    expect(rank).toBe(4)
+    expect(action).toHaveBeenCalledWith('serverGameWrites.addScore', {
+      writeSecret: 'server-secret',
+      name: 'AAA',
+      score: 500,
+    })
+    expect(mutation).not.toHaveBeenCalledWith('scores.addScorePublic', expect.anything())
   })
 })

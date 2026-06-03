@@ -3,7 +3,7 @@
 import { v } from 'convex/values'
 import { createHash } from 'node:crypto'
 import { internal } from './_generated/api'
-import { action } from './_generated/server'
+import { internalAction } from './_generated/server'
 import { stableStringify } from './_utils'
 
 type Result = { success: true; position: number } | { success: false; message: string }
@@ -12,7 +12,7 @@ type Result = { success: true; position: number } | { success: false; message: s
  * Verify signature and submit score atomically.
  * This action handles server-side signature verification and score submission.
  */
-export const verifyAndSubmitScore = action({
+export const verifyAndSubmitScore = internalAction({
   args: {
     sessionId: v.id('gameSessions'),
     name: v.string(),
