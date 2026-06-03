@@ -6,12 +6,22 @@ import { mutation } from '../_generated/server'
  * This can be run via: npx convex run dev/seedScores
  */
 export const seedScores = mutation({
-  args: {},
+  args: {
+    writeSecret: v.string(),
+  },
   returns: v.object({
     inserted: v.number(),
     message: v.string(),
   }),
-  handler: async ctx => {
+  handler: async (ctx, args) => {
+    const expectedSecret = process.env.CONVEX_GAME_WRITE_SECRET
+    if (!expectedSecret) {
+      throw new Error('Convex game write secret is not configured')
+    }
+    if (args.writeSecret !== expectedSecret) {
+      throw new Error('Unauthorized game write')
+    }
+
     const sampleScores = [
       { name: 'AAA', score: 1250 },
       { name: 'BBB', score: 1080 },
