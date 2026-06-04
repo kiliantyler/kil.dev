@@ -30,6 +30,25 @@ copy_if_missing() {
   cp -p "${source_path}" "${worktree_path}"
 }
 
+copy_dir_if_missing() {
+  local relative_path="$1"
+  local source_path="${source_root}/${relative_path}"
+  local worktree_path="${worktree_root}/${relative_path}"
+
+  if [[ ! -d "${source_path}" || -e "${worktree_path}" ]]; then
+    return 0
+  fi
+
+  if ! git -C "${source_root}" check-ignore -q -- "${relative_path}"; then
+    return 0
+  fi
+
+  mkdir -p "$(dirname "${worktree_path}")"
+  cp -pR "${source_path}" "${worktree_path}"
+}
+
+copy_dir_if_missing ".vercel"
+
 while IFS= read -r -d '' env_path; do
   relative_path="${env_path#"${source_root}/"}"
 
