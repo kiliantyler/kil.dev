@@ -3,7 +3,12 @@ import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 
 import { stableStringify } from '@/utils/stable-stringify'
-import { buildAskKilianKnowledgeEntries, normalizeKnowledgeKey } from './knowledge-sources'
+import {
+  ASK_KILIAN_KNOWLEDGE_SOURCE_GLOBS,
+  buildAskKilianKnowledgeEntries,
+  isAskKilianKnowledgeSourcePathCovered,
+  normalizeKnowledgeKey,
+} from './knowledge-sources'
 
 describe('normalizeKnowledgeKey', () => {
   it('normalizes labels for stable keys', () => {
@@ -103,6 +108,26 @@ describe('buildAskKilianKnowledgeEntries', () => {
       const expectedHash = createHash('sha256').update(stableStringify(entryWithoutContentHash)).digest('hex')
 
       expect(contentHash).toBe(expectedHash)
+    }
+  })
+})
+
+describe('ASK_KILIAN_KNOWLEDGE_SOURCE_GLOBS', () => {
+  it('covers every emitted sourcePath', () => {
+    const uncovered = buildAskKilianKnowledgeEntries()
+      .map(entry => entry.sourcePath)
+      .filter(sourcePath => !isAskKilianKnowledgeSourcePathCovered(sourcePath))
+
+    expect(uncovered).toEqual([])
+  })
+
+  it('keeps source globs narrow enough to avoid noisy preview embedding signals', () => {
+    const forbiddenBroadGlobs = ['src/**', 'convex/**', 'scripts/**', '**/*']
+
+    expect(ASK_KILIAN_KNOWLEDGE_SOURCE_GLOBS).not.toEqual([])
+    expect(ASK_KILIAN_KNOWLEDGE_SOURCE_GLOBS).toContain('src/lib/ask-kilian/**')
+    for (const glob of forbiddenBroadGlobs) {
+      expect(ASK_KILIAN_KNOWLEDGE_SOURCE_GLOBS).not.toContain(glob)
     }
   })
 })

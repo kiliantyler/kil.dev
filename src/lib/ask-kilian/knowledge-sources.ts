@@ -13,7 +13,53 @@ import { stableStringify } from '@/utils/stable-stringify'
 import type { ThemeConfig } from '@/types/themes'
 import type { AskKilianKnowledgeCategory, AskKilianKnowledgeEntry, AskKilianSpoilerLevel, AskKilianTier } from './types'
 
+export const ASK_KILIAN_KNOWLEDGE_SOURCE_GLOBS = [
+  'src/lib/achievements.ts',
+  'src/lib/content.ts',
+  'src/lib/experience.ts',
+  'src/lib/navmenu.ts',
+  'src/lib/pets.ts',
+  'src/lib/projects.ts',
+  'src/lib/quickfacts.ts',
+  'src/lib/themes.ts',
+  'src/lib/ask-kilian/**',
+  'src/types/themes.ts',
+  'src/utils/stable-stringify.ts',
+] as const
+
 type EntryInput = Omit<AskKilianKnowledgeEntry, 'contentHash' | 'source' | 'status'>
+
+function escapeRegExp(value: string) {
+  return value.replaceAll(/[\\^$+?.()|[\]{}]/g, '\\$&')
+}
+
+function globToRegExp(glob: string) {
+  let pattern = ''
+
+  for (let index = 0; index < glob.length; index += 1) {
+    const character = glob[index]
+    if (character !== '*') {
+      pattern += escapeRegExp(character)
+      continue
+    }
+
+    if (glob[index + 1] === '*') {
+      pattern += '.*'
+      index += 1
+      continue
+    }
+
+    pattern += '[^/]*'
+  }
+
+  return new RegExp(`^${pattern}$`)
+}
+
+const askKilianKnowledgeSourcePathMatchers = ASK_KILIAN_KNOWLEDGE_SOURCE_GLOBS.map(globToRegExp)
+
+export function isAskKilianKnowledgeSourcePathCovered(sourcePath: string) {
+  return askKilianKnowledgeSourcePathMatchers.some(matcher => matcher.test(sourcePath))
+}
 
 export function normalizeKnowledgeKey(value: string) {
   return value
