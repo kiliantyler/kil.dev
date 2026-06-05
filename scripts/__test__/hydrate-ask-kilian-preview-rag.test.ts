@@ -10,6 +10,7 @@ import { ASK_KILIAN_APP_TABLES, ASK_KILIAN_RAG_TABLES } from '../ask-kilian-rag-
 import {
   extractSnapshotTable,
   hydrateAskKilianPreviewRag,
+  stripConvexSystemFields,
   type HydrateAskKilianPreviewRagDeps,
 } from '../hydrate-ask-kilian-preview-rag'
 
@@ -37,6 +38,7 @@ function createDeps(overrides: Partial<HydrateAskKilianPreviewRagDeps> = {}) {
       filePath: `/tmp/ask-kilian-preview-rag-test/${options?.component ? `${options.component}-` : ''}${table}.jsonl`,
       rowCount: 3,
     })),
+    stripConvexSystemFields: vi.fn(async () => {}),
     run: vi.fn(async () => ''),
     log: vi.fn(),
     ...overrides,
@@ -74,6 +76,10 @@ describe('hydrateAskKilianPreviewRag', () => {
     const importCommands = commands.filter(command => command.includes('convex import'))
     expect(importCommands).toHaveLength(ASK_KILIAN_APP_TABLES.length + ASK_KILIAN_RAG_TABLES.length)
     expect(deps.extractSnapshotTable).toHaveBeenCalledTimes(importCommands.length)
+    expect(deps.stripConvexSystemFields).toHaveBeenCalledTimes(ASK_KILIAN_APP_TABLES.length)
+    expect(deps.stripConvexSystemFields).toHaveBeenCalledWith(
+      '/tmp/ask-kilian-preview-rag-test/askKilianKnowledgeEntries.jsonl',
+    )
 
     const logText = vi.mocked(deps.log).mock.calls.flat().join('\n')
     expect(logText).not.toContain('source-secret')
@@ -131,6 +137,7 @@ describe('hydrateAskKilianPreviewRag', () => {
     expect(deps.mkdtemp).not.toHaveBeenCalled()
     expect(deps.run).not.toHaveBeenCalled()
     expect(deps.extractSnapshotTable).not.toHaveBeenCalled()
+    expect(deps.stripConvexSystemFields).not.toHaveBeenCalled()
     expect(deps.rm).not.toHaveBeenCalled()
   })
 
@@ -154,6 +161,7 @@ describe('hydrateAskKilianPreviewRag', () => {
     expect(deps.mkdtemp).not.toHaveBeenCalled()
     expect(deps.run).not.toHaveBeenCalled()
     expect(deps.extractSnapshotTable).not.toHaveBeenCalled()
+    expect(deps.stripConvexSystemFields).not.toHaveBeenCalled()
     expect(deps.rm).not.toHaveBeenCalled()
   })
 
@@ -175,6 +183,30 @@ describe('hydrateAskKilianPreviewRag', () => {
         table,
         expect.objectContaining({ component: 'rag' }),
       )
+    }
+  })
+
+  it('strips Convex system fields from app-table JSONL before import', async () => {
+    const tempDir = await mkdtemp(path.join(tmpdir(), 'ask-kilian-rag-strip-test-'))
+    const filePath = path.join(tempDir, 'rows.jsonl')
+
+    try {
+      await writeFile(
+        filePath,
+        `${JSON.stringify({ _id: 'row-a', _creationTime: 123, stableKey: 'a' })}\n${JSON.stringify({
+          _id: 'row-b',
+          _creationTime: 456,
+          stableKey: 'b',
+        })}\n\n`,
+      )
+
+      await stripConvexSystemFields(filePath)
+
+      await expect(readFile(filePath, 'utf8')).resolves.toBe(
+        `${JSON.stringify({ stableKey: 'a' })}\n${JSON.stringify({ stableKey: 'b' })}\n`,
+      )
+    } finally {
+      await rm(tempDir, { recursive: true, force: true })
     }
   })
 
@@ -218,6 +250,33 @@ describe('hydrateAskKilianPreviewRag', () => {
       })
       await expect(stat(extracted.filePath)).resolves.toMatchObject({ size: content.length })
       expect(content.length).toBeGreaterThan(1024 * 1024)
+      await expect(readFile(extracted.filePath, 'utf8')).resolves.toBe(content)
+    } finally {
+      await rm(tempDir, { recursive: true, force: true })
+    }
+  })
+
+  it('extracts component tables from Convex snapshot _components paths', async () => {
+    const tempDir = await mkdtemp(path.join(tmpdir(), 'ask-kilian-rag-component-extract-test-'))
+
+    try {
+      const sourceDir = path.join(tempDir, 'source')
+      const outputDir = path.join(tempDir, 'output')
+      const tableDir = path.join(sourceDir, '_components', 'rag', 'entries')
+      await mkdir(tableDir, { recursive: true })
+
+      const content = `${JSON.stringify({ _id: 'entry-a', key: 'a' })}\n`
+      await writeFile(path.join(tableDir, 'documents.jsonl'), content)
+
+      const zipPath = path.join(tempDir, 'snapshot.zip')
+      await execFileAsync('zip', ['-qr', zipPath, '.'], { cwd: sourceDir })
+
+      const extracted = await extractSnapshotTable(zipPath, 'entries', { component: 'rag', outputDir })
+
+      expect(extracted).toEqual({
+        filePath: path.join(outputDir, 'rag-entries.jsonl'),
+        rowCount: 1,
+      })
       await expect(readFile(extracted.filePath, 'utf8')).resolves.toBe(content)
     } finally {
       await rm(tempDir, { recursive: true, force: true })

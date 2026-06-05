@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 import { execFile, spawn } from 'node:child_process'
 import { createWriteStream } from 'node:fs'
-import { mkdir, mkdtemp, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { Transform } from 'node:stream'
@@ -22,6 +22,7 @@ type HydrationEnv = Record<string, string | undefined>
 type RunOptions = { env: NodeJS.ProcessEnv }
 type ExtractSnapshotTableOptions = { component?: string; outputDir?: string }
 type ExtractedSnapshotTable = { filePath: string; rowCount: number }
+type JsonRecord = Record<string, unknown>
 
 export type HydrateAskKilianPreviewRagDeps = {
   mkdtemp: (prefix: string) => Promise<string>
@@ -31,6 +32,7 @@ export type HydrateAskKilianPreviewRagDeps = {
     table: string,
     options?: ExtractSnapshotTableOptions,
   ) => Promise<ExtractedSnapshotTable>
+  stripConvexSystemFields: (filePath: string) => Promise<void>
   run: (command: string, options: RunOptions) => Promise<string>
   log: (message: string) => void
 }
@@ -75,10 +77,29 @@ function previewImportArgs(previewName: string) {
 
 function snapshotPathCandidates(table: string, options: ExtractSnapshotTableOptions) {
   if (options.component) {
-    return [`components/${options.component}/${table}/documents.jsonl`, `${options.component}/${table}/documents.jsonl`]
+    return [
+      `_components/${options.component}/${table}/documents.jsonl`,
+      `components/${options.component}/${table}/documents.jsonl`,
+      `${options.component}/${table}/documents.jsonl`,
+    ]
   }
 
   return [`${table}/documents.jsonl`, `tables/${table}/documents.jsonl`]
+}
+
+export async function stripConvexSystemFields(filePath: string) {
+  const content = await readFile(filePath, 'utf8')
+  const outputLines = content
+    .split('\n')
+    .filter(line => line.trim())
+    .map(line => {
+      const row = JSON.parse(line) as JsonRecord
+      delete row._id
+      delete row._creationTime
+      return JSON.stringify(row)
+    })
+
+  await writeFile(filePath, outputLines.length > 0 ? `${outputLines.join('\n')}\n` : '')
 }
 
 function createJsonlRowCounter() {
@@ -168,6 +189,7 @@ function createDefaultDeps(): HydrateAskKilianPreviewRagDeps {
     mkdtemp,
     rm,
     extractSnapshotTable,
+    stripConvexSystemFields,
     log: message => console.log(message),
     run: async (command, options) => {
       const { stdout } = await execFileAsync('bash', ['-lc', command], {
@@ -212,6 +234,7 @@ export async function hydrateAskKilianPreviewRag(
       const extracted = await deps.extractSnapshotTable(sourceSnapshotZip, table, {
         outputDir: path.join(tempDir, 'app'),
       })
+      await deps.stripConvexSystemFields(extracted.filePath)
       await deps.run(
         `bunx convex import --replace -y ${previewImportArgs(previewName)} --table ${table} ${shellQuote(extracted.filePath)}`,
         {
