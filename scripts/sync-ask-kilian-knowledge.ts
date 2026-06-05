@@ -8,6 +8,18 @@ import { isPlaceholderSecret } from '../src/lib/env-secrets'
 
 const MIN_FULL_MANIFEST_ENTRY_COUNT = 10
 type ConvexActionClient = Pick<ConvexHttpClient, 'action'>
+export type SyncAskKilianMode = 'sync' | 'dryRun' | 'ifChanged'
+
+export type SyncIfChangedSummary =
+  | {
+      skipped: true
+      diff: SyncSummary
+    }
+  | {
+      skipped: false
+      diff: SyncSummary
+      sync: SyncSummary
+    }
 
 export type SyncAskKilianKnowledgeDeps = {
   createClient: (convexUrl: string) => ConvexActionClient
@@ -15,15 +27,25 @@ export type SyncAskKilianKnowledgeDeps = {
 }
 
 export function parseSyncAskKilianArgs(args: string[]) {
-  let dryRun = false
+  let mode: SyncAskKilianMode = 'sync'
   for (const arg of args) {
     if (arg === '--dry-run') {
-      dryRun = true
+      if (mode !== 'sync') {
+        throw new Error('Ask Kilian sync accepts only one mode option')
+      }
+      mode = 'dryRun'
+      continue
+    }
+    if (arg === '--if-changed') {
+      if (mode !== 'sync') {
+        throw new Error('Ask Kilian sync accepts only one mode option')
+      }
+      mode = 'ifChanged'
       continue
     }
     throw new Error(`Unknown Ask Kilian sync option: ${arg}`)
   }
-  return { dryRun }
+  return { mode }
 }
 
 export function resolveSyncMode(env: { NEXT_PUBLIC_CONVEX_URL?: string; ASK_KILIAN_CONVEX_ACCESS_TOKEN?: string }) {
@@ -60,19 +82,48 @@ function assertFullManifestEntries(entries: AskKilianKnowledgeEntry[]) {
 
 export async function syncAskKilianKnowledge(
   {
-    dryRun,
+    mode,
     convexUrl,
     accessToken,
   }: {
-    dryRun: boolean
+    mode: SyncAskKilianMode
     convexUrl: string
     accessToken: string
   },
   deps: SyncAskKilianKnowledgeDeps = createDefaultDeps(),
-): Promise<SyncSummary> {
+): Promise<SyncSummary | SyncIfChangedSummary> {
   const entries = deps.buildEntries()
   assertFullManifestEntries(entries)
   const client = deps.createClient(convexUrl)
+
+  if (mode === 'ifChanged') {
+    const diff: SyncSummary = await client.action(api.askKilianKnowledge.diffRepoKnowledgeForServer, {
+      accessToken,
+      entries,
+      isFullManifest: true,
+    })
+    if (diff.counts.created === 0 && diff.counts.changed === 0 && diff.counts.retired === 0) {
+      return { skipped: true, diff }
+    }
+
+    const runtimeEnvStatus: AskKilianRuntimeEnvStatus = await client.action(
+      api.askKilianKnowledge.verifyRuntimeEnvForServer,
+      {
+        accessToken,
+      },
+    )
+    if (!runtimeEnvStatus.ok) {
+      throw new Error('Ask Kilian Convex runtime environment verification failed')
+    }
+
+    const sync: SyncSummary = await client.action(api.askKilianKnowledge.syncRepoKnowledgeForServer, {
+      accessToken,
+      entries,
+      dryRun: false,
+      isFullManifest: true,
+    })
+    return { skipped: false, diff, sync }
+  }
 
   const runtimeEnvStatus: AskKilianRuntimeEnvStatus = await client.action(
     api.askKilianKnowledge.verifyRuntimeEnvForServer,
@@ -87,18 +138,18 @@ export async function syncAskKilianKnowledge(
   return await client.action(api.askKilianKnowledge.syncRepoKnowledgeForServer, {
     accessToken,
     entries,
-    dryRun,
+    dryRun: mode === 'dryRun',
     isFullManifest: true,
   })
 }
 
 async function main() {
-  const args = parseSyncAskKilianArgs(process.argv.slice(2))
+  const { mode } = parseSyncAskKilianArgs(process.argv.slice(2))
   const { convexUrl, accessToken } = resolveSyncMode({
     NEXT_PUBLIC_CONVEX_URL: process.env.NEXT_PUBLIC_CONVEX_URL,
     ASK_KILIAN_CONVEX_ACCESS_TOKEN: process.env.ASK_KILIAN_CONVEX_ACCESS_TOKEN,
   })
-  const result = await syncAskKilianKnowledge({ dryRun: args.dryRun, convexUrl, accessToken })
+  const result = await syncAskKilianKnowledge({ mode, convexUrl, accessToken })
   console.log(JSON.stringify(result, null, 2))
 }
 

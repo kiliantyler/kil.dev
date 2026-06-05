@@ -6,6 +6,7 @@
   "scripts": {
     "ask-kilian:sync": "bun scripts/sync-ask-kilian-knowledge.ts",
     "ask-kilian:sync:dry-run": "bun scripts/sync-ask-kilian-knowledge.ts --dry-run",
+    "ask-kilian:sync-if-changed": "bun scripts/sync-ask-kilian-knowledge.ts --if-changed",
     "prebuild": "bun scripts/verify-deploy-env.ts && bun run build:runtimes",
     "build": "next build",
     "build:runtimes": "bun scripts/build-runtimes.ts",

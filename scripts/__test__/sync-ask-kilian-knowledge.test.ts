@@ -1,6 +1,7 @@
 import type { ConvexHttpClient } from 'convex/browser'
 import { describe, expect, it, vi } from 'vitest'
 import { api } from '../../convex/_generated/api'
+import type { SyncSummary } from '../../convex/askKilianKnowledge'
 import type { AskKilianKnowledgeEntry } from '../../src/lib/ask-kilian/types'
 import {
   parseSyncAskKilianArgs,
@@ -32,22 +33,45 @@ function createEntries(count: number) {
   }))
 }
 
-function createDeps(entries: AskKilianKnowledgeEntry[] = createEntries(10)) {
-  const action = vi.fn(async () => {
+const runtimeEnvStatus = {
+  ok: true,
+  aiGatewayConfigured: true,
+  accessTokenConfigured: true,
+}
+
+function createSummary(counts: Partial<SyncSummary['counts']> = {}): SyncSummary {
+  const resolvedCounts = {
+    created: 0,
+    changed: 0,
+    unchanged: 0,
+    retired: 0,
+    ignoredAdmin: 0,
+    ...counts,
+  }
+  return {
+    dryRun: true,
+    counts: resolvedCounts,
+    keys: {
+      created: Array.from({ length: resolvedCounts.created }, (_, index) => `created:${index}`),
+      changed: Array.from({ length: resolvedCounts.changed }, (_, index) => `changed:${index}`),
+      unchanged: Array.from({ length: resolvedCounts.unchanged }, (_, index) => `unchanged:${index}`),
+      retired: Array.from({ length: resolvedCounts.retired }, (_, index) => `retired:${index}`),
+      ignoredAdmin: Array.from({ length: resolvedCounts.ignoredAdmin }, (_, index) => `ignored-admin:${index}`),
+    },
+  }
+}
+
+function createDeps(
+  entries: AskKilianKnowledgeEntry[] = createEntries(10),
+  actionImplementation?: Parameters<typeof vi.fn>[0],
+) {
+  const action = vi.fn(actionImplementation ?? (async () => {
     if (action.mock.calls.length === 1) {
-      return {
-        ok: true,
-        aiGatewayConfigured: true,
-        accessTokenConfigured: true,
-      }
+      return runtimeEnvStatus
     }
 
-    return {
-      dryRun: true,
-      counts: { created: 1, changed: 0, unchanged: 0, retired: 0, ignoredAdmin: 0 },
-      keys: { created: ['pet:lux'], changed: [], unchanged: [], retired: [], ignoredAdmin: [] },
-    }
-  })
+    return createSummary({ created: 1 })
+  }))
 
   const deps = {
     createClient: vi.fn(() => ({ action: action as unknown as ConvexHttpClient['action'] })),
@@ -59,15 +83,27 @@ function createDeps(entries: AskKilianKnowledgeEntry[] = createEntries(10)) {
 
 describe('parseSyncAskKilianArgs', () => {
   it('parses dry-run mode', () => {
-    expect(parseSyncAskKilianArgs(['--dry-run'])).toEqual({ dryRun: true })
+    expect(parseSyncAskKilianArgs(['--dry-run'])).toEqual({ mode: 'dryRun' })
+  })
+
+  it('parses if-changed mode', () => {
+    expect(parseSyncAskKilianArgs(['--if-changed'])).toEqual({ mode: 'ifChanged' })
   })
 
   it('defaults to live sync mode', () => {
-    expect(parseSyncAskKilianArgs([])).toEqual({ dryRun: false })
+    expect(parseSyncAskKilianArgs([])).toEqual({ mode: 'sync' })
   })
 
   it.each(['--dryrun', '--dry-run=true', '--live'])('rejects unknown sync options: %s', option => {
     expect(() => parseSyncAskKilianArgs([option])).toThrow(`Unknown Ask Kilian sync option: ${option}`)
+  })
+
+  it.each([
+    ['--dry-run', '--if-changed'],
+    ['--if-changed', '--dry-run'],
+    ['--dry-run', '--dry-run'],
+  ])('rejects multiple mode options: %s %s', (...args) => {
+    expect(() => parseSyncAskKilianArgs(args)).toThrow('Ask Kilian sync accepts only one mode option')
   })
 })
 
@@ -123,12 +159,12 @@ describe('syncAskKilianKnowledge', () => {
       {
         convexUrl: 'https://example.convex.cloud',
         accessToken: 'server-token',
-        dryRun: true,
+        mode: 'dryRun',
       },
       deps,
     )
 
-    expect(result.counts.created).toBe(1)
+    expect('counts' in result && result.counts.created).toBe(1)
     expect(deps.createClient).toHaveBeenCalledWith('https://example.convex.cloud')
     expect(deps.buildEntries).toHaveBeenCalledOnce()
     expect(action).toHaveBeenCalledTimes(2)
@@ -143,6 +179,88 @@ describe('syncAskKilianKnowledge', () => {
     })
   })
 
+  it('skips runtime verification and sync when if-changed diff has no created, changed, or retired entries', async () => {
+    const diff = createSummary({ unchanged: 10, ignoredAdmin: 1 })
+    const { deps, action } = createDeps(createEntries(10), async () => diff)
+
+    const result = await syncAskKilianKnowledge(
+      {
+        convexUrl: 'https://example.convex.cloud',
+        accessToken: 'server-token',
+        mode: 'ifChanged',
+      },
+      deps,
+    )
+
+    expect(result).toEqual({ skipped: true, diff })
+    expect(action).toHaveBeenCalledOnce()
+    expect(action).toHaveBeenNthCalledWith(1, api.askKilianKnowledge.diffRepoKnowledgeForServer, {
+      accessToken: 'server-token',
+      entries: createEntries(10),
+      isFullManifest: true,
+    })
+  })
+
+  it.each([
+    ['created', { created: 1 }],
+    ['changed', { changed: 1 }],
+    ['retired', { retired: 1 }],
+  ] satisfies [string, Partial<SyncSummary['counts']>][])(
+    'runs live sync after diff and runtime verification when if-changed diff has %s entries',
+    async (_label, counts) => {
+      const diff = createSummary(counts)
+      const sync = createSummary({ changed: 1, unchanged: 9 })
+      const { deps, action } = createDeps(createEntries(10), async () => {
+        if (action.mock.calls.length === 1) return diff
+        if (action.mock.calls.length === 2) return runtimeEnvStatus
+        return sync
+      })
+
+      const result = await syncAskKilianKnowledge(
+        {
+          convexUrl: 'https://example.convex.cloud',
+          accessToken: 'server-token',
+          mode: 'ifChanged',
+        },
+        deps,
+      )
+
+      expect(result).toEqual({ skipped: false, diff, sync })
+      expect(action).toHaveBeenCalledTimes(3)
+      expect(action).toHaveBeenNthCalledWith(1, api.askKilianKnowledge.diffRepoKnowledgeForServer, {
+        accessToken: 'server-token',
+        entries: createEntries(10),
+        isFullManifest: true,
+      })
+      expect(action).toHaveBeenNthCalledWith(2, api.askKilianKnowledge.verifyRuntimeEnvForServer, {
+        accessToken: 'server-token',
+      })
+      expect(action).toHaveBeenNthCalledWith(3, api.askKilianKnowledge.syncRepoKnowledgeForServer, {
+        accessToken: 'server-token',
+        entries: createEntries(10),
+        dryRun: false,
+        isFullManifest: true,
+      })
+    },
+  )
+
+  it('does not sync when ignoredAdmin is the only if-changed diff count', async () => {
+    const diff = createSummary({ unchanged: 10, ignoredAdmin: 2 })
+    const { deps, action } = createDeps(createEntries(10), async () => diff)
+
+    const result = await syncAskKilianKnowledge(
+      {
+        convexUrl: 'https://example.convex.cloud',
+        accessToken: 'server-token',
+        mode: 'ifChanged',
+      },
+      deps,
+    )
+
+    expect(result).toEqual({ skipped: true, diff })
+    expect(action).toHaveBeenCalledOnce()
+  })
+
   it('refuses suspiciously small full manifests before calling Convex', async () => {
     const { deps, action } = createDeps([])
 
@@ -151,7 +269,7 @@ describe('syncAskKilianKnowledge', () => {
         {
           convexUrl: 'https://example.convex.cloud',
           accessToken: 'server-token',
-          dryRun: false,
+          mode: 'sync',
         },
         deps,
       ),
