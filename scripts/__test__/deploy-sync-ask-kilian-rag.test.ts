@@ -1,10 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { SyncSummary } from '../../convex/askKilianKnowledge'
-import {
-  deploySyncAskKilianRag,
-  type DeploySyncAskKilianRagDeps,
-} from '../deploy-sync-ask-kilian-rag'
+import { deploySyncAskKilianRag, type DeploySyncAskKilianRagDeps } from '../deploy-sync-ask-kilian-rag'
 
 function baseEnv(overrides: Record<string, string | undefined> = {}) {
   return {
@@ -165,11 +162,7 @@ describe('deploySyncAskKilianRag', () => {
 
   it.each([
     ['missing Convex URL', { NEXT_PUBLIC_CONVEX_URL: undefined, CONVEX_URL: undefined }, 'Missing Convex URL'],
-    [
-      'missing access token',
-      { ASK_KILIAN_CONVEX_ACCESS_TOKEN: undefined },
-      'Missing ASK_KILIAN_CONVEX_ACCESS_TOKEN',
-    ],
+    ['missing access token', { ASK_KILIAN_CONVEX_ACCESS_TOKEN: undefined }, 'Missing ASK_KILIAN_CONVEX_ACCESS_TOKEN'],
     [
       'placeholder access token',
       { ASK_KILIAN_CONVEX_ACCESS_TOKEN: 'replace-with-ask-kilian-convex-access-token' },

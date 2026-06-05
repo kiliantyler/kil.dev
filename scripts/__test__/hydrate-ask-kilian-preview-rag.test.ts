@@ -1,13 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import {
-  ASK_KILIAN_APP_TABLES,
-  ASK_KILIAN_RAG_TABLES,
-} from '../ask-kilian-rag-tables'
-import {
-  hydrateAskKilianPreviewRag,
-  type HydrateAskKilianPreviewRagDeps,
-} from '../hydrate-ask-kilian-preview-rag'
+import { ASK_KILIAN_APP_TABLES, ASK_KILIAN_RAG_TABLES } from '../ask-kilian-rag-tables'
+import { hydrateAskKilianPreviewRag, type HydrateAskKilianPreviewRagDeps } from '../hydrate-ask-kilian-preview-rag'
 
 const sourceKey = 'dev:test-source-123|source-secret'
 const targetKey = 'preview:test-team:test-project|target-secret'

@@ -65,13 +65,16 @@ function createDeps(
   entries: AskKilianKnowledgeEntry[] = createEntries(10),
   actionImplementation?: Parameters<typeof vi.fn>[0],
 ) {
-  const action = vi.fn(actionImplementation ?? (async () => {
-    if (action.mock.calls.length === 1) {
-      return runtimeEnvStatus
-    }
+  const action = vi.fn(
+    actionImplementation ??
+      (async () => {
+        if (action.mock.calls.length === 1) {
+          return runtimeEnvStatus
+        }
 
-    return createSummary({ created: 1 })
-  }))
+        return createSummary({ created: 1 })
+      }),
+  )
 
   const deps = {
     createClient: vi.fn(() => ({ action: action as unknown as ConvexHttpClient['action'] })),

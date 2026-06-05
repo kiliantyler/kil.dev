@@ -1,14 +1,8 @@
 #!/usr/bin/env bun
 import type { SyncSummary } from '../convex/askKilianKnowledge'
 import { isPlaceholderSecret } from '../src/lib/env-secrets.js'
-import {
-  hydrateAskKilianPreviewRag,
-  type HydrateAskKilianPreviewRagDeps,
-} from './hydrate-ask-kilian-preview-rag'
-import {
-  syncAskKilianKnowledge,
-  type SyncIfChangedSummary,
-} from './sync-ask-kilian-knowledge'
+import { hydrateAskKilianPreviewRag, type HydrateAskKilianPreviewRagDeps } from './hydrate-ask-kilian-preview-rag'
+import { syncAskKilianKnowledge, type SyncIfChangedSummary } from './sync-ask-kilian-knowledge'
 
 type DeploySyncEnv = Record<string, string | undefined>
 type DeploySyncEnvironment = 'preview' | 'production'
