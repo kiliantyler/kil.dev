@@ -61,6 +61,18 @@ function targetDeploymentFromEnv(env: HydrationEnv) {
   }
 }
 
+function requirePreviewName(env: HydrationEnv) {
+  const previewName = env.VERCEL_GIT_COMMIT_REF?.trim()
+  if (!previewName) {
+    throw new Error('VERCEL_GIT_COMMIT_REF is required for preview RAG hydration imports')
+  }
+  return previewName
+}
+
+function previewImportArgs(previewName: string) {
+  return `--preview-name ${shellQuote(previewName)}`
+}
+
 function snapshotPathCandidates(table: string, options: ExtractSnapshotTableOptions) {
   if (options.component) {
     return [`components/${options.component}/${table}/documents.jsonl`, `${options.component}/${table}/documents.jsonl`]
@@ -185,6 +197,7 @@ export async function hydrateAskKilianPreviewRag(
   }
 
   const targetDeployment = targetDeploymentFromEnv(env)
+  const previewName = requirePreviewName(env)
   const tempDir = await deps.mkdtemp(path.join(tmpdir(), 'ask-kilian-preview-rag-'))
   const sourceSnapshotZip = path.join(tempDir, 'source.zip')
 
@@ -199,9 +212,12 @@ export async function hydrateAskKilianPreviewRag(
       const extracted = await deps.extractSnapshotTable(sourceSnapshotZip, table, {
         outputDir: path.join(tempDir, 'app'),
       })
-      await deps.run(`bunx convex import --replace -y --table ${table} ${shellQuote(extracted.filePath)}`, {
-        env: commandEnv(env, targetKey),
-      })
+      await deps.run(
+        `bunx convex import --replace -y ${previewImportArgs(previewName)} --table ${table} ${shellQuote(extracted.filePath)}`,
+        {
+          env: commandEnv(env, targetKey),
+        },
+      )
       deps.log(`[ask-kilian:hydrate] replaced app table ${table} (${extracted.rowCount} rows)`)
     }
 
@@ -211,7 +227,7 @@ export async function hydrateAskKilianPreviewRag(
         outputDir: path.join(tempDir, ASK_KILIAN_RAG_COMPONENT_PATH),
       })
       await deps.run(
-        `bunx convex import --replace -y --component ${ASK_KILIAN_RAG_COMPONENT_PATH} --table ${table} ${shellQuote(extracted.filePath)}`,
+        `bunx convex import --replace -y ${previewImportArgs(previewName)} --component ${ASK_KILIAN_RAG_COMPONENT_PATH} --table ${table} ${shellQuote(extracted.filePath)}`,
         {
           env: commandEnv(env, targetKey),
         },

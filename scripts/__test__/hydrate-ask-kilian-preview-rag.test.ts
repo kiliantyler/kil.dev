@@ -21,6 +21,7 @@ const targetKey = 'preview:test-team:test-project|target-secret'
 function previewEnv(overrides: Record<string, string | undefined> = {}) {
   return {
     VERCEL_ENV: 'preview',
+    VERCEL_GIT_COMMIT_REF: 'codex/kty-63-ai-kilian-chatbot-design',
     NEXT_PUBLIC_CONVEX_URL: 'https://test-preview-123.convex.cloud',
     ASK_KILIAN_RAG_SOURCE_CONVEX_DEPLOY_KEY: sourceKey,
     CONVEX_DEPLOY_KEY: targetKey,
@@ -61,8 +62,12 @@ describe('hydrateAskKilianPreviewRag', () => {
     expect(commands).not.toEqual(expect.arrayContaining([expect.stringContaining('convex data')]))
     expect(commands).toEqual(
       expect.arrayContaining([
-        expect.stringContaining('convex import --replace -y --table askKilianKnowledgeEntries'),
-        expect.stringContaining('convex import --replace -y --component rag --table namespaces'),
+        expect.stringContaining(
+          "convex import --replace -y --preview-name 'codex/kty-63-ai-kilian-chatbot-design' --table askKilianKnowledgeEntries",
+        ),
+        expect.stringContaining(
+          "convex import --replace -y --preview-name 'codex/kty-63-ai-kilian-chatbot-design' --component rag --table namespaces",
+        ),
       ]),
     )
 
@@ -137,6 +142,19 @@ describe('hydrateAskKilianPreviewRag', () => {
     const importCommands = runCommands(deps).filter(command => command.includes('convex import'))
     expect(importCommands).not.toEqual([])
     expect(importCommands.every(command => command.includes('--replace -y'))).toBe(true)
+  })
+
+  it('fails closed before commands when the Vercel preview name is missing', async () => {
+    const deps = createDeps()
+
+    await expect(
+      hydrateAskKilianPreviewRag({ env: previewEnv({ VERCEL_GIT_COMMIT_REF: undefined }) }, deps),
+    ).rejects.toThrow('VERCEL_GIT_COMMIT_REF is required for preview RAG hydration imports')
+
+    expect(deps.mkdtemp).not.toHaveBeenCalled()
+    expect(deps.run).not.toHaveBeenCalled()
+    expect(deps.extractSnapshotTable).not.toHaveBeenCalled()
+    expect(deps.rm).not.toHaveBeenCalled()
   })
 
   it('extracts app tables without component options and RAG tables with component options', async () => {
