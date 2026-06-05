@@ -30,14 +30,14 @@ export const ASK_KILIAN_KNOWLEDGE_SOURCE_GLOBS = [
 type EntryInput = Omit<AskKilianKnowledgeEntry, 'contentHash' | 'source' | 'status'>
 
 function escapeRegExp(value: string) {
-  return value.replaceAll(/[\\^$+?.()|[\]{}]/g, '\\$&')
+  return value.replaceAll(/[\\^$+?.()|[\]{}]/g, String.raw`\$&`)
 }
 
 function globToRegExp(glob: string) {
   let pattern = ''
 
   for (let index = 0; index < glob.length; index += 1) {
-    const character = glob[index]
+    const character = glob.charAt(index)
     if (character !== '*') {
       pattern += escapeRegExp(character)
       continue
