@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "ask-kilian:deploy-sync": "bun scripts/deploy-sync-ask-kilian-rag.ts",
     "ask-kilian:sync": "bun scripts/sync-ask-kilian-knowledge.ts",
     "ask-kilian:sync:dry-run": "bun scripts/sync-ask-kilian-knowledge.ts --dry-run",
     "ask-kilian:sync-if-changed": "bun scripts/sync-ask-kilian-knowledge.ts --if-changed",

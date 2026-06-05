@@ -30,6 +30,7 @@ describe('package scripts', () => {
   })
 
   it('includes Ask Kilian knowledge sync scripts', () => {
+    expect(packageJson.scripts['ask-kilian:deploy-sync']).toBe('bun scripts/deploy-sync-ask-kilian-rag.ts')
     expect(packageJson.scripts['ask-kilian:sync']).toBe('bun scripts/sync-ask-kilian-knowledge.ts')
     expect(packageJson.scripts['ask-kilian:sync:dry-run']).toBe('bun scripts/sync-ask-kilian-knowledge.ts --dry-run')
     expect(packageJson.scripts['ask-kilian:sync-if-changed']).toBe(
