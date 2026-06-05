@@ -1,7 +1,20 @@
 #!/usr/bin/env bun
 import { execFileSync } from 'node:child_process'
 
+import { isPlaceholderSecret } from '../src/lib/env-secrets'
+
 const GAME_WRITE_SECRET = 'CONVEX_GAME_WRITE_SECRET'
+const AI_GATEWAY_API_KEY = 'AI_GATEWAY_API_KEY'
+const ASK_KILIAN_ACCESS_TOKEN = 'ASK_KILIAN_CONVEX_ACCESS_TOKEN'
+const ASK_KILIAN_GATEWAY_ENV = 'ASK_KILIAN_GATEWAY_ENV'
+const VERCEL_PROJECT_ID = 'VERCEL_PROJECT_ID'
+const REQUIRED_SHARED_ENV_KEYS = [
+  GAME_WRITE_SECRET,
+  AI_GATEWAY_API_KEY,
+  ASK_KILIAN_ACCESS_TOKEN,
+  ASK_KILIAN_GATEWAY_ENV,
+  VERCEL_PROJECT_ID,
+] as const
 
 type Env = Record<string, string | undefined>
 type ExecFile = (
@@ -20,8 +33,18 @@ type VerifyDeployEnvOptions = {
   log?: (message: string) => void
 }
 
-function isPlaceholder(value: string) {
-  return value.includes('placeholder') || value.startsWith('replace-with-')
+function formatRequiredKeys() {
+  return `${REQUIRED_SHARED_ENV_KEYS.slice(0, -1).join(', ')}, and ${REQUIRED_SHARED_ENV_KEYS.at(-1)}`
+}
+
+function formatRequiredKeysForError() {
+  return REQUIRED_SHARED_ENV_KEYS.join(' and ')
+}
+
+function createConvexCliEnv(env: Env) {
+  const convexCliEnv = { ...process.env, ...env }
+  delete convexCliEnv.CONVEX_DEPLOYMENT
+  return convexCliEnv
 }
 
 export function shouldVerifyDeployEnv(env: Env = process.env) {
@@ -60,54 +83,62 @@ export function verifyDeployEnv(options: VerifyDeployEnvOptions = {}) {
     return { checked: false as const }
   }
 
-  const vercelSecret = env[GAME_WRITE_SECRET]
-  if (!vercelSecret) {
-    throw new Error(`Missing ${GAME_WRITE_SECRET} in the Vercel build environment`)
-  }
-  if (isPlaceholder(vercelSecret)) {
-    throw new Error(`Replace placeholder ${GAME_WRITE_SECRET} in the Vercel build environment`)
+  const vercelSecrets = new Map<(typeof REQUIRED_SHARED_ENV_KEYS)[number], string>()
+  for (const key of REQUIRED_SHARED_ENV_KEYS) {
+    const value = env[key]?.trim()
+    if (!value) {
+      throw new Error(`Missing ${key} in the Vercel build environment`)
+    }
+    if (isPlaceholderSecret(value)) {
+      throw new Error(`Replace placeholder ${key} in the Vercel build environment`)
+    }
+    vercelSecrets.set(key, value)
   }
 
   const deployment = getConvexDeploymentTarget(env)
   if (!deployment) {
-    throw new Error('Missing Convex deployment target; cannot verify Convex game write secret')
+    throw new Error('Missing Convex deployment target; cannot verify Convex environment secrets')
   }
 
   if (env.CONVEX_DEPLOY_KEY) {
     log(
-      `Verified ${GAME_WRITE_SECRET} in the Vercel build environment for Convex deployment ${deployment}. Convex deploy key will select the deployment during deploy.`,
+      `Verified ${formatRequiredKeys()} in the Vercel build environment for Convex deployment ${deployment}. Convex deploy key will select the deployment during deploy; Convex runtime secrets were not compared.`,
     )
-    return { checked: true as const, deployment }
+    return { checked: true as const, convexRuntimeChecked: false as const, deployment }
   }
 
   let convexEnvList: string
   try {
-    const convexCliEnv = { ...process.env, ...env }
-    delete convexCliEnv.CONVEX_DEPLOYMENT
     convexEnvList = execFile('bunx', ['convex', 'env', 'list', '--deployment', deployment], {
       encoding: 'utf8',
-      env: convexCliEnv,
+      env: createConvexCliEnv(env),
       stdio: ['ignore', 'pipe', 'pipe'],
     })
   } catch {
-    throw new Error(`Missing ${GAME_WRITE_SECRET} in Convex deployment ${deployment}`)
+    throw new Error(`Missing ${formatRequiredKeysForError()} in Convex deployment ${deployment}`)
   }
 
-  const convexSecret =
-    convexEnvList
-      .split('\n')
-      .find(line => line.startsWith(`${GAME_WRITE_SECRET}=`))
-      ?.slice(GAME_WRITE_SECRET.length + 1) ?? ''
+  for (const key of REQUIRED_SHARED_ENV_KEYS) {
+    const convexSecret =
+      convexEnvList
+        .split('\n')
+        .find(line => line.startsWith(`${key}=`))
+        ?.slice(key.length + 1)
+        .trim() ?? ''
 
-  if (!convexSecret) {
-    throw new Error(`Missing ${GAME_WRITE_SECRET} in Convex deployment ${deployment}`)
-  }
-  if (convexSecret !== vercelSecret) {
-    throw new Error(`${GAME_WRITE_SECRET} does not match between Vercel and Convex deployment ${deployment}`)
+    if (!convexSecret) {
+      throw new Error(`Missing ${key} in Convex deployment ${deployment}`)
+    }
+    if (isPlaceholderSecret(convexSecret)) {
+      throw new Error(`Replace placeholder ${key} in Convex deployment ${deployment}`)
+    }
+    if (convexSecret !== vercelSecrets.get(key)) {
+      throw new Error(`${key} does not match between Vercel and Convex deployment ${deployment}`)
+    }
   }
 
-  log(`Verified ${GAME_WRITE_SECRET} in Vercel and Convex deployment ${deployment}.`)
-  return { checked: true as const, deployment }
+  log(`Verified ${formatRequiredKeys()} in Vercel and Convex deployment ${deployment}.`)
+  return { checked: true as const, convexRuntimeChecked: true as const, deployment }
 }
 
 if (import.meta.main) {
