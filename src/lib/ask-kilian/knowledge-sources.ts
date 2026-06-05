@@ -13,7 +13,7 @@ import { stableStringify } from '@/utils/stable-stringify'
 import type { ThemeConfig } from '@/types/themes'
 import type { AskKilianKnowledgeCategory, AskKilianKnowledgeEntry, AskKilianSpoilerLevel, AskKilianTier } from './types'
 
-export const ASK_KILIAN_KNOWLEDGE_SOURCE_GLOBS = [
+const ASK_KILIAN_KNOWLEDGE_SOURCE_GLOBS = [
   'src/lib/achievements.ts',
   'src/lib/content.ts',
   'src/lib/experience.ts',

@@ -15,8 +15,8 @@ export const ASK_KILIAN_TIERS = [0, 1, 2] as const
 export const ASK_KILIAN_SPOILER_LEVELS = ['none', 'hint', 'spoiler'] as const
 
 export type AskKilianKnowledgeCategory = (typeof ASK_KILIAN_CATEGORIES)[number]
-export type AskKilianKnowledgeSource = (typeof ASK_KILIAN_SOURCES)[number]
-export type AskKilianKnowledgeStatus = (typeof ASK_KILIAN_STATUSES)[number]
+type AskKilianKnowledgeSource = (typeof ASK_KILIAN_SOURCES)[number]
+type AskKilianKnowledgeStatus = (typeof ASK_KILIAN_STATUSES)[number]
 export type AskKilianTier = (typeof ASK_KILIAN_TIERS)[number]
 export type AskKilianSpoilerLevel = (typeof ASK_KILIAN_SPOILER_LEVELS)[number]
 
