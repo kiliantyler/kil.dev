@@ -27,6 +27,7 @@ export const env = createEnv({
     VERCEL_PROJECT_ID: z.string().optional(),
     AI_GATEWAY_API_KEY: z.string().optional(),
     ASK_KILIAN_CONVEX_ACCESS_TOKEN: z.string().optional(),
+    ASK_KILIAN_RAG_SOURCE_CONVEX_DEPLOY_KEY: z.string().optional(),
     ASK_KILIAN_GATEWAY_ENV: z.enum(['development', 'preview', 'production']).optional(),
     ASK_KILIAN_EMBEDDING_MODEL: z.string().optional(),
     ASK_KILIAN_EMBEDDING_DIMENSIONS: z.coerce
@@ -62,6 +63,7 @@ export const env = createEnv({
     VERCEL_PROJECT_ID: process.env.VERCEL_PROJECT_ID,
     AI_GATEWAY_API_KEY: process.env.AI_GATEWAY_API_KEY,
     ASK_KILIAN_CONVEX_ACCESS_TOKEN: process.env.ASK_KILIAN_CONVEX_ACCESS_TOKEN,
+    ASK_KILIAN_RAG_SOURCE_CONVEX_DEPLOY_KEY: process.env.ASK_KILIAN_RAG_SOURCE_CONVEX_DEPLOY_KEY,
     ASK_KILIAN_GATEWAY_ENV: process.env.ASK_KILIAN_GATEWAY_ENV,
     ASK_KILIAN_EMBEDDING_MODEL: process.env.ASK_KILIAN_EMBEDDING_MODEL,
     ASK_KILIAN_EMBEDDING_DIMENSIONS: process.env.ASK_KILIAN_EMBEDDING_DIMENSIONS,

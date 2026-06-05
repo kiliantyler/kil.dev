@@ -27,8 +27,9 @@ const BASE_ENV = {
   UPLOADTHING_TOKEN: 'uploadthing-token-valid-value',
 }
 
-async function importEnvWith(overrides: Partial<typeof BASE_ENV> = {}) {
+async function importEnvWith(overrides: Record<string, string> = {}) {
   vi.resetModules()
+  vi.unstubAllEnvs()
   for (const [key, value] of Object.entries({ ...BASE_ENV, ...overrides })) {
     vi.stubEnv(key, value)
   }
@@ -131,6 +132,24 @@ describe('env', () => {
     })
   })
 
+  it('exposes the optional Ask Kilian RAG source Convex deploy key only when present', async () => {
+    const omitted = await importEnvWith()
+
+    expect(omitted.env.ASK_KILIAN_RAG_SOURCE_CONVEX_DEPLOY_KEY).toBeUndefined()
+
+    const empty = await importEnvWith({
+      ASK_KILIAN_RAG_SOURCE_CONVEX_DEPLOY_KEY: '',
+    })
+
+    expect(empty.env.ASK_KILIAN_RAG_SOURCE_CONVEX_DEPLOY_KEY).toBeUndefined()
+
+    const present = await importEnvWith({
+      ASK_KILIAN_RAG_SOURCE_CONVEX_DEPLOY_KEY: 'source-deploy-key-test-value',
+    })
+
+    expect(present.env.ASK_KILIAN_RAG_SOURCE_CONVEX_DEPLOY_KEY).toBe('source-deploy-key-test-value')
+  })
+
   it('uses defaults when optional Ask Kilian embedding env values are omitted or empty', async () => {
     const { ASK_KILIAN_DEFAULT_EMBEDDING_DIMENSIONS, ASK_KILIAN_DEFAULT_EMBEDDING_MODEL, getAskKilianAiEnv } =
       await importEnvWith({
@@ -224,6 +243,7 @@ describe('env', () => {
     expect(envExample).toContain('AI_GATEWAY_API_KEY=')
     expect(envExample).toContain('VERCEL_PROJECT_ID=')
     expect(envExample).toContain('ASK_KILIAN_CONVEX_ACCESS_TOKEN=')
+    expect(envExample).toContain('ASK_KILIAN_RAG_SOURCE_CONVEX_DEPLOY_KEY=')
     expect(envExample).toContain('ASK_KILIAN_GATEWAY_ENV=')
     expect(envExample).toContain(`ASK_KILIAN_EMBEDDING_MODEL=${ASK_KILIAN_DEFAULT_EMBEDDING_MODEL}`)
     expect(envExample).toContain(`ASK_KILIAN_EMBEDDING_DIMENSIONS=${ASK_KILIAN_DEFAULT_EMBEDDING_DIMENSIONS}`)
