@@ -9,8 +9,10 @@ import {
 } from '../../src/lib/ask-kilian/types'
 import { api, internal } from '../_generated/api'
 import {
+  createDiffRepoKnowledgeHandler,
   createSearchKnowledgeHandler,
   createSyncRepoKnowledgeHandler,
+  diffRepoKnowledgeForServer,
   diffRepoKnowledgeEntries,
   filterSearchEntriesForTier,
   searchKnowledgeForServer,
@@ -568,6 +570,73 @@ describe('createSyncRepoKnowledgeHandler', () => {
   })
 })
 
+describe('createDiffRepoKnowledgeHandler', () => {
+  it('returns a full-manifest dry-run diff without mutations or RAG dependencies', async () => {
+    const existing = [
+      existingEntry('pet:lux', { contentHash: 'same-hash' }),
+      existingEntry('pet:gwen', { contentHash: 'old-hash' }),
+      existingEntry('pet:old'),
+      existingEntry('admin:manual', { source: 'admin' }),
+    ]
+    const incoming = [
+      incomingEntry('pet:lux', { contentHash: 'same-hash' }),
+      incomingEntry('pet:gwen', { contentHash: 'new-hash' }),
+      incomingEntry('pet:new'),
+    ]
+    const ctx = {
+      runQuery: vi.fn(async () => existing),
+      runMutation: vi.fn(),
+      runAction: vi.fn(),
+    }
+
+    const handler = createDiffRepoKnowledgeHandler()
+    const result = await handler(ctx, { entries: incoming, isFullManifest: true })
+
+    expect(result).toEqual({
+      dryRun: true,
+      counts: {
+        created: 1,
+        changed: 1,
+        unchanged: 1,
+        retired: 1,
+        ignoredAdmin: 1,
+      },
+      keys: {
+        created: ['pet:new'],
+        changed: ['pet:gwen'],
+        unchanged: ['pet:lux'],
+        retired: ['pet:old'],
+        ignoredAdmin: ['admin:manual'],
+      },
+    })
+    expect(ctx.runQuery).toHaveBeenCalledOnce()
+    expect(ctx.runMutation).not.toHaveBeenCalled()
+    expect(ctx.runAction).not.toHaveBeenCalled()
+  })
+
+  it('does not report retired entries for partial no-embedding diffs', async () => {
+    const existing = [existingEntry('pet:lux', { contentHash: 'same-hash' }), existingEntry('pet:old')]
+    const incoming = [incomingEntry('pet:lux', { contentHash: 'same-hash' })]
+    const ctx = {
+      runQuery: vi.fn(async () => existing),
+      runMutation: vi.fn(),
+      runAction: vi.fn(),
+    }
+
+    const handler = createDiffRepoKnowledgeHandler()
+    const result = await handler(ctx, { entries: incoming })
+
+    expect(result).toMatchObject({
+      dryRun: true,
+      counts: { created: 0, changed: 0, unchanged: 1, retired: 0, ignoredAdmin: 0 },
+      keys: { unchanged: ['pet:lux'], retired: [] },
+    })
+    expect(ctx.runQuery).toHaveBeenCalledOnce()
+    expect(ctx.runMutation).not.toHaveBeenCalled()
+    expect(ctx.runAction).not.toHaveBeenCalled()
+  })
+})
+
 describe('upsertSyncedKnowledgeEntry', () => {
   it('persists the current RAG filter version and pending cleanup ids on insert and patch', async () => {
     const entry = incomingEntry('pet:lux')
@@ -961,6 +1030,7 @@ describe('generated API exposure', () => {
     expect(internal.askKilianKnowledge.listKnowledgeEntries).toBeDefined()
     expect(internal.askKilianKnowledge.listSearchableKnowledgeEntries).toBeDefined()
     expect(api.askKilianKnowledge.syncRepoKnowledgeForServer).toBeDefined()
+    expect(api.askKilianKnowledge.diffRepoKnowledgeForServer).toBeDefined()
     expect(api.askKilianKnowledge.searchKnowledgeForServer).toBeDefined()
     expect(api.askKilianKnowledge.verifyRuntimeEnvForServer).toBeDefined()
 
@@ -986,6 +1056,7 @@ describe('server action guards', () => {
     vi.stubEnv('ASK_KILIAN_CONVEX_ACCESS_TOKEN', 'server-token')
     vi.stubEnv('AI_GATEWAY_API_KEY', 'ai-gateway-key')
     const syncCtx = { runQuery: vi.fn(), runMutation: vi.fn(), runAction: vi.fn() }
+    const diffCtx = { runQuery: vi.fn(), runMutation: vi.fn(), runAction: vi.fn() }
     const searchCtx = { runQuery: vi.fn() }
 
     await expect(
@@ -993,6 +1064,12 @@ describe('server action guards', () => {
         accessToken: 'wrong-token',
         entries: [],
         dryRun: true,
+      }),
+    ).rejects.toThrow('Invalid Ask Kilian server action access token')
+    await expect(
+      getActionHandler(diffRepoKnowledgeForServer)(diffCtx, {
+        accessToken: 'wrong-token',
+        entries: [],
       }),
     ).rejects.toThrow('Invalid Ask Kilian server action access token')
     await expect(
@@ -1005,6 +1082,8 @@ describe('server action guards', () => {
 
     expect(syncCtx.runQuery).not.toHaveBeenCalled()
     expect(syncCtx.runMutation).not.toHaveBeenCalled()
+    expect(diffCtx.runQuery).not.toHaveBeenCalled()
+    expect(diffCtx.runMutation).not.toHaveBeenCalled()
     expect(searchCtx.runQuery).not.toHaveBeenCalled()
     vi.unstubAllEnvs()
   })
@@ -1053,6 +1132,32 @@ describe('server action guards', () => {
     vi.unstubAllEnvs()
   })
 
+  it('allows the guarded public diff wrapper without an AI Gateway key and only runs queries', async () => {
+    vi.stubEnv('ASK_KILIAN_CONVEX_ACCESS_TOKEN', 'server-token')
+    vi.stubEnv('AI_GATEWAY_API_KEY', '')
+    vi.stubEnv('VERCEL_PROJECT_ID', '')
+    const ctx = {
+      runQuery: vi.fn(async () => [existingEntry('pet:lux', { contentHash: 'same-hash' })]),
+      runMutation: vi.fn(),
+      runAction: vi.fn(),
+    }
+
+    const result = await getActionHandler(diffRepoKnowledgeForServer)(ctx, {
+      accessToken: 'server-token',
+      entries: [incomingEntry('pet:lux', { contentHash: 'same-hash' })],
+    })
+
+    expect(result).toMatchObject({
+      dryRun: true,
+      counts: { created: 0, changed: 0, unchanged: 1, retired: 0, ignoredAdmin: 0 },
+      keys: { unchanged: ['pet:lux'], retired: [] },
+    })
+    expect(ctx.runQuery).toHaveBeenCalledOnce()
+    expect(ctx.runMutation).not.toHaveBeenCalled()
+    expect(ctx.runAction).not.toHaveBeenCalled()
+    vi.unstubAllEnvs()
+  })
+
   it('rejects unsafe public full-manifest syncs before Convex work', async () => {
     vi.stubEnv('ASK_KILIAN_CONVEX_ACCESS_TOKEN', 'server-token')
     vi.stubEnv('AI_GATEWAY_API_KEY', 'ai-gateway-key')
@@ -1066,6 +1171,23 @@ describe('server action guards', () => {
         isFullManifest: true,
       }),
     ).rejects.toThrow('Ask Kilian full-manifest sync built only 1 entries; refusing sync below 10')
+
+    expect(ctx.runQuery).not.toHaveBeenCalled()
+    expect(ctx.runMutation).not.toHaveBeenCalled()
+    vi.unstubAllEnvs()
+  })
+
+  it('rejects unsafe public full-manifest diffs before Convex work', async () => {
+    vi.stubEnv('ASK_KILIAN_CONVEX_ACCESS_TOKEN', 'server-token')
+    const ctx = { runQuery: vi.fn(), runMutation: vi.fn(), runAction: vi.fn() }
+
+    await expect(
+      getActionHandler(diffRepoKnowledgeForServer)(ctx, {
+        accessToken: 'server-token',
+        entries: [incomingEntry('pet:lux')],
+        isFullManifest: true,
+      }),
+    ).rejects.toThrow('Ask Kilian full-manifest diff built only 1 entries; refusing diff below 10')
 
     expect(ctx.runQuery).not.toHaveBeenCalled()
     expect(ctx.runMutation).not.toHaveBeenCalled()

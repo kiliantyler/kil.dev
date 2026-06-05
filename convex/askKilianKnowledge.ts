@@ -668,6 +668,25 @@ export function createSyncRepoKnowledgeHandler({
   }
 }
 
+export function createDiffRepoKnowledgeHandler({
+  refs = {
+    listExisting: internal.askKilianKnowledge.listExistingKnowledgeEntriesForSync,
+  },
+}: {
+  refs?: {
+    listExisting: Parameters<ActionCtx['runQuery']>[0]
+  }
+} = {}) {
+  return async function diffRepoKnowledgeHandler(
+    ctx: Pick<ActionCtx, 'runQuery'>,
+    args: { entries: AskKilianKnowledgeEntry[]; isFullManifest?: boolean },
+  ): Promise<SyncSummary> {
+    const existing = (await ctx.runQuery(refs.listExisting, {})) as ExistingKnowledgeEntry[]
+    const diff = diffRepoKnowledgeEntries(existing, args.entries)
+    return summarizeDiff(diffForManifestMode(diff, args.isFullManifest), true)
+  }
+}
+
 export const listKnowledgeEntries = internalQuery({
   args: {},
   returns: v.array(knowledgeEntryWithoutTextValidator),
@@ -858,6 +877,27 @@ export const syncRepoKnowledgeForServer = action({
     return createSyncRepoKnowledgeHandler()(ctx, {
       entries: args.entries,
       dryRun: args.dryRun,
+      isFullManifest: args.isFullManifest,
+    })
+  },
+})
+
+export const diffRepoKnowledgeForServer = action({
+  args: {
+    accessToken: v.string(),
+    entries: v.array(askKilianKnowledgeEntryInputValidator),
+    isFullManifest: v.optional(v.boolean()),
+  },
+  returns: syncSummaryValidator,
+  handler: async (ctx, args) => {
+    requireMatchingAskKilianAccessToken(args.accessToken)
+    if (args.isFullManifest === true && args.entries.length < MIN_FULL_MANIFEST_ENTRY_COUNT) {
+      throw new Error(
+        `Ask Kilian full-manifest diff built only ${args.entries.length} entries; refusing diff below ${MIN_FULL_MANIFEST_ENTRY_COUNT}`,
+      )
+    }
+    return createDiffRepoKnowledgeHandler()(ctx, {
+      entries: args.entries,
       isFullManifest: args.isFullManifest,
     })
   },
