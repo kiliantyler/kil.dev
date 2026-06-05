@@ -28,4 +28,9 @@ describe('package scripts', () => {
   it('prebuild verifies deploy environment before production builds', () => {
     expect(packageJson.scripts.prebuild).toContain('bun scripts/verify-deploy-env.ts')
   })
+
+  it('includes Ask Kilian knowledge sync scripts', () => {
+    expect(packageJson.scripts['ask-kilian:sync']).toBe('bun scripts/sync-ask-kilian-knowledge.ts')
+    expect(packageJson.scripts['ask-kilian:sync:dry-run']).toBe('bun scripts/sync-ask-kilian-knowledge.ts --dry-run')
+  })
 })

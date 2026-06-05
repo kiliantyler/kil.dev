@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "ask-kilian:sync": "bun scripts/sync-ask-kilian-knowledge.ts",
+    "ask-kilian:sync:dry-run": "bun scripts/sync-ask-kilian-knowledge.ts --dry-run",
     "prebuild": "bun scripts/verify-deploy-env.ts && bun run build:runtimes",
     "build": "next build",
     "build:runtimes": "bun scripts/build-runtimes.ts",
@@ -34,6 +36,7 @@
     "typecheck": "bun run build:runtimes && tsc --noEmit"
   },
   "dependencies": {
+    "@convex-dev/rag": "0.7.5",
     "@convex-dev/workos-authkit": "0.2.5",
     "@radix-ui/react-alert-dialog": "1.1.15",
     "@radix-ui/react-collapsible": "1.1.12",
@@ -47,6 +50,7 @@
     "@vercel/blob": "2.3.3",
     "@workos-inc/authkit-nextjs": "4.1.0",
     "@workos-inc/authkit-react": "0.16.1",
+    "ai": "6.0.196",
     "babel-plugin-react-compiler": "1.0.0",
     "canvas-confetti": "1.9.4",
     "class-variance-authority": "0.7.1",

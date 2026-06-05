@@ -1,6 +1,22 @@
 import { createEnv } from '@t3-oss/env-nextjs'
 import { z } from 'zod'
 
+import {
+  ASK_KILIAN_DEFAULT_EMBEDDING_DIMENSIONS,
+  ASK_KILIAN_DEFAULT_EMBEDDING_MODEL,
+  ASK_KILIAN_SUPPORTED_EMBEDDING_DIMENSIONS,
+  ASK_KILIAN_SUPPORTED_EMBEDDING_DIMENSIONS_MESSAGE,
+  isSupportedAskKilianEmbeddingDimensions,
+  resolveAskKilianEmbeddingModel,
+} from './lib/ask-kilian/config.js'
+import { isPlaceholderSecret } from './lib/env-secrets.js'
+
+export {
+  ASK_KILIAN_DEFAULT_EMBEDDING_DIMENSIONS,
+  ASK_KILIAN_DEFAULT_EMBEDDING_MODEL,
+  ASK_KILIAN_SUPPORTED_EMBEDDING_DIMENSIONS,
+}
+
 export const env = createEnv({
   server: {
     NODE_ENV: z.enum(['development', 'test', 'production']),
@@ -8,6 +24,18 @@ export const env = createEnv({
     CONVEX_DEPLOYMENT: z.string().optional(),
     CONVEX_DEPLOY_KEY: z.string().optional(),
     CONVEX_GAME_WRITE_SECRET: z.string().optional(),
+    VERCEL_PROJECT_ID: z.string().optional(),
+    AI_GATEWAY_API_KEY: z.string().optional(),
+    ASK_KILIAN_CONVEX_ACCESS_TOKEN: z.string().optional(),
+    ASK_KILIAN_GATEWAY_ENV: z.enum(['development', 'preview', 'production']).optional(),
+    ASK_KILIAN_EMBEDDING_MODEL: z.string().optional(),
+    ASK_KILIAN_EMBEDDING_DIMENSIONS: z.coerce
+      .number()
+      .int()
+      .refine(value => isSupportedAskKilianEmbeddingDimensions(value), {
+        message: ASK_KILIAN_SUPPORTED_EMBEDDING_DIMENSIONS_MESSAGE,
+      })
+      .optional(),
     PET_GALLERY_CONVEX_ACCESS_TOKEN: z.string().optional(),
     WORKOS_API_KEY: z.string().optional(),
     WORKOS_CLIENT_ID: z.string().optional(),
@@ -31,6 +59,12 @@ export const env = createEnv({
     CONVEX_DEPLOYMENT: process.env.CONVEX_DEPLOYMENT,
     CONVEX_DEPLOY_KEY: process.env.CONVEX_DEPLOY_KEY,
     CONVEX_GAME_WRITE_SECRET: process.env.CONVEX_GAME_WRITE_SECRET,
+    VERCEL_PROJECT_ID: process.env.VERCEL_PROJECT_ID,
+    AI_GATEWAY_API_KEY: process.env.AI_GATEWAY_API_KEY,
+    ASK_KILIAN_CONVEX_ACCESS_TOKEN: process.env.ASK_KILIAN_CONVEX_ACCESS_TOKEN,
+    ASK_KILIAN_GATEWAY_ENV: process.env.ASK_KILIAN_GATEWAY_ENV,
+    ASK_KILIAN_EMBEDDING_MODEL: process.env.ASK_KILIAN_EMBEDDING_MODEL,
+    ASK_KILIAN_EMBEDDING_DIMENSIONS: process.env.ASK_KILIAN_EMBEDDING_DIMENSIONS,
     PET_GALLERY_CONVEX_ACCESS_TOKEN: process.env.PET_GALLERY_CONVEX_ACCESS_TOKEN,
     WORKOS_API_KEY: process.env.WORKOS_API_KEY,
     WORKOS_CLIENT_ID: process.env.WORKOS_CLIENT_ID,
@@ -62,7 +96,7 @@ export function requireAdminAuthEnv() {
     .filter(([, value]) => !value)
     .map(([key]) => key)
   const placeholders = Object.entries(required)
-    .filter(([, value]) => value?.includes('placeholder') || value?.startsWith('replace-with-'))
+    .filter(([, value]) => isPlaceholderSecret(value))
     .map(([key]) => key)
 
   if (missing.length > 0) {
@@ -90,7 +124,7 @@ export function requireConvexGameWriteSecret() {
     .filter(([, value]) => !value)
     .map(([key]) => key)
   const placeholders = Object.entries(required)
-    .filter(([, value]) => value?.includes('placeholder') || value?.startsWith('replace-with-'))
+    .filter(([, value]) => isPlaceholderSecret(value))
     .map(([key]) => key)
 
   if (missing.length > 0) {
@@ -103,6 +137,44 @@ export function requireConvexGameWriteSecret() {
   return required.CONVEX_GAME_WRITE_SECRET ?? ''
 }
 
+export function getAskKilianAiEnv() {
+  return {
+    AI_GATEWAY_API_KEY: env.AI_GATEWAY_API_KEY ?? '',
+    VERCEL_PROJECT_ID: env.VERCEL_PROJECT_ID ?? '',
+    ASK_KILIAN_EMBEDDING_MODEL: resolveAskKilianEmbeddingModel(env.ASK_KILIAN_EMBEDDING_MODEL),
+    ASK_KILIAN_EMBEDDING_DIMENSIONS: env.ASK_KILIAN_EMBEDDING_DIMENSIONS ?? ASK_KILIAN_DEFAULT_EMBEDDING_DIMENSIONS,
+  }
+}
+
+export function requireAskKilianAiEnv() {
+  const aiEnv = getAskKilianAiEnv()
+  const required = {
+    AI_GATEWAY_API_KEY: aiEnv.AI_GATEWAY_API_KEY.trim(),
+    VERCEL_PROJECT_ID: aiEnv.VERCEL_PROJECT_ID.trim(),
+    ASK_KILIAN_CONVEX_ACCESS_TOKEN: env.ASK_KILIAN_CONVEX_ACCESS_TOKEN?.trim() ?? '',
+  }
+  const missing = Object.entries(required)
+    .filter(([, value]) => !value)
+    .map(([key]) => key)
+  const placeholders = Object.entries(required)
+    .filter(([, value]) => isPlaceholderSecret(value))
+    .map(([key]) => key)
+
+  if (missing.length > 0) {
+    throw new Error(`Missing Ask Kilian AI environment variables: ${missing.join(', ')}`)
+  }
+  if (placeholders.length > 0) {
+    throw new Error(`Replace Ask Kilian AI placeholder environment variables: ${placeholders.join(', ')}`)
+  }
+
+  return {
+    ...aiEnv,
+    AI_GATEWAY_API_KEY: required.AI_GATEWAY_API_KEY,
+    VERCEL_PROJECT_ID: required.VERCEL_PROJECT_ID,
+    ASK_KILIAN_CONVEX_ACCESS_TOKEN: required.ASK_KILIAN_CONVEX_ACCESS_TOKEN,
+  }
+}
+
 export function requirePetGalleryAdminEnv() {
   const authEnv = requireAdminAuthEnv()
   const required = {
@@ -112,7 +184,7 @@ export function requirePetGalleryAdminEnv() {
     .filter(([, value]) => !value)
     .map(([key]) => key)
   const placeholders = Object.entries(required)
-    .filter(([, value]) => value?.includes('placeholder') || value?.startsWith('replace-with-'))
+    .filter(([, value]) => isPlaceholderSecret(value))
     .map(([key]) => key)
 
   if (missing.length > 0) {
