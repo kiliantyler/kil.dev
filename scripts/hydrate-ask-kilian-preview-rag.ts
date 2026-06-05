@@ -37,13 +37,12 @@ function shellQuote(value: string) {
 }
 
 function commandEnv(env: HydrationEnv, convexDeployKey: string): NodeJS.ProcessEnv {
-  const rest = { ...env }
-  delete rest.ASK_KILIAN_RAG_SOURCE_CONVEX_DEPLOY_KEY
-  delete rest.CONVEX_DEPLOY_KEY
+  const mergedEnv = { ...process.env, ...env }
+  delete mergedEnv.ASK_KILIAN_RAG_SOURCE_CONVEX_DEPLOY_KEY
+  delete mergedEnv.CONVEX_DEPLOY_KEY
 
   return {
-    ...process.env,
-    ...rest,
+    ...mergedEnv,
     CONVEX_DEPLOY_KEY: convexDeployKey,
   }
 }

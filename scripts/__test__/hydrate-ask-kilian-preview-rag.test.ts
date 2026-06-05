@@ -71,19 +71,39 @@ describe('hydrateAskKilianPreviewRag', () => {
 
   it('uses the dev key only for source reads and the preview key only for target imports', async () => {
     const deps = createDeps()
+    const originalSourceKey = process.env.ASK_KILIAN_RAG_SOURCE_CONVEX_DEPLOY_KEY
+    const originalConvexDeployKey = process.env.CONVEX_DEPLOY_KEY
 
-    await hydrateAskKilianPreviewRag({ env: previewEnv() }, deps)
+    try {
+      process.env.ASK_KILIAN_RAG_SOURCE_CONVEX_DEPLOY_KEY = 'dev:test-source-123|process-source-secret'
+      process.env.CONVEX_DEPLOY_KEY = 'preview:test-team:test-project|process-target-secret'
 
-    const runCalls = vi.mocked(deps.run).mock.calls
-    const exportCalls = runCalls.filter(([command]) => command.includes('convex export'))
-    const importCalls = runCalls.filter(([command]) => command.includes('convex import'))
+      await hydrateAskKilianPreviewRag({ env: previewEnv() }, deps)
 
-    expect(exportCalls).toHaveLength(1)
-    expect(exportCalls[0]?.[1].env.CONVEX_DEPLOY_KEY).toBe(sourceKey)
-    expect(exportCalls[0]?.[1].env.ASK_KILIAN_RAG_SOURCE_CONVEX_DEPLOY_KEY).toBeUndefined()
-    for (const [, options] of importCalls) {
-      expect(options.env.CONVEX_DEPLOY_KEY).toBe(targetKey)
-      expect(options.env.ASK_KILIAN_RAG_SOURCE_CONVEX_DEPLOY_KEY).toBeUndefined()
+      const runCalls = vi.mocked(deps.run).mock.calls
+      const exportCalls = runCalls.filter(([command]) => command.includes('convex export'))
+      const importCalls = runCalls.filter(([command]) => command.includes('convex import'))
+
+      expect(exportCalls).toHaveLength(1)
+      expect(exportCalls[0]?.[1].env.CONVEX_DEPLOY_KEY).toBe(sourceKey)
+      expect(exportCalls[0]?.[1].env.ASK_KILIAN_RAG_SOURCE_CONVEX_DEPLOY_KEY).toBeUndefined()
+      for (const [, options] of runCalls) {
+        expect(options.env.ASK_KILIAN_RAG_SOURCE_CONVEX_DEPLOY_KEY).toBeUndefined()
+      }
+      for (const [, options] of importCalls) {
+        expect(options.env.CONVEX_DEPLOY_KEY).toBe(targetKey)
+      }
+    } finally {
+      if (originalSourceKey === undefined) {
+        delete process.env.ASK_KILIAN_RAG_SOURCE_CONVEX_DEPLOY_KEY
+      } else {
+        process.env.ASK_KILIAN_RAG_SOURCE_CONVEX_DEPLOY_KEY = originalSourceKey
+      }
+      if (originalConvexDeployKey === undefined) {
+        delete process.env.CONVEX_DEPLOY_KEY
+      } else {
+        process.env.CONVEX_DEPLOY_KEY = originalConvexDeployKey
+      }
     }
   })
 
