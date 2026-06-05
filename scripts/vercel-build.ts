@@ -1,22 +1,20 @@
 #!/usr/bin/env bun
 import { spawn } from 'node:child_process'
 
-import { buildRuntimes } from './build-runtimes'
 import { deploySyncAskKilianRag } from './deploy-sync-ask-kilian-rag'
-import { verifyDeployEnv } from './verify-deploy-env'
+
+export const CONVEX_DEPLOY_BUILD_COMMAND = 'bun scripts/vercel-build-command.ts'
+
+export type VercelBuildDeps = {
+  runConvexDeploy: (buildCommand: string) => unknown | Promise<unknown>
+  deploySyncAskKilianRag: BuildStep
+}
 
 type BuildStep = () => unknown | Promise<unknown>
 
-export type VercelBuildDeps = {
-  verifyDeployEnv: BuildStep
-  buildRuntimes: BuildStep
-  deploySyncAskKilianRag: BuildStep
-  runNextBuild: BuildStep
-}
-
-export function runNextBuild() {
+export function runConvexDeploy(buildCommand = CONVEX_DEPLOY_BUILD_COMMAND) {
   return new Promise<void>((resolve, reject) => {
-    const child = spawn('bunx', ['next', 'build'], { stdio: 'inherit' })
+    const child = spawn('bunx', ['convex', 'deploy', '--cmd', buildCommand], { stdio: 'inherit' })
 
     child.once('error', reject)
     child.once('exit', (code, signal) => {
@@ -25,25 +23,23 @@ export function runNextBuild() {
         return
       }
 
-      reject(new Error(signal ? `next build exited with signal ${signal}` : `next build exited with code ${code}`))
+      reject(
+        new Error(signal ? `convex deploy exited with signal ${signal}` : `convex deploy exited with code ${code}`),
+      )
     })
   })
 }
 
 function createDefaultDeps(): VercelBuildDeps {
   return {
-    verifyDeployEnv,
-    buildRuntimes,
+    runConvexDeploy,
     deploySyncAskKilianRag,
-    runNextBuild,
   }
 }
 
 export async function runVercelBuild(deps: VercelBuildDeps = createDefaultDeps()) {
-  await deps.verifyDeployEnv()
-  await deps.buildRuntimes()
+  await deps.runConvexDeploy(CONVEX_DEPLOY_BUILD_COMMAND)
   await deps.deploySyncAskKilianRag()
-  await deps.runNextBuild()
 }
 
 if (import.meta.main) {

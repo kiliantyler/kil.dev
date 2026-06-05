@@ -6,7 +6,12 @@ type PackageJson = {
   scripts: Record<string, string>
 }
 
+type VercelJson = {
+  buildCommand?: string
+}
+
 const packageJson = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8')) as PackageJson
+const vercelJson = JSON.parse(readFileSync(join(process.cwd(), 'vercel.json'), 'utf8')) as VercelJson
 
 describe('package scripts', () => {
   it.each(['check', 'test', 'test:watch', 'knip', 'knip:deps'])(
@@ -30,8 +35,14 @@ describe('package scripts', () => {
   })
 
   it('uses a dedicated Vercel build orchestrator without recursive build script calls', () => {
-    expect(packageJson.scripts['vercel-build']).toContain('scripts/vercel-build.ts')
+    expect(packageJson.scripts['vercel-build']).toBe('bun scripts/vercel-build.ts')
     expect(packageJson.scripts['vercel-build']).not.toContain('bun run build')
+  })
+
+  it('tracks the Vercel build command through the top-level orchestrator', () => {
+    expect(vercelJson.buildCommand).toBe('bun run vercel-build')
+    expect(vercelJson.buildCommand).not.toContain('bun run build')
+    expect(packageJson.scripts['vercel-build']).toContain('scripts/vercel-build.ts')
   })
 
   it('includes Ask Kilian knowledge sync scripts', () => {

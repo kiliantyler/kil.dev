@@ -1,13 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { runVercelBuild, type VercelBuildDeps } from '../vercel-build'
+import { CONVEX_DEPLOY_BUILD_COMMAND, runVercelBuild, type VercelBuildDeps } from '../vercel-build'
 
 function createDeps(overrides: Partial<VercelBuildDeps> = {}) {
   const deps = {
-    verifyDeployEnv: vi.fn(),
-    buildRuntimes: vi.fn(async () => {}),
+    runConvexDeploy: vi.fn(async () => {}),
     deploySyncAskKilianRag: vi.fn(async () => ({ skipped: true as const, reason: 'outside-vercel' as const })),
-    runNextBuild: vi.fn(async () => {}),
     ...overrides,
   } satisfies VercelBuildDeps
 
@@ -15,37 +13,36 @@ function createDeps(overrides: Partial<VercelBuildDeps> = {}) {
 }
 
 describe('runVercelBuild', () => {
-  it('runs deploy verification, runtime generation, deploy sync, then direct Next build', async () => {
+  it('runs Convex deploy before Ask Kilian deploy sync', async () => {
     const deps = createDeps()
 
     await runVercelBuild(deps)
 
-    expect(deps.verifyDeployEnv).toHaveBeenCalledOnce()
-    expect(deps.buildRuntimes).toHaveBeenCalledOnce()
+    expect(deps.runConvexDeploy).toHaveBeenCalledOnce()
+    expect(deps.runConvexDeploy).toHaveBeenCalledWith(CONVEX_DEPLOY_BUILD_COMMAND)
     expect(deps.deploySyncAskKilianRag).toHaveBeenCalledOnce()
-    expect(deps.runNextBuild).toHaveBeenCalledOnce()
-    const verifyOrder = vi.mocked(deps.verifyDeployEnv).mock.invocationCallOrder[0]!
-    const runtimeOrder = vi.mocked(deps.buildRuntimes).mock.invocationCallOrder[0]!
+    const convexDeployOrder = vi.mocked(deps.runConvexDeploy).mock.invocationCallOrder[0]!
     const deploySyncOrder = vi.mocked(deps.deploySyncAskKilianRag).mock.invocationCallOrder[0]!
-    const nextBuildOrder = vi.mocked(deps.runNextBuild).mock.invocationCallOrder[0]!
 
-    expect(verifyOrder).toBeLessThan(runtimeOrder)
-    expect(runtimeOrder).toBeLessThan(deploySyncOrder)
-    expect(deploySyncOrder).toBeLessThan(nextBuildOrder)
+    expect(convexDeployOrder).toBeLessThan(deploySyncOrder)
   })
 
-  it('short-circuits later steps when deploy verification fails', async () => {
-    const error = new Error('missing deploy env')
+  it('passes only the safe pre-push build command to Convex deploy', () => {
+    expect(CONVEX_DEPLOY_BUILD_COMMAND).toBe('bun scripts/vercel-build-command.ts')
+    expect(CONVEX_DEPLOY_BUILD_COMMAND).not.toContain('deploy-sync')
+    expect(CONVEX_DEPLOY_BUILD_COMMAND).not.toContain('ask-kilian')
+  })
+
+  it('short-circuits deploy sync when Convex deploy fails', async () => {
+    const error = new Error('convex deploy failed')
     const deps = createDeps({
-      verifyDeployEnv: vi.fn(() => {
+      runConvexDeploy: vi.fn(() => {
         throw error
       }),
     })
 
     await expect(runVercelBuild(deps)).rejects.toThrow(error)
 
-    expect(deps.buildRuntimes).not.toHaveBeenCalled()
     expect(deps.deploySyncAskKilianRag).not.toHaveBeenCalled()
-    expect(deps.runNextBuild).not.toHaveBeenCalled()
   })
 })
