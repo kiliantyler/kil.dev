@@ -4,7 +4,6 @@ import { describe, expect, it } from 'vitest'
 
 import { stableStringify } from '@/utils/stable-stringify'
 import {
-  ASK_KILIAN_KNOWLEDGE_SOURCE_GLOBS,
   buildAskKilianKnowledgeEntries,
   isAskKilianKnowledgeSourcePathCovered,
   normalizeKnowledgeKey,
@@ -121,13 +120,31 @@ describe('ASK_KILIAN_KNOWLEDGE_SOURCE_GLOBS', () => {
     expect(uncovered).toEqual([])
   })
 
-  it('keeps source globs narrow enough to avoid noisy preview embedding signals', () => {
-    const forbiddenBroadGlobs = ['src/**', 'convex/**', 'scripts/**', '**/*']
+  it('matches intended knowledge source paths directly', () => {
+    const intendedSourcePaths = [
+      'src/lib/achievements.ts',
+      'src/lib/experience.ts',
+      'src/lib/ask-kilian/config.ts',
+      'src/lib/ask-kilian/knowledge-sources.ts',
+      'src/types/themes.ts',
+      'src/utils/stable-stringify.ts',
+    ]
 
-    expect(ASK_KILIAN_KNOWLEDGE_SOURCE_GLOBS).not.toEqual([])
-    expect(ASK_KILIAN_KNOWLEDGE_SOURCE_GLOBS).toContain('src/lib/ask-kilian/**')
-    for (const glob of forbiddenBroadGlobs) {
-      expect(ASK_KILIAN_KNOWLEDGE_SOURCE_GLOBS).not.toContain(glob)
+    for (const sourcePath of intendedSourcePaths) {
+      expect(isAskKilianKnowledgeSourcePathCovered(sourcePath)).toBe(true)
+    }
+  })
+
+  it('rejects unrelated paths that would add noisy preview embedding signals', () => {
+    const unrelatedSourcePaths = [
+      'src/lib/not-knowledge.ts',
+      'convex/askKilianKnowledge.ts',
+      'scripts/sync-ask-kilian-knowledge.ts',
+      'src/app/page.tsx',
+    ]
+
+    for (const sourcePath of unrelatedSourcePaths) {
+      expect(isAskKilianKnowledgeSourcePathCovered(sourcePath)).toBe(false)
     }
   })
 })
