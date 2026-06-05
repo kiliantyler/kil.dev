@@ -412,6 +412,7 @@ describe('verify deploy env', () => {
 
   it('does not require preview RAG source key as a shared Vercel and Convex runtime secret', () => {
     const log = vi.fn()
+    const sourceDeployKey = 'dev:test-source-123|source-secret'
     const execFile = vi.fn(() =>
       [
         `CONVEX_GAME_WRITE_SECRET=${secret}`,
@@ -422,8 +423,56 @@ describe('verify deploy env', () => {
       ].join('\n'),
     )
 
-    expect(() =>
-      verifyDeployEnv({
+    const result = verifyDeployEnv({
+      env: {
+        VERCEL: '1',
+        CONVEX_DEPLOYMENT: 'preview-deployment',
+        ASK_KILIAN_RAG_SOURCE_CONVEX_DEPLOY_KEY: sourceDeployKey,
+        CONVEX_GAME_WRITE_SECRET: secret,
+        AI_GATEWAY_API_KEY: aiGatewayApiKey,
+        ASK_KILIAN_CONVEX_ACCESS_TOKEN: askKilianAccessToken,
+        ASK_KILIAN_GATEWAY_ENV: askKilianGatewayEnv,
+        VERCEL_PROJECT_ID: vercelProjectId,
+      },
+      execFile,
+      log,
+    })
+
+    expect(result).toEqual({ checked: true, convexRuntimeChecked: true, deployment: 'preview-deployment' })
+
+    expect(execFile).toHaveBeenCalledWith(
+      'bunx',
+      ['convex', 'env', 'list', '--deployment', 'preview-deployment'],
+      expect.objectContaining({
+        encoding: 'utf8',
+      }),
+    )
+    expect(log).toHaveBeenCalledWith(
+      'Verified CONVEX_GAME_WRITE_SECRET, AI_GATEWAY_API_KEY, ASK_KILIAN_CONVEX_ACCESS_TOKEN, ASK_KILIAN_GATEWAY_ENV, and VERCEL_PROJECT_ID in Vercel and Convex deployment preview-deployment.',
+    )
+    expect(execFile.mock.results.map(result => result.value).join('\n')).not.toContain(
+      'ASK_KILIAN_RAG_SOURCE_CONVEX_DEPLOY_KEY',
+    )
+    expect(log.mock.calls.flat().join('\n')).not.toContain('ASK_KILIAN_RAG_SOURCE_CONVEX_DEPLOY_KEY')
+  })
+
+  it('ignores ambient preview RAG source key when comparing shared runtime secrets', () => {
+    const originalSourceKey = process.env.ASK_KILIAN_RAG_SOURCE_CONVEX_DEPLOY_KEY
+    const log = vi.fn()
+    const execFile = vi.fn(() =>
+      [
+        `CONVEX_GAME_WRITE_SECRET=${secret}`,
+        `AI_GATEWAY_API_KEY=${aiGatewayApiKey}`,
+        `ASK_KILIAN_CONVEX_ACCESS_TOKEN=${askKilianAccessToken}`,
+        `ASK_KILIAN_GATEWAY_ENV=${askKilianGatewayEnv}`,
+        `VERCEL_PROJECT_ID=${vercelProjectId}`,
+      ].join('\n'),
+    )
+
+    try {
+      process.env.ASK_KILIAN_RAG_SOURCE_CONVEX_DEPLOY_KEY = 'dev:test-source-123|ambient-source-secret'
+
+      const result = verifyDeployEnv({
         env: {
           VERCEL: '1',
           CONVEX_DEPLOYMENT: 'preview-deployment',
@@ -435,19 +484,17 @@ describe('verify deploy env', () => {
         },
         execFile,
         log,
-      }),
-    ).not.toThrow()
+      })
 
-    expect(execFile).toHaveBeenCalledWith(
-      'bunx',
-      ['convex', 'env', 'list', '--deployment', 'preview-deployment'],
-      expect.objectContaining({
-        env: expect.not.objectContaining({
-          ASK_KILIAN_RAG_SOURCE_CONVEX_DEPLOY_KEY: expect.any(String),
-        }),
-      }),
-    )
-    expect(JSON.stringify(execFile.mock.calls)).not.toContain('ASK_KILIAN_RAG_SOURCE_CONVEX_DEPLOY_KEY')
+      expect(result).toEqual({ checked: true, convexRuntimeChecked: true, deployment: 'preview-deployment' })
+      expect(log.mock.calls.flat().join('\n')).not.toContain('ASK_KILIAN_RAG_SOURCE_CONVEX_DEPLOY_KEY')
+    } finally {
+      if (originalSourceKey === undefined) {
+        delete process.env.ASK_KILIAN_RAG_SOURCE_CONVEX_DEPLOY_KEY
+      } else {
+        process.env.ASK_KILIAN_RAG_SOURCE_CONVEX_DEPLOY_KEY = originalSourceKey
+      }
+    }
   })
 
   it('passes for Convex deploy preview builds that provide only injected Convex URLs', () => {
