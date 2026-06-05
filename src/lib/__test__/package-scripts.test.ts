@@ -29,6 +29,11 @@ describe('package scripts', () => {
     expect(packageJson.scripts.prebuild).toContain('bun scripts/verify-deploy-env.ts')
   })
 
+  it('uses a dedicated Vercel build orchestrator without recursive build script calls', () => {
+    expect(packageJson.scripts['vercel-build']).toContain('scripts/vercel-build.ts')
+    expect(packageJson.scripts['vercel-build']).not.toContain('bun run build')
+  })
+
   it('includes Ask Kilian knowledge sync scripts', () => {
     expect(packageJson.scripts['ask-kilian:deploy-sync']).toBe('bun scripts/deploy-sync-ask-kilian-rag.ts')
     expect(packageJson.scripts['ask-kilian:sync']).toBe('bun scripts/sync-ask-kilian-knowledge.ts')

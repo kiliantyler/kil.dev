@@ -45,7 +45,7 @@ async function buildAndWriteBundle(target: BuildTarget, projectRoot: string, sou
   console.log(`Wrote ${target.globalName} bundle to ${outFile} (${js.length} bytes)`)
 }
 
-async function main() {
+export async function buildRuntimes() {
   const projectRoot = path.resolve(__dirname, '..')
   const sourcemap = isDev() ? 'inline' : false
 
@@ -74,8 +74,10 @@ async function main() {
   )
 }
 
-await main().catch((err: unknown) => {
-  const msg = err instanceof Error ? err.message : String(err)
-  console.error(msg)
-  process.exit(1)
-})
+if (import.meta.main) {
+  await buildRuntimes().catch((err: unknown) => {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error(msg)
+    process.exit(1)
+  })
+}

@@ -35,7 +35,8 @@
     "test:e2e:report": "playwright show-report",
     "test:e2e:ui": "playwright test --ui",
     "test:watch": "bun run build:runtimes && vitest",
-    "typecheck": "bun run build:runtimes && tsc --noEmit"
+    "typecheck": "bun run build:runtimes && tsc --noEmit",
+    "vercel-build": "bun scripts/vercel-build.ts"
   },
   "dependencies": {
     "@convex-dev/rag": "0.7.5",
