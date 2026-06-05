@@ -1,7 +1,19 @@
+import { execFile } from 'node:child_process'
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+import { promisify } from 'node:util'
+
 import { describe, expect, it, vi } from 'vitest'
 
 import { ASK_KILIAN_APP_TABLES, ASK_KILIAN_RAG_TABLES } from '../ask-kilian-rag-tables'
-import { hydrateAskKilianPreviewRag, type HydrateAskKilianPreviewRagDeps } from '../hydrate-ask-kilian-preview-rag'
+import {
+  extractSnapshotTable,
+  hydrateAskKilianPreviewRag,
+  type HydrateAskKilianPreviewRagDeps,
+} from '../hydrate-ask-kilian-preview-rag'
+
+const execFileAsync = promisify(execFile)
 
 const sourceKey = 'dev:test-source-123|source-secret'
 const targetKey = 'preview:test-team:test-project|target-secret'
@@ -159,5 +171,38 @@ describe('hydrateAskKilianPreviewRag', () => {
     await expect(hydrateAskKilianPreviewRag({ env: previewEnv() }, deps)).rejects.toThrow('import failed')
 
     expect(deps.rm).toHaveBeenCalledWith('/tmp/ask-kilian-preview-rag-test', { recursive: true, force: true })
+  })
+
+  it('streams a large JSONL table out of the first available snapshot candidate', async () => {
+    const tempDir = await mkdtemp(path.join(tmpdir(), 'ask-kilian-rag-extract-test-'))
+
+    try {
+      const sourceDir = path.join(tempDir, 'source')
+      const outputDir = path.join(tempDir, 'output')
+      const tableDir = path.join(sourceDir, 'tables', 'largeTable')
+      await mkdir(tableDir, { recursive: true })
+
+      const lines = Array.from({ length: 20_000 }, (_, index) =>
+        JSON.stringify({ _id: `row-${index}`, text: 'large export table row content'.repeat(3) }),
+      )
+      const content = `${lines.join('\n')}\n\n`
+      const documentsPath = path.join(tableDir, 'documents.jsonl')
+      await writeFile(documentsPath, content)
+
+      const zipPath = path.join(tempDir, 'snapshot.zip')
+      await execFileAsync('zip', ['-qr', zipPath, '.'], { cwd: sourceDir })
+
+      const extracted = await extractSnapshotTable(zipPath, 'largeTable', { outputDir })
+
+      expect(extracted).toEqual({
+        filePath: path.join(outputDir, 'largeTable.jsonl'),
+        rowCount: lines.length,
+      })
+      await expect(stat(extracted.filePath)).resolves.toMatchObject({ size: content.length })
+      expect(content.length).toBeGreaterThan(1024 * 1024)
+      await expect(readFile(extracted.filePath, 'utf8')).resolves.toBe(content)
+    } finally {
+      await rm(tempDir, { recursive: true, force: true })
+    }
   })
 })

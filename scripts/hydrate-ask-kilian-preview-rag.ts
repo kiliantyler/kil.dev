@@ -1,8 +1,11 @@
 #!/usr/bin/env bun
-import { execFile } from 'node:child_process'
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { execFile, spawn } from 'node:child_process'
+import { createWriteStream } from 'node:fs'
+import { mkdir, mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { Transform } from 'node:stream'
+import { pipeline } from 'node:stream/promises'
 import { promisify } from 'node:util'
 
 import {
@@ -66,36 +69,85 @@ function snapshotPathCandidates(table: string, options: ExtractSnapshotTableOpti
   return [`${table}/documents.jsonl`, `tables/${table}/documents.jsonl`]
 }
 
-async function extractSnapshotTable(
+function createJsonlRowCounter() {
+  let buffered = ''
+  let rowCount = 0
+
+  const counter = new Transform({
+    transform(chunk: Buffer, _encoding, callback) {
+      const text = buffered + chunk.toString('utf8')
+      const lines = text.split('\n')
+      buffered = lines.pop() ?? ''
+      rowCount += lines.filter(line => line.trim()).length
+      callback(null, chunk)
+    },
+    flush(callback) {
+      if (buffered.trim()) rowCount += 1
+      callback()
+    },
+  })
+
+  return {
+    counter,
+    getRowCount: () => rowCount,
+  }
+}
+
+async function streamUnzipEntryToFile(snapshotZip: string, candidate: string, filePath: string) {
+  const unzip = spawn('unzip', ['-p', snapshotZip, candidate], {
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
+  const { counter, getRowCount } = createJsonlRowCounter()
+  const stderrChunks: Buffer[] = []
+
+  unzip.stderr.on('data', chunk => {
+    stderrChunks.push(Buffer.from(chunk))
+  })
+
+  const exitPromise = new Promise<void>((resolve, reject) => {
+    unzip.on('error', reject)
+    unzip.on('close', code => {
+      if (code === 0) {
+        resolve()
+        return
+      }
+
+      const stderr = Buffer.concat(stderrChunks).toString('utf8').trim()
+      reject(new Error(stderr || `unzip exited with code ${code}`))
+    })
+  })
+
+  await Promise.all([pipeline(unzip.stdout, counter, createWriteStream(filePath)), exitPromise])
+  return getRowCount()
+}
+
+export async function extractSnapshotTable(
   snapshotZip: string,
   table: string,
   options: ExtractSnapshotTableOptions = {},
 ): Promise<ExtractedSnapshotTable> {
-  let content: string | undefined
+  const outputDir = options.outputDir ?? tmpdir()
+  await mkdir(outputDir, { recursive: true })
+  const filePath = path.join(outputDir, `${options.component ? `${options.component}-` : ''}${table}.jsonl`)
+  let rowCount: number | undefined
 
   for (const candidate of snapshotPathCandidates(table, options)) {
     try {
-      const { stdout } = await execFileAsync('unzip', ['-p', snapshotZip, candidate], { encoding: 'utf8' })
-      content = stdout
+      rowCount = await streamUnzipEntryToFile(snapshotZip, candidate, filePath)
       break
     } catch {
       // Convex export paths have changed across CLI versions; try the next known shape.
     }
   }
 
-  if (content === undefined) {
+  if (rowCount === undefined) {
     const tableName = options.component ? `${options.component}.${table}` : table
     throw new Error(`Unable to find Convex export documents for table ${tableName}`)
   }
 
-  const outputDir = options.outputDir ?? tmpdir()
-  await mkdir(outputDir, { recursive: true })
-  const filePath = path.join(outputDir, `${options.component ? `${options.component}-` : ''}${table}.jsonl`)
-  await writeFile(filePath, content)
-
   return {
     filePath,
-    rowCount: content.split('\n').filter(line => line.trim()).length,
+    rowCount,
   }
 }
 
