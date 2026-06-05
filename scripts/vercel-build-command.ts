@@ -1,12 +1,15 @@
 #!/usr/bin/env bun
 import { spawn } from 'node:child_process'
+import { writeFile } from 'node:fs/promises'
 
 import { buildRuntimes } from './build-runtimes'
+import { CONVEX_DEPLOY_URL_CAPTURE_ENV, CONVEX_DEPLOY_URL_ENV_VAR_NAME } from './vercel-build-shared'
 import { verifyDeployEnv } from './verify-deploy-env'
 
 type BuildStep = () => unknown | Promise<unknown>
 
 export type VercelBuildCommandDeps = {
+  captureConvexDeployUrl: BuildStep
   verifyDeployEnv: BuildStep
   buildRuntimes: BuildStep
   runNextBuild: BuildStep
@@ -28,8 +31,27 @@ export function runNextBuild() {
   })
 }
 
+export async function captureConvexDeployUrl({
+  env = process.env,
+  writeFileText = writeFile,
+}: {
+  env?: Record<string, string | undefined>
+  writeFileText?: (path: string, data: string, options: { encoding: BufferEncoding }) => Promise<void>
+} = {}) {
+  const capturePath = env[CONVEX_DEPLOY_URL_CAPTURE_ENV]?.trim()
+  if (!capturePath) return
+
+  const convexUrl = env[CONVEX_DEPLOY_URL_ENV_VAR_NAME]?.trim()
+  if (!convexUrl) {
+    throw new Error(`Missing ${CONVEX_DEPLOY_URL_ENV_VAR_NAME} while ${CONVEX_DEPLOY_URL_CAPTURE_ENV} is set`)
+  }
+
+  await writeFileText(capturePath, `${convexUrl}\n`, { encoding: 'utf8' })
+}
+
 function createDefaultDeps(): VercelBuildCommandDeps {
   return {
+    captureConvexDeployUrl,
     verifyDeployEnv,
     buildRuntimes,
     runNextBuild,
@@ -37,6 +59,7 @@ function createDefaultDeps(): VercelBuildCommandDeps {
 }
 
 export async function runVercelBuildCommand(deps: VercelBuildCommandDeps = createDefaultDeps()) {
+  await deps.captureConvexDeployUrl()
   await deps.verifyDeployEnv()
   await deps.buildRuntimes()
   await deps.runNextBuild()
