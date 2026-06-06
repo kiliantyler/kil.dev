@@ -1,4 +1,5 @@
 import { requireAdminAuthEnv } from '@/env'
+import { adminAuthRedirectUri } from '@/lib/admin-auth-redirect'
 import { getSignInUrl } from '@workos-inc/authkit-nextjs'
 import { connection, NextResponse, type NextRequest } from 'next/server'
 
@@ -33,6 +34,7 @@ export async function GET(request: NextRequest) {
   const signInUrl = await getSignInUrl({
     organizationId: PET_GALLERY_WORKOS_ORG_ID,
     returnTo: readSafeReturnTo(request),
+    redirectUri: adminAuthRedirectUri(request),
   })
 
   return applyNoStoreHeaders(NextResponse.redirect(signInUrl))

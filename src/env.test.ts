@@ -49,7 +49,6 @@ describe('env', () => {
       WORKOS_API_KEY: 'sk_test_valid_test_value',
       WORKOS_CLIENT_ID: 'client_test_valid_value',
       WORKOS_COOKIE_PASSWORD: 'a'.repeat(32),
-      NEXT_PUBLIC_WORKOS_REDIRECT_URI: 'http://localhost:3000/auth/callback',
       PET_GALLERY_WORKOS_ORG_ID: 'org_test_valid_value',
       PET_GALLERY_ADMIN_EMAIL: 'admin@example.test',
       UPLOADTHING_TOKEN: 'uploadthing-token-valid-value',
@@ -61,7 +60,6 @@ describe('env', () => {
       'WORKOS_API_KEY',
       'WORKOS_CLIENT_ID',
       'WORKOS_COOKIE_PASSWORD',
-      'NEXT_PUBLIC_WORKOS_REDIRECT_URI',
       'PET_GALLERY_WORKOS_ORG_ID',
       'PET_GALLERY_ADMIN_EMAIL',
     ] as const) {
@@ -86,7 +84,6 @@ describe('env', () => {
       WORKOS_API_KEY: 'sk_test_valid_test_value',
       WORKOS_CLIENT_ID: 'client_test_valid_value',
       WORKOS_COOKIE_PASSWORD: 'a'.repeat(32),
-      NEXT_PUBLIC_WORKOS_REDIRECT_URI: 'http://localhost:3000/auth/callback',
       PET_GALLERY_WORKOS_ORG_ID: 'org_test_valid_value',
       PET_GALLERY_ADMIN_EMAIL: 'admin@example.test',
     })
@@ -282,7 +279,6 @@ describe('env', () => {
   it.each([
     ['WORKOS_COOKIE_PASSWORD', 'short'],
     ['PET_GALLERY_ADMIN_EMAIL', 'not-an-email'],
-    ['NEXT_PUBLIC_WORKOS_REDIRECT_URI', 'not-a-url'],
   ] as const)('rejects invalid %s values', async (key, value) => {
     await expect(importEnvWith({ [key]: value })).rejects.toThrow()
   })

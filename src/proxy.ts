@@ -1,6 +1,7 @@
 import { authkit, handleAuthkitHeaders } from '@workos-inc/authkit-nextjs'
 import type { NextFetchEvent, NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
+import { adminAuthRedirectUri } from './lib/admin-auth-redirect'
 import {
   ADMIN_TEST_BYPASS_COOKIE,
   ADMIN_TEST_BYPASS_COOKIE_VALUE,
@@ -63,7 +64,7 @@ export default async function proxy(request: NextRequest, _event: NextFetchEvent
     return applyNoStoreHeaders(NextResponse.redirect(adminSignInUrl(request)))
   }
 
-  const { session, headers } = await authkit(request)
+  const { session, headers } = await authkit(request, { redirectUri: adminAuthRedirectUri(request) })
   if (isAdminPath(request.nextUrl.pathname) && !session.user) {
     return applyNoStoreHeaders(handleAuthkitHeaders(request, headers, { redirect: adminSignInUrl(request) }))
   }

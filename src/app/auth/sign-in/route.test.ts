@@ -52,6 +52,7 @@ describe('AuthKit sign-in route', () => {
     expect(getSignInUrl).toHaveBeenCalledWith({
       organizationId: 'org_allowed',
       returnTo: '/admin/pet-gallery?tab=photos',
+      redirectUri: 'http://localhost:3000/auth/callback',
     })
     expect(response.headers.get('location')).toBe('https://workos.example.test/sign-in')
     expect(response.headers.get('Cache-Control')).toBe('private, no-store, no-cache, must-revalidate, max-age=0')
@@ -75,6 +76,7 @@ describe('AuthKit sign-in route', () => {
     expect(getSignInUrl).toHaveBeenCalledWith({
       organizationId: 'org_allowed',
       returnTo: '/admin',
+      redirectUri: 'http://localhost:3000/auth/callback',
     })
   })
 })
