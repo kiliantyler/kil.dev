@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import {
-  buildAdminKnowledgeEntry,
-  normalizeAdminKnowledgeSlug,
-  validateAdminKnowledgeEntryInput,
-} from './admin-workspace'
+import { buildAdminKnowledgeEntry } from './admin-workspace'
+import { normalizeAdminKnowledgeSlug, validateAdminKnowledgeEntryInput } from './admin-workspace-shared'
 
 describe('Ask Kilian admin workspace helpers', () => {
   it('normalizes admin slugs and prefixes stable keys', () => {

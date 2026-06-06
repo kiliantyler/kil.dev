@@ -8,7 +8,7 @@ type ContextPreviewPanelPreview = {
   contextPreview: string
 }
 
-export type ContextPreviewPanelSection = {
+type ContextPreviewPanelSection = {
   id: 'retrieved-context' | 'preview-text' | 'response'
   title: string
   text: string

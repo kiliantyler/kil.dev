@@ -9,8 +9,8 @@ import {
 } from './types'
 
 export const ASK_KILIAN_ADMIN_SOURCE_PATH = 'admin:/admin/ask-kilian'
-export const ASK_KILIAN_ADMIN_MIN_TEXT_LENGTH = 20
-export const ASK_KILIAN_ADMIN_MAX_TEXT_LENGTH = 8000
+const ASK_KILIAN_ADMIN_MIN_TEXT_LENGTH = 20
+const ASK_KILIAN_ADMIN_MAX_TEXT_LENGTH = 8000
 
 export type AdminKnowledgeEntryInput = {
   slug: string
@@ -52,7 +52,7 @@ export type AdminWorkspaceKnowledgeEntry = Omit<AskKilianKnowledgeEntry, 'text'>
   retiredAt?: number
 }
 
-export type AskKilianAdminStatusLevel = 'ready' | 'degraded' | 'unavailable' | 'checking'
+type AskKilianAdminStatusLevel = 'ready' | 'degraded' | 'unavailable' | 'checking'
 
 export type AskKilianAdminStatus = {
   level: AskKilianAdminStatusLevel

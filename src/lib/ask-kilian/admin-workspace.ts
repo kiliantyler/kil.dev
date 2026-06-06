@@ -7,26 +7,7 @@ import {
 } from './admin-workspace-shared'
 import { type AskKilianKnowledgeEntry } from './types'
 
-export {
-  ASK_KILIAN_ADMIN_MAX_TEXT_LENGTH,
-  ASK_KILIAN_ADMIN_MIN_TEXT_LENGTH,
-  ASK_KILIAN_ADMIN_SOURCE_PATH,
-  assertAdminCreateDoesNotCollide,
-  assertAdminEditStableKeyAllowed,
-  normalizeAdminKnowledgeSlug,
-  validateAdminKnowledgeEntryInput,
-  type AdminKnowledgeEntryCreateInput,
-  type AdminKnowledgeEntryEditInput,
-  type AdminKnowledgeEntryInput,
-  type AdminKnowledgeEntrySaveInput,
-  type AdminKnowledgeEntryValidation,
-  type AdminWorkspaceKnowledgeEntry,
-  type AskKilianAdminStatus,
-  type AskKilianAdminStatusLevel,
-  type AskKilianAdminWorkspaceState,
-} from './admin-workspace-shared'
-
-export function buildAdminKnowledgeContentHash(entry: Omit<AskKilianKnowledgeEntry, 'contentHash'>) {
+function buildAdminKnowledgeContentHash(entry: Omit<AskKilianKnowledgeEntry, 'contentHash'>) {
   return createHash('sha256').update(stableStringify(entry)).digest('hex')
 }
 

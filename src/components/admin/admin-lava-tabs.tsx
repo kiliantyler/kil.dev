@@ -4,7 +4,7 @@ import { LavaFallbackIndicator, LavaIndicator, type LavaIndicatorState } from '@
 import { cn } from '@/utils/utils'
 import { useCallback, useLayoutEffect, useRef, useState, type FocusEvent, type KeyboardEvent } from 'react'
 
-export type AdminLavaTabDefinition<TValue extends string> = {
+type AdminLavaTabDefinition<TValue extends string> = {
   value: TValue
   label: string
   panelId: string
