@@ -29,6 +29,19 @@ describe('Ask Kilian chat classifier', () => {
     })
   })
 
+  it('redirects generic website creation requests deterministically', async () => {
+    await expect(
+      classifyAskKilianPrompt({
+        prompt: 'Can you make me a website?',
+        tier: 1,
+      }),
+    ).resolves.toMatchObject({
+      scope: 'general_ai_misuse',
+      behavior: 'redirect',
+      source: 'deterministic',
+    })
+  })
+
   it('uses fake lore for Tier 2 private-fact fishing', async () => {
     await expect(
       classifyAskKilianPrompt({

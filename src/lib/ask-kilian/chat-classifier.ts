@@ -47,8 +47,8 @@ const PRIVATE_FACT_PATTERNS = [
 ] as const
 
 const GENERAL_AI_MISUSE_PATTERNS = [
-  /\bwrite\s+(?:my|me|a|an|the)\b.*\b(?:app|component|essay|resume|cover\s+letter|script|code|function)\b/u,
-  /\bbuild\s+(?:my|me|a|an|the)\b.*\b(?:app|website|component|feature|api)\b/u,
+  /\b(?:make|create|build|write|generate)\s+(?:my|me|a|an|the|this)\b.*\b(?:app|website|component|code|script|api|essay|homework)\b/u,
+  /\b(?:make|create|build|write|generate)\b.*\b(?:app|website|component|code|script|api|essay|homework)\b.*\bfor\s+me\b/u,
   /\bfix\s+(?:my|this)\b.*\b(?:code|bug|app|website|component)\b/u,
   /\bdebug\s+(?:my|this)\b.*\b(?:code|bug|app|website|component)\b/u,
   /\b(?:generate|draft|summarize|rewrite|translate)\s+(?:this|my|me|a|an|the)\b/u,
@@ -63,10 +63,7 @@ const ACHIEVEMENT_SPOILER_PATTERNS = [
 const TOPIC_RULES: readonly DeterministicRule[] = [
   {
     topic: 'projects',
-    patterns: [
-      /\b(?:built|build|made|make|created|shipped|worked\s+on)\b/u,
-      /\b(?:project|projects|convex|vercel|kil\.dev|website|site|app|apps|code|github)\b/u,
-    ],
+    patterns: [/\b(?:project|projects|convex|vercel|kil\.dev|github)\b/u],
   },
   {
     topic: 'career',
