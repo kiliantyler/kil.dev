@@ -858,8 +858,14 @@ export function createSaveAdminKnowledgeEntryHandler({
     if (existingOriginal && existingOriginal.source !== 'admin') {
       throw new Error('Repo entries cannot be changed through Ask Kilian admin')
     }
+    if (existingOriginal?.status === 'retired') {
+      throw new Error('Retired Ask Kilian admin entries are inspect-only')
+    }
     if (existingTarget && existingTarget.source !== 'admin') {
       throw new Error('Repo entries cannot be overwritten by admin saves')
+    }
+    if (existingTarget?.status === 'retired') {
+      throw new Error('Retired Ask Kilian admin entries are inspect-only')
     }
     if (originalStableKey !== args.entry.stableKey && existingTarget) {
       throw new Error(`Ask Kilian admin entry already exists: ${args.entry.stableKey}`)
@@ -960,6 +966,7 @@ export function createDisableAdminKnowledgeEntryHandler({
     const existing = rows[0]
     if (!existing) throw new Error(`Ask Kilian entry not found: ${args.stableKey}`)
     if (existing.source !== 'admin') throw new Error('Repo entries cannot be changed through Ask Kilian admin')
+    if (existing.status === 'retired') throw new Error('Retired Ask Kilian admin entries are inspect-only')
 
     const pendingRagEntryCleanupIds = uniqueCleanupIds([existing.ragEntryId])
     await ctx.runMutation(refs.patchAdminManagedStatus, {
@@ -1004,6 +1011,7 @@ export function createReenableAdminKnowledgeEntryHandler({
     const existing = rows[0]
     if (!existing) throw new Error(`Ask Kilian entry not found: ${args.stableKey}`)
     if (existing.source !== 'admin') throw new Error('Repo entries cannot be changed through Ask Kilian admin')
+    if (existing.status === 'retired') throw new Error('Retired Ask Kilian admin entries are inspect-only')
 
     const entry = { ...existing, status: 'active' as const }
     const result = await addKnowledgeEntryToRag(ctx, rag, entry)

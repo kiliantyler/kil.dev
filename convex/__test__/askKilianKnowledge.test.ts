@@ -298,6 +298,63 @@ describe('admin-managed knowledge lifecycle', () => {
       now: 500,
     })
   })
+
+  it('rejects edits to retired admin rows', async () => {
+    const { createSaveAdminKnowledgeEntryHandler } = await import('../askKilianKnowledge')
+    const retiredEntry = existingEntry('admin:manual', {
+      source: 'admin',
+      status: 'retired',
+      sourcePath: 'admin:/admin/ask-kilian',
+      ragStatus: 'deleted',
+    })
+    const edited = incomingEntry('admin:manual', {
+      source: 'admin',
+      sourcePath: 'admin:/admin/ask-kilian',
+      text: 'Edited retired text',
+    })
+    const ctx = {
+      runQuery: vi.fn(async () => [retiredEntry]),
+      runMutation: vi.fn(),
+      runAction: vi.fn(),
+    }
+    const rag = { add: vi.fn(), delete: vi.fn() }
+
+    await expect(
+      createSaveAdminKnowledgeEntryHandler({ rag: rag as never })(ctx, {
+        entry: edited,
+        originalStableKey: 'admin:manual',
+      }),
+    ).rejects.toThrow('Retired Ask Kilian admin entries are inspect-only')
+    expect(rag.add).not.toHaveBeenCalled()
+    expect(ctx.runMutation).not.toHaveBeenCalled()
+  })
+
+  it('rejects disable and re-enable actions for retired admin rows', async () => {
+    const { createDisableAdminKnowledgeEntryHandler, createReenableAdminKnowledgeEntryHandler } =
+      await import('../askKilianKnowledge')
+    const retiredEntry = existingEntry('admin:manual', {
+      source: 'admin',
+      status: 'retired',
+      sourcePath: 'admin:/admin/ask-kilian',
+      ragStatus: 'deleted',
+    })
+    const ctx = {
+      runQuery: vi.fn(async () => [retiredEntry]),
+      runMutation: vi.fn(),
+      runAction: vi.fn(),
+    }
+    const rag = { add: vi.fn(), delete: vi.fn() }
+
+    await expect(
+      createDisableAdminKnowledgeEntryHandler({ rag: rag as never })(ctx, { stableKey: 'admin:manual' }),
+    ).rejects.toThrow('Retired Ask Kilian admin entries are inspect-only')
+    await expect(
+      createReenableAdminKnowledgeEntryHandler({ rag: rag as never })(ctx, { stableKey: 'admin:manual' }),
+    ).rejects.toThrow('Retired Ask Kilian admin entries are inspect-only')
+    expect(rag.add).not.toHaveBeenCalled()
+    expect(rag.delete).not.toHaveBeenCalled()
+    expect(ctx.runMutation).not.toHaveBeenCalled()
+  })
 })
 
 describe('Ask Kilian admin auth guard', () => {

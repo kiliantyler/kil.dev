@@ -36,6 +36,7 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
   const selectedStableKeyRef = useRef<string | null>(initialState.selectedStableKey ?? null)
   const latestDetailRequestStableKey = useRef<string | null>(null)
   const latestRetrievalRequestId = useRef(0)
+  const pendingOperationKeys = useRef(new Set<string>())
 
   const selectedEntry = useMemo(
     () => state.entries.find(entry => entry.stableKey === selectedStableKey) ?? null,
@@ -60,9 +61,15 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
     )
   }
 
-  function runWorkspaceOperation(operation: () => Promise<void>) {
+  function runWorkspaceOperation(operation: () => Promise<void>, key?: string) {
+    if (key && pendingOperationKeys.current.has(key)) return false
+    if (key) pendingOperationKeys.current.add(key)
     setPendingOperations(count => count + 1)
-    void operation().finally(() => setPendingOperations(count => Math.max(0, count - 1)))
+    void operation().finally(() => {
+      if (key) pendingOperationKeys.current.delete(key)
+      setPendingOperations(count => Math.max(0, count - 1))
+    })
+    return true
   }
 
   function refresh() {
@@ -73,7 +80,7 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
       } catch (error) {
         setKnowledgeError(error instanceof Error ? error.message : 'Unable to refresh Ask Kilian admin state')
       }
-    })
+    }, 'refresh')
   }
 
   function selectEntry(stableKey: string) {
@@ -123,7 +130,7 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
       } catch (error) {
         setKnowledgeError(error instanceof Error ? error.message : 'Unable to disable Ask Kilian entry')
       }
-    })
+    }, `disable:${stableKey}`)
   }
 
   function reenableEntry(stableKey: string) {
@@ -136,7 +143,7 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
       } catch (error) {
         setKnowledgeError(error instanceof Error ? error.message : 'Unable to re-enable Ask Kilian entry')
       }
-    })
+    }, `reenable:${stableKey}`)
   }
 
   function previewRepoSync() {
@@ -149,7 +156,7 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
       } catch (error) {
         setOpsError(error instanceof Error ? error.message : 'Unable to preview Ask Kilian repo sync')
       }
-    })
+    }, 'previewRepoSync')
   }
 
   function applyRepoSync() {
@@ -164,7 +171,7 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
       } catch (error) {
         setOpsError(error instanceof Error ? error.message : 'Unable to apply Ask Kilian repo sync')
       }
-    })
+    }, 'applyRepoSync')
   }
 
   function previewRetrieval(input: {
@@ -186,7 +193,7 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
           setRetrievalError(error instanceof Error ? error.message : 'Unable to run Ask Kilian retrieval preview')
         }
       }
-    })
+    }, 'previewRetrieval')
   }
 
   const isOperationPending = isPending || pendingOperations > 0

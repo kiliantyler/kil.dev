@@ -158,7 +158,12 @@ export function TestLabTab({ workspace }: { workspace: AskKilianAdminWorkspaceCo
           </label>
 
           <label className="flex items-center gap-3 rounded-md border border-border bg-background px-3 py-2">
-            <Switch size="sm" checked={includeSpoilers} onCheckedChange={setIncludeSpoilers} />
+            <Switch
+              size="sm"
+              checked={includeSpoilers}
+              onCheckedChange={setIncludeSpoilers}
+              aria-label="Include spoilers"
+            />
             <span className="text-sm font-medium">Include spoilers</span>
           </label>
         </div>
