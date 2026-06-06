@@ -6,6 +6,16 @@ const aiGatewayApiKey = 'shared-ai-gateway-api-key'
 const askKilianAccessToken = 'shared-ask-kilian-access-token'
 const askKilianGatewayEnv = 'preview'
 const vercelProjectId = 'prj_test_project'
+const adminAuthEnv = {
+  WORKOS_API_KEY: 'sk_test_admin_auth_key',
+  WORKOS_CLIENT_ID: 'client_test_admin_auth_client',
+  WORKOS_COOKIE_PASSWORD: 'admin-auth-cookie-password-value',
+  WORKOS_ORG_ID: 'org_test_admin_auth',
+  ADMIN_EMAIL: 'admin@example.test',
+}
+
+const adminAuthLog =
+  'admin auth environment variables (WORKOS_API_KEY, WORKOS_CLIENT_ID, WORKOS_COOKIE_PASSWORD, WORKOS_ORG_ID, ADMIN_EMAIL)'
 
 function createExecFile(
   value: string,
@@ -20,8 +30,50 @@ function createExecFile(
   )
 }
 
+function createExecFileWithAdmin({
+  value = secret,
+  aiKey = aiGatewayApiKey,
+  askKilianToken = askKilianAccessToken,
+  gatewayEnv = askKilianGatewayEnv,
+  projectId = vercelProjectId,
+  workosApiKey = adminAuthEnv.WORKOS_API_KEY,
+  workosClientId = adminAuthEnv.WORKOS_CLIENT_ID,
+  workosCookiePassword = adminAuthEnv.WORKOS_COOKIE_PASSWORD,
+  workosOrgId = adminAuthEnv.WORKOS_ORG_ID,
+  adminEmail = adminAuthEnv.ADMIN_EMAIL,
+}: {
+  value?: string
+  aiKey?: string
+  askKilianToken?: string
+  gatewayEnv?: string
+  projectId?: string
+  workosApiKey?: string
+  workosClientId?: string
+  workosCookiePassword?: string
+  workosOrgId?: string | null
+  adminEmail?: string | null
+} = {}) {
+  return vi.fn(() =>
+    [
+      'OTHER=value',
+      `CONVEX_GAME_WRITE_SECRET=${value}`,
+      `AI_GATEWAY_API_KEY=${aiKey}`,
+      `ASK_KILIAN_CONVEX_ACCESS_TOKEN=${askKilianToken}`,
+      `ASK_KILIAN_GATEWAY_ENV=${gatewayEnv}`,
+      `VERCEL_PROJECT_ID=${projectId}`,
+      workosApiKey === undefined ? undefined : `WORKOS_API_KEY=${workosApiKey}`,
+      workosClientId === undefined ? undefined : `WORKOS_CLIENT_ID=${workosClientId}`,
+      workosCookiePassword === undefined ? undefined : `WORKOS_COOKIE_PASSWORD=${workosCookiePassword}`,
+      workosOrgId == null ? undefined : `WORKOS_ORG_ID=${workosOrgId}`,
+      adminEmail == null ? undefined : `ADMIN_EMAIL=${adminEmail}`,
+    ]
+      .filter((line): line is string => line !== undefined)
+      .join('\n'),
+  )
+}
+
 function expectedDeployKeyLog(deployment: string) {
-  return `Verified CONVEX_GAME_WRITE_SECRET, AI_GATEWAY_API_KEY, ASK_KILIAN_CONVEX_ACCESS_TOKEN, ASK_KILIAN_GATEWAY_ENV, and VERCEL_PROJECT_ID in the Vercel build environment for Convex deployment ${deployment}. Convex deploy key will select the deployment during deploy; Convex runtime secrets were not compared.`
+  return `Verified CONVEX_GAME_WRITE_SECRET, AI_GATEWAY_API_KEY, ASK_KILIAN_CONVEX_ACCESS_TOKEN, ASK_KILIAN_GATEWAY_ENV, and VERCEL_PROJECT_ID and ${adminAuthLog} in the Vercel build environment for Convex deployment ${deployment}. Convex deploy key will select the deployment during deploy; Convex runtime secrets were not compared.`
 }
 
 describe('verify deploy env', () => {
@@ -159,6 +211,25 @@ describe('verify deploy env', () => {
         log: vi.fn(),
       }),
     ).toThrow('Missing AI_GATEWAY_API_KEY in the Vercel build environment')
+  })
+
+  it('fails for preview builds when admin auth environment is missing', () => {
+    expect(() =>
+      verifyDeployEnv({
+        env: {
+          VERCEL: '1',
+          VERCEL_ENV: 'preview',
+          CONVEX_DEPLOYMENT: 'preview-deployment',
+          CONVEX_GAME_WRITE_SECRET: secret,
+          AI_GATEWAY_API_KEY: aiGatewayApiKey,
+          ASK_KILIAN_CONVEX_ACCESS_TOKEN: askKilianAccessToken,
+          ASK_KILIAN_GATEWAY_ENV: askKilianGatewayEnv,
+          VERCEL_PROJECT_ID: vercelProjectId,
+        },
+        execFile: createExecFile(secret),
+        log: vi.fn(),
+      }),
+    ).toThrow('Missing WORKOS_API_KEY in the Vercel build environment')
   })
 
   it('fails when the Vercel build AI Gateway key is still a placeholder', () => {
@@ -497,14 +568,75 @@ describe('verify deploy env', () => {
     }
   })
 
+  it('fails when the Convex deployment admin email is missing for preview builds', () => {
+    expect(() =>
+      verifyDeployEnv({
+        env: {
+          VERCEL: '1',
+          VERCEL_ENV: 'preview',
+          ...adminAuthEnv,
+          CONVEX_DEPLOYMENT: 'preview-deployment',
+          CONVEX_GAME_WRITE_SECRET: secret,
+          AI_GATEWAY_API_KEY: aiGatewayApiKey,
+          ASK_KILIAN_CONVEX_ACCESS_TOKEN: askKilianAccessToken,
+          ASK_KILIAN_GATEWAY_ENV: askKilianGatewayEnv,
+          VERCEL_PROJECT_ID: vercelProjectId,
+        },
+        execFile: createExecFileWithAdmin({ adminEmail: null }),
+        log: vi.fn(),
+      }),
+    ).toThrow('Missing ADMIN_EMAIL in Convex deployment preview-deployment')
+  })
+
+  it('fails when the Convex deployment WorkOS organization id is missing for production builds', () => {
+    expect(() =>
+      verifyDeployEnv({
+        env: {
+          VERCEL: '1',
+          VERCEL_ENV: 'production',
+          ...adminAuthEnv,
+          CONVEX_DEPLOYMENT: 'prod',
+          CONVEX_GAME_WRITE_SECRET: secret,
+          AI_GATEWAY_API_KEY: aiGatewayApiKey,
+          ASK_KILIAN_CONVEX_ACCESS_TOKEN: askKilianAccessToken,
+          ASK_KILIAN_GATEWAY_ENV: askKilianGatewayEnv,
+          VERCEL_PROJECT_ID: vercelProjectId,
+        },
+        execFile: createExecFileWithAdmin({ workosOrgId: null }),
+        log: vi.fn(),
+      }),
+    ).toThrow('Missing WORKOS_ORG_ID in Convex deployment prod')
+  })
+
+  it('fails when the Convex and Vercel admin emails differ for preview builds', () => {
+    expect(() =>
+      verifyDeployEnv({
+        env: {
+          VERCEL: '1',
+          VERCEL_ENV: 'preview',
+          ...adminAuthEnv,
+          CONVEX_DEPLOYMENT: 'preview-deployment',
+          CONVEX_GAME_WRITE_SECRET: secret,
+          AI_GATEWAY_API_KEY: aiGatewayApiKey,
+          ASK_KILIAN_CONVEX_ACCESS_TOKEN: askKilianAccessToken,
+          ASK_KILIAN_GATEWAY_ENV: askKilianGatewayEnv,
+          VERCEL_PROJECT_ID: vercelProjectId,
+        },
+        execFile: createExecFileWithAdmin({ adminEmail: 'other-admin@example.test' }),
+        log: vi.fn(),
+      }),
+    ).toThrow('ADMIN_EMAIL does not match between Vercel and Convex deployment preview-deployment')
+  })
+
   it('passes for Convex deploy preview builds that provide only injected Convex URLs', () => {
     const log = vi.fn()
-    const execFile = createExecFile(`${secret}\n`)
+    const execFile = createExecFileWithAdmin()
 
     const result = verifyDeployEnv({
       env: {
         VERCEL: '1',
         VERCEL_ENV: 'preview',
+        ...adminAuthEnv,
         NEXT_PUBLIC_CONVEX_URL: 'https://warm-squid-123.convex.cloud',
         CONVEX_GAME_WRITE_SECRET: secret,
         AI_GATEWAY_API_KEY: aiGatewayApiKey,
@@ -523,7 +655,7 @@ describe('verify deploy env', () => {
       expect.objectContaining({ encoding: 'utf8' }),
     )
     expect(log).toHaveBeenCalledWith(
-      'Verified CONVEX_GAME_WRITE_SECRET, AI_GATEWAY_API_KEY, ASK_KILIAN_CONVEX_ACCESS_TOKEN, ASK_KILIAN_GATEWAY_ENV, and VERCEL_PROJECT_ID in Vercel and Convex deployment warm-squid-123.',
+      `Verified CONVEX_GAME_WRITE_SECRET, AI_GATEWAY_API_KEY, ASK_KILIAN_CONVEX_ACCESS_TOKEN, ASK_KILIAN_GATEWAY_ENV, and VERCEL_PROJECT_ID and ${adminAuthLog} in Vercel and Convex deployment warm-squid-123.`,
     )
   })
 
@@ -537,6 +669,7 @@ describe('verify deploy env', () => {
       env: {
         VERCEL: '1',
         VERCEL_ENV: 'production',
+        ...adminAuthEnv,
         CONVEX_DEPLOY_KEY: 'prod:resolute-ptarmigan-441|prod-deploy-key',
         NEXT_PUBLIC_CONVEX_URL: 'https://resolute-ptarmigan-441.convex.cloud',
         CONVEX_GAME_WRITE_SECRET: secret,
@@ -564,6 +697,7 @@ describe('verify deploy env', () => {
       env: {
         VERCEL: '1',
         VERCEL_ENV: 'production',
+        ...adminAuthEnv,
         CONVEX_DEPLOY_KEY: 'project:ktyler:kil-dev|project-deploy-key',
         NEXT_PUBLIC_CONVEX_URL: 'https://resolute-ptarmigan-441.convex.cloud',
         CONVEX_GAME_WRITE_SECRET: secret,
@@ -591,6 +725,7 @@ describe('verify deploy env', () => {
       env: {
         VERCEL: '1',
         VERCEL_ENV: 'preview',
+        ...adminAuthEnv,
         CONVEX_DEPLOY_KEY: 'preview:ktyler:kil-dev|preview-deploy-key',
         NEXT_PUBLIC_CONVEX_URL: 'https://preview-squid-123.convex.cloud',
         CONVEX_GAME_WRITE_SECRET: secret,

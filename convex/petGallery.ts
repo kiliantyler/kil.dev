@@ -334,8 +334,8 @@ function displayNameForActor(
 }
 
 export async function requirePetGalleryAdmin(ctx: PetGalleryContext): Promise<PetGalleryActor> {
-  const configuredEmail = normalizeEmail(process.env.PET_GALLERY_ADMIN_EMAIL)
-  const configuredOrgId = process.env.PET_GALLERY_WORKOS_ORG_ID?.trim()
+  const configuredEmail = normalizeEmail(process.env.ADMIN_EMAIL)
+  const configuredOrgId = process.env.WORKOS_ORG_ID?.trim()
 
   if (!configuredEmail || !configuredOrgId) {
     throw new Error('Pet gallery admin access denied')

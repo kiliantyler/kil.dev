@@ -43,8 +43,8 @@ describe('pet gallery Convex admin API', () => {
   })
 
   it('rejects unauthenticated and mismatched admin identities', async () => {
-    vi.stubEnv('PET_GALLERY_ADMIN_EMAIL', 'admin@example.com')
-    vi.stubEnv('PET_GALLERY_WORKOS_ORG_ID', 'org_good')
+    vi.stubEnv('ADMIN_EMAIL', 'admin@example.com')
+    vi.stubEnv('WORKOS_ORG_ID', 'org_good')
 
     await expect(getAdminStateHandler(createPetGalleryHarness({ auth: 'unauth' }).ctx, {})).rejects.toThrow(
       'Pet gallery admin access denied',
@@ -61,8 +61,8 @@ describe('pet gallery Convex admin API', () => {
   })
 
   it('rejects unauthenticated and mismatched admin identities for admin write and cleanup handlers', async () => {
-    vi.stubEnv('PET_GALLERY_ADMIN_EMAIL', 'admin@example.com')
-    vi.stubEnv('PET_GALLERY_WORKOS_ORG_ID', 'org_good')
+    vi.stubEnv('ADMIN_EMAIL', 'admin@example.com')
+    vi.stubEnv('WORKOS_ORG_ID', 'org_good')
 
     const adminHandlers = [
       {

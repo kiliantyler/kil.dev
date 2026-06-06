@@ -1,6 +1,11 @@
+import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 import { expectAchievementCookieContains, getUnlockedAchievementCount } from '../../fixtures/achievement-helpers'
 import { abortNoise, clearState, gotoAndWaitForMain } from '../../fixtures/test-helpers'
+
+async function expectUnlockedAchievementCount(page: Page, count: number) {
+  await expect.poll(() => getUnlockedAchievementCount(page), { timeout: 5000 }).toBe(count)
+}
 
 test.describe('RECURSIVE_REWARD Achievement', () => {
   test.beforeEach(async ({ page }) => {
@@ -13,36 +18,36 @@ test.describe('RECURSIVE_REWARD Achievement', () => {
     await gotoAndWaitForMain(page, '/')
     await page.waitForTimeout(500)
 
-    const initialCount = await getUnlockedAchievementCount(page)
-    expect(initialCount).toBe(0)
+    await expectUnlockedAchievementCount(page, 0)
 
     // Visit About page - unlock first achievement
     await gotoAndWaitForMain(page, '/about')
     await page.waitForTimeout(500)
 
-    const count1 = await getUnlockedAchievementCount(page)
-    expect(count1).toBe(1)
+    await expectUnlockedAchievementCount(page, 1)
 
     // Visit Experience page - unlock second achievement
     await gotoAndWaitForMain(page, '/experience')
     await page.waitForTimeout(500)
 
-    const count2 = await getUnlockedAchievementCount(page)
-    expect(count2).toBe(2)
+    await expectUnlockedAchievementCount(page, 2)
 
     // Visit Projects page - unlock third achievement
     await gotoAndWaitForMain(page, '/projects')
     await page.waitForTimeout(1000) // Wait a bit longer for RECURSIVE_REWARD to trigger
 
     // Should now have 4 achievements (3 + RECURSIVE_REWARD)
-    const finalCount = await getUnlockedAchievementCount(page)
-    expect(finalCount).toBe(4)
+    await expectUnlockedAchievementCount(page, 4)
 
     // Verify RECURSIVE_REWARD is unlocked
     await expectAchievementCookieContains(page, 'RECURSIVE_REWARD')
   })
 
   test('should make achievements nav link visible after RECURSIVE_REWARD', async ({ page }) => {
+    if ((page.viewportSize()?.width ?? 0) < 920) {
+      test.skip(true, 'Desktop topbar is hidden below the nav breakpoint')
+    }
+
     // First visit home to mount provider
     await gotoAndWaitForMain(page, '/')
     await page.waitForTimeout(500)

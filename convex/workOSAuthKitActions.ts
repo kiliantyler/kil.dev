@@ -36,16 +36,16 @@ function getActionOrganizationId(action: WorkOSActionPayload) {
 }
 
 function getWorkOSActionDenyReason(action: WorkOSActionPayload) {
-  const adminEmail = configuredValue(process.env.PET_GALLERY_ADMIN_EMAIL)
-  const adminOrganizationId = configuredValue(process.env.PET_GALLERY_WORKOS_ORG_ID)
+  const adminEmail = configuredValue(process.env.ADMIN_EMAIL)
+  const adminOrganizationId = configuredValue(process.env.WORKOS_ORG_ID)
   const actionEmail = getActionEmail(action)
   const actionOrganizationId = getActionOrganizationId(action)
 
-  if (adminEmail && (!actionEmail || normalizeEmail(actionEmail) !== normalizeEmail(adminEmail))) {
+  if (!adminEmail || !actionEmail || normalizeEmail(actionEmail) !== normalizeEmail(adminEmail)) {
     return 'This account is not allowed to access the pet gallery admin.'
   }
 
-  if (adminOrganizationId && actionOrganizationId !== adminOrganizationId) {
+  if (!adminOrganizationId || actionOrganizationId !== adminOrganizationId) {
     return 'This organization is not allowed to access the pet gallery admin.'
   }
 

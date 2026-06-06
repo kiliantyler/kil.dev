@@ -11,7 +11,7 @@ describe('AuthKit callback route', () => {
   it('uses the documented WorkOS AuthKit callback handler', async () => {
     const route = await import('./route')
 
-    expect(handleAuth).toHaveBeenCalledWith()
+    expect(handleAuth).toHaveBeenCalledWith({ baseURL: process.env.NEXT_PUBLIC_WORKOS_REDIRECT_URI })
     expect(route.GET).toBe(mockAuthHandler)
   })
 })

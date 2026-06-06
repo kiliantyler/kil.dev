@@ -2,6 +2,7 @@ import { v } from 'convex/values'
 
 import type { EntryId } from '@convex-dev/rag'
 import type { Infer } from 'convex/values'
+import { ASK_KILIAN_ADMIN_SOURCE_PATH } from '../src/lib/ask-kilian/admin-workspace-shared'
 import type { AskKilianKnowledgeCategory, AskKilianKnowledgeEntry, AskKilianTier } from '../src/lib/ask-kilian/types'
 import { isPlaceholderSecret } from '../src/lib/env-secrets'
 import { internal } from './_generated/api'
@@ -9,12 +10,15 @@ import { action, internalAction, internalMutation, internalQuery, type ActionCtx
 import { ASK_KILIAN_NAMESPACE, askKilianRag, resolveGatewayProjectId } from './askKilianRag'
 import {
   ASK_KILIAN_RAG_FILTER_VERSION,
+  askKilianAdminMutationResultValidator,
   askKilianCategoryValidator,
-  askKilianKnowledgeEntryCoreFields,
+  askKilianKnowledgeEntryDetailDisplayValidator,
   askKilianKnowledgeEntryInputValidator,
-  askKilianRagFilterVersionValidator,
+  askKilianKnowledgeEntryListDisplayValidator,
+  askKilianStatusValidator,
   askKilianTierValidator,
 } from './askKilianValidators'
+import { getAuthKit } from './auth'
 
 export type { AskKilianKnowledgeEntry } from '../src/lib/ask-kilian/types'
 
@@ -30,8 +34,13 @@ type SearchableKnowledgeEntry = AskKilianKnowledgeEntry & {
   ragStatus?: string
   ragFilterVersion?: number
   pendingRagEntryCleanupIds?: string[]
+  createdAt?: number
   updatedAt?: number
   retiredAt?: number
+}
+
+type StoredKnowledgeEntry = SearchableKnowledgeEntry & {
+  updatedAt: number
 }
 
 type RagSearchEntry = {
@@ -46,6 +55,20 @@ type SyncableKnowledgeEntry = AskKilianKnowledgeEntry & {
   previousRagEntryId?: string
   previousRagFilterVersion?: number
 }
+
+type AskKilianAdminContext = ActionCtx
+
+type AuthKitUser = {
+  id?: string
+  email?: string | null
+  firstName?: string | null
+  lastName?: string | null
+  name?: string | null
+}
+
+type AskKilianKnowledgeEntryListDisplay = Infer<typeof askKilianKnowledgeEntryListDisplayValidator>
+type AskKilianKnowledgeEntryDetailDisplay = Infer<typeof askKilianKnowledgeEntryDetailDisplayValidator>
+type AskKilianAdminMutationResult = Infer<typeof askKilianAdminMutationResultValidator>
 
 const syncSummaryValidator = v.object({
   dryRun: v.boolean(),
@@ -66,24 +89,9 @@ const syncSummaryValidator = v.object({
 })
 export type SyncSummary = Infer<typeof syncSummaryValidator>
 
-const knowledgeEntryWithoutTextValidator = v.object({
-  ...askKilianKnowledgeEntryCoreFields,
-  text: v.optional(v.string()),
-  ragEntryId: v.optional(v.string()),
-  ragStatus: v.optional(v.string()),
-  ragFilterVersion: v.optional(askKilianRagFilterVersionValidator),
-  pendingRagEntryCleanupIds: v.optional(v.array(v.string())),
-  updatedAt: v.number(),
-  retiredAt: v.optional(v.number()),
-})
+const knowledgeEntryWithoutTextValidator = askKilianKnowledgeEntryListDisplayValidator
 
-const knowledgeEntryWithTextValidator = v.object({
-  ...askKilianKnowledgeEntryCoreFields,
-  ragEntryId: v.optional(v.string()),
-  ragStatus: v.optional(v.string()),
-  ragFilterVersion: v.optional(askKilianRagFilterVersionValidator),
-  pendingRagEntryCleanupIds: v.optional(v.array(v.string())),
-})
+const knowledgeEntryWithTextValidator = askKilianKnowledgeEntryDetailDisplayValidator
 
 const searchResultValidator = v.object({
   stableKey: v.string(),
@@ -106,6 +114,7 @@ const MAX_SEARCH_RESULT_LIMIT = 12
 const SEARCH_OVERFETCH_MULTIPLIER = 3
 const MAX_RAG_SEARCH_LIMIT = MAX_SEARCH_RESULT_LIMIT * SEARCH_OVERFETCH_MULTIPLIER
 const MAX_SEARCH_RESULT_TEXT_LENGTH = 1600
+const MAX_ADMIN_LIST_TEXT_SUMMARY_LENGTH = 240
 const MIN_FULL_MANIFEST_ENTRY_COUNT = 10
 const LEXICAL_MATCH_SCORE = 0.82
 const LEXICAL_STOP_WORDS = new Set([
@@ -155,6 +164,61 @@ function requireAskKilianAiGatewayApiKey() {
   }
 }
 
+function normalizeEmail(value: string | null | undefined) {
+  const trimmed = value?.trim().toLowerCase()
+  return trimmed || null
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : null
+}
+
+function readWorkOSOrgId(identity: Record<string, unknown>): string | null {
+  for (const key of ['organizationId', 'org_id', 'https://api.workos.com/organization_id']) {
+    const value = identity[key]
+    if (typeof value === 'string' && value.trim()) return value.trim()
+  }
+
+  const token = asRecord(identity.token)
+  const claims = asRecord(token?.claims)
+  const tokenOrgId = claims?.org_id
+  return typeof tokenOrgId === 'string' && tokenOrgId.trim() ? tokenOrgId.trim() : null
+}
+
+async function readAuthKitUser(ctx: AskKilianAdminContext): Promise<AuthKitUser> {
+  return (await getAuthKit().getAuthUser(ctx as never)) as AuthKitUser
+}
+
+export async function requireAskKilianAdmin(ctx: AskKilianAdminContext) {
+  const configuredEmail = normalizeEmail(process.env.ADMIN_EMAIL)
+  const configuredOrgId = process.env.WORKOS_ORG_ID?.trim()
+
+  if (!configuredEmail || !configuredOrgId) {
+    throw new Error('Ask Kilian admin access denied')
+  }
+
+  const identity = await ctx.auth.getUserIdentity()
+  const identityRecord = asRecord(identity)
+  const workosOrgId = identityRecord ? readWorkOSOrgId(identityRecord) : null
+  const subject = typeof identityRecord?.subject === 'string' ? identityRecord.subject.trim() : ''
+  const authUser = identityRecord && subject ? await readAuthKitUser(ctx) : null
+  const email = normalizeEmail(authUser?.email)
+
+  if (
+    !identityRecord ||
+    !authUser ||
+    authUser.id !== subject ||
+    !email ||
+    !subject ||
+    email !== configuredEmail ||
+    workosOrgId !== configuredOrgId
+  ) {
+    throw new Error('Ask Kilian admin access denied')
+  }
+
+  return { workosUserId: subject, workosOrgId, email }
+}
+
 function isRagStatusReady(status: string | undefined) {
   return status === 'ready'
 }
@@ -180,13 +244,18 @@ function capSearchResultText(text: string) {
   return text.slice(0, MAX_SEARCH_RESULT_TEXT_LENGTH)
 }
 
-function projectKnowledgeEntryWithoutText(row: SearchableKnowledgeEntry & { updatedAt: number; retiredAt?: number }) {
+function summarizeAdminListText(text: string) {
+  return text.trim().replaceAll(/\s+/g, ' ').slice(0, MAX_ADMIN_LIST_TEXT_SUMMARY_LENGTH)
+}
+
+function projectKnowledgeEntryWithoutText(row: StoredKnowledgeEntry) {
   return {
     stableKey: row.stableKey,
     source: row.source,
     status: row.status,
     category: row.category,
     title: row.title,
+    textSummary: summarizeAdminListText(row.text),
     contentHash: row.contentHash,
     sourcePath: row.sourcePath,
     minTier: row.minTier,
@@ -196,12 +265,13 @@ function projectKnowledgeEntryWithoutText(row: SearchableKnowledgeEntry & { upda
     ragStatus: row.ragStatus,
     ragFilterVersion: row.ragFilterVersion,
     pendingRagEntryCleanupIds: row.pendingRagEntryCleanupIds,
+    createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     retiredAt: row.retiredAt,
   }
 }
 
-function projectKnowledgeEntryWithText(row: SearchableKnowledgeEntry) {
+function projectKnowledgeEntryWithText(row: StoredKnowledgeEntry) {
   return {
     stableKey: row.stableKey,
     source: row.source,
@@ -218,6 +288,9 @@ function projectKnowledgeEntryWithText(row: SearchableKnowledgeEntry) {
     ragStatus: row.ragStatus,
     ragFilterVersion: row.ragFilterVersion,
     pendingRagEntryCleanupIds: row.pendingRagEntryCleanupIds,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    retiredAt: row.retiredAt,
   }
 }
 
@@ -280,8 +353,58 @@ function contentHashForRagSync(entry: SyncableKnowledgeEntry) {
   return `${entry.contentHash}:rag-filter-v${ASK_KILIAN_RAG_FILTER_VERSION}`
 }
 
+function assertAdminManagedEntry(entry: AskKilianKnowledgeEntry) {
+  if (entry.source !== 'admin' || !entry.stableKey.startsWith('admin:')) {
+    throw new Error('Only admin: stable keys can be saved through Ask Kilian admin')
+  }
+  if (entry.sourcePath !== ASK_KILIAN_ADMIN_SOURCE_PATH) {
+    throw new Error(`Ask Kilian admin entries must use ${ASK_KILIAN_ADMIN_SOURCE_PATH} as sourcePath`)
+  }
+}
+
+function assertAdminStableKey(stableKey: string) {
+  if (!stableKey.startsWith('admin:')) {
+    throw new Error('Only admin: stable keys can be changed through Ask Kilian admin')
+  }
+}
+
 function uniqueCleanupIds(ids: Array<string | undefined>) {
   return [...new Set(ids.filter((id): id is string => typeof id === 'string' && id.length > 0))]
+}
+
+async function addKnowledgeEntryToRag(
+  ctx: Pick<ActionCtx, 'runMutation' | 'runAction'>,
+  rag: Pick<typeof askKilianRag, 'add'>,
+  entry: AskKilianKnowledgeEntry,
+) {
+  const result = await rag.add(ctx as ActionCtx, {
+    namespace: ASK_KILIAN_NAMESPACE,
+    key: entry.stableKey,
+    title: entry.title,
+    text: entry.text,
+    contentHash: contentHashForRagSync(entry),
+    importance: entry.importance,
+    filterValues: [
+      { name: 'category', value: entry.category },
+      { name: 'categoryStatus', value: categoryStatusFilterValue(entry.category) },
+      { name: 'status', value: 'active' },
+    ],
+    metadata: {
+      stableKey: entry.stableKey,
+      source: entry.source,
+      status: entry.status,
+      category: entry.category,
+      sourcePath: entry.sourcePath,
+      contentHash: entry.contentHash,
+      minTier: entry.minTier,
+      spoilerLevel: entry.spoilerLevel,
+      ragFilterVersion: ASK_KILIAN_RAG_FILTER_VERSION,
+    },
+  })
+  if (!isRagStatusReady(result.status)) {
+    throw new Error(`Ask Kilian RAG entry ${entry.stableKey} was not ready after admin save; status=${result.status}`)
+  }
+  return result
 }
 
 function isMissingRagEntryError(error: unknown) {
@@ -565,6 +688,33 @@ export function createSearchKnowledgeHandler({
   }
 }
 
+export function createPreviewKnowledgeHandler({
+  rag = askKilianRag,
+  refs = {
+    listSearchable: internal.askKilianKnowledge.listSearchableKnowledgeEntries,
+  },
+}: {
+  rag?: Pick<typeof askKilianRag, 'search'>
+  refs?: {
+    listSearchable: Parameters<ActionCtx['runQuery']>[0]
+  }
+} = {}) {
+  const searchKnowledgeHandler = createSearchKnowledgeHandler({ rag, refs })
+
+  return async function previewKnowledgeHandler(
+    ctx: Pick<ActionCtx, 'runQuery'>,
+    args: {
+      query: string
+      tier: AskKilianTier
+      includeSpoilers?: boolean
+      categories?: AskKilianKnowledgeCategory[]
+      limit?: number
+    },
+  ) {
+    return searchKnowledgeHandler(ctx, args)
+  }
+}
+
 export function createSyncRepoKnowledgeHandler({
   rag = askKilianRag,
   now = () => Date.now(),
@@ -687,6 +837,223 @@ export function createDiffRepoKnowledgeHandler({
   }
 }
 
+export function createSaveAdminKnowledgeEntryHandler({
+  rag = askKilianRag,
+  now = () => Date.now(),
+  refs = {
+    listByStableKey: internal.askKilianKnowledge.listKnowledgeEntriesByStableKey,
+    upsertAdminManaged: internal.askKilianKnowledge.upsertAdminManagedKnowledgeEntry,
+    patchAdminManagedStatus: internal.askKilianKnowledge.patchAdminManagedKnowledgeEntryStatus,
+    clearPendingCleanup: internal.askKilianKnowledge.clearPendingRagEntryCleanupId,
+  },
+}: {
+  rag?: Pick<typeof askKilianRag, 'add' | 'delete'>
+  now?: () => number
+  refs?: {
+    listByStableKey: Parameters<ActionCtx['runQuery']>[0]
+    upsertAdminManaged: Parameters<ActionCtx['runMutation']>[0]
+    patchAdminManagedStatus: Parameters<ActionCtx['runMutation']>[0]
+    clearPendingCleanup: Parameters<ActionCtx['runMutation']>[0]
+  }
+} = {}) {
+  return async function saveAdminKnowledgeEntryHandler(
+    ctx: Pick<ActionCtx, 'runQuery' | 'runMutation' | 'runAction'>,
+    args: { entry: AskKilianKnowledgeEntry; originalStableKey?: string },
+  ) {
+    assertAdminManagedEntry(args.entry)
+    const originalStableKey = args.originalStableKey ?? args.entry.stableKey
+    assertAdminStableKey(originalStableKey)
+
+    const keys = [...new Set([originalStableKey, args.entry.stableKey])]
+    const existingRows = (await ctx.runQuery(refs.listByStableKey, { stableKeys: keys })) as ExistingKnowledgeEntry[]
+    const existingByKey = new Map(existingRows.map(entry => [entry.stableKey, entry]))
+    const existingOriginal = existingByKey.get(originalStableKey)
+    const existingTarget = existingByKey.get(args.entry.stableKey)
+
+    if (existingOriginal && existingOriginal.source !== 'admin') {
+      throw new Error('Repo entries cannot be changed through Ask Kilian admin')
+    }
+    if (existingOriginal?.status === 'retired') {
+      throw new Error('Retired Ask Kilian admin entries are inspect-only')
+    }
+    if (existingOriginal && existingOriginal.status !== args.entry.status) {
+      throw new Error('Ask Kilian admin entry status changed; reload before saving')
+    }
+    if (existingTarget && existingTarget.source !== 'admin') {
+      throw new Error('Repo entries cannot be overwritten by admin saves')
+    }
+    if (existingTarget?.status === 'retired') {
+      throw new Error('Retired Ask Kilian admin entries are inspect-only')
+    }
+    if (originalStableKey !== args.entry.stableKey && existingTarget) {
+      throw new Error(`Ask Kilian admin entry already exists: ${args.entry.stableKey}`)
+    }
+
+    const timestamp = now()
+    const status: AskKilianKnowledgeEntry['status'] =
+      existingOriginal?.status === 'disabled' || args.entry.status === 'disabled' ? 'disabled' : 'active'
+    const entry = { ...args.entry, status }
+
+    if (status === 'disabled') {
+      const isRename = originalStableKey !== entry.stableKey
+      await ctx.runMutation(refs.upsertAdminManaged, {
+        entry,
+        ragEntryId: isRename ? undefined : existingOriginal?.ragEntryId,
+        ragStatus: isRename ? 'deleted' : (existingOriginal?.ragStatus ?? 'deleted'),
+        pendingRagEntryCleanupIds: [],
+        now: timestamp,
+      })
+      if (isRename && existingOriginal) {
+        const pendingRagEntryCleanupIds = uniqueCleanupIds([existingOriginal.ragEntryId])
+        await ctx.runMutation(refs.patchAdminManagedStatus, {
+          stableKey: originalStableKey,
+          status: 'retired',
+          ragEntryId: undefined,
+          ragStatus: existingOriginal.ragEntryId ? 'cleanupPending' : 'deleted',
+          pendingRagEntryCleanupIds,
+          now: timestamp,
+        })
+        await cleanupRagEntries(ctx, rag, refs, originalStableKey, pendingRagEntryCleanupIds)
+      }
+      return { stableKey: entry.stableKey, status: 'disabled' as const }
+    }
+
+    const result = await addKnowledgeEntryToRag(ctx, rag, entry)
+    const pendingRagEntryCleanupIds = uniqueCleanupIds([
+      result.replacedEntry?.entryId === result.entryId ? undefined : result.replacedEntry?.entryId,
+      originalStableKey === entry.stableKey ? undefined : existingOriginal?.ragEntryId,
+    ])
+
+    await ctx.runMutation(refs.upsertAdminManaged, {
+      entry,
+      ragEntryId: result.entryId,
+      ragStatus: result.status,
+      pendingRagEntryCleanupIds,
+      now: timestamp,
+    })
+
+    if (originalStableKey !== entry.stableKey && existingOriginal) {
+      await ctx.runMutation(refs.patchAdminManagedStatus, {
+        stableKey: originalStableKey,
+        status: 'retired',
+        ragEntryId: undefined,
+        ragStatus: existingOriginal.ragEntryId ? 'cleanupPending' : 'deleted',
+        pendingRagEntryCleanupIds: uniqueCleanupIds([existingOriginal.ragEntryId]),
+        now: timestamp,
+      })
+    }
+
+    await cleanupRagEntries(ctx, rag, refs, entry.stableKey, pendingRagEntryCleanupIds)
+    if (originalStableKey !== entry.stableKey && existingOriginal?.ragEntryId) {
+      await cleanupRagEntries(ctx, rag, refs, originalStableKey, [existingOriginal.ragEntryId])
+    }
+
+    return {
+      stableKey: entry.stableKey,
+      ragEntryId: result.entryId,
+      ragStatus: result.status,
+    }
+  }
+}
+
+export function createDisableAdminKnowledgeEntryHandler({
+  rag = askKilianRag,
+  now = () => Date.now(),
+  refs = {
+    listByStableKey: internal.askKilianKnowledge.listKnowledgeEntriesByStableKey,
+    patchAdminManagedStatus: internal.askKilianKnowledge.patchAdminManagedKnowledgeEntryStatus,
+    clearPendingCleanup: internal.askKilianKnowledge.clearPendingRagEntryCleanupId,
+  },
+}: {
+  rag?: Pick<typeof askKilianRag, 'delete'>
+  now?: () => number
+  refs?: {
+    listByStableKey: Parameters<ActionCtx['runQuery']>[0]
+    patchAdminManagedStatus: Parameters<ActionCtx['runMutation']>[0]
+    clearPendingCleanup: Parameters<ActionCtx['runMutation']>[0]
+  }
+} = {}) {
+  return async function disableAdminKnowledgeEntryHandler(
+    ctx: Pick<ActionCtx, 'runQuery' | 'runMutation' | 'runAction'>,
+    args: { stableKey: string },
+  ) {
+    assertAdminStableKey(args.stableKey)
+    const rows = (await ctx.runQuery(refs.listByStableKey, {
+      stableKeys: [args.stableKey],
+    })) as ExistingKnowledgeEntry[]
+    const existing = rows[0]
+    if (!existing) throw new Error(`Ask Kilian entry not found: ${args.stableKey}`)
+    if (existing.source !== 'admin') throw new Error('Repo entries cannot be changed through Ask Kilian admin')
+    if (existing.status === 'retired') throw new Error('Retired Ask Kilian admin entries are inspect-only')
+
+    const pendingRagEntryCleanupIds = uniqueCleanupIds([existing.ragEntryId])
+    await ctx.runMutation(refs.patchAdminManagedStatus, {
+      stableKey: args.stableKey,
+      status: 'disabled',
+      ragEntryId: undefined,
+      ragStatus: existing.ragEntryId ? 'cleanupPending' : 'deleted',
+      pendingRagEntryCleanupIds,
+      now: now(),
+    })
+    await cleanupRagEntries(ctx, rag, refs, args.stableKey, pendingRagEntryCleanupIds)
+
+    return { stableKey: args.stableKey, status: 'disabled' as const }
+  }
+}
+
+export function createReenableAdminKnowledgeEntryHandler({
+  rag = askKilianRag,
+  now = () => Date.now(),
+  refs = {
+    listByStableKey: internal.askKilianKnowledge.listKnowledgeEntriesByStableKey,
+    patchAdminManagedStatus: internal.askKilianKnowledge.patchAdminManagedKnowledgeEntryStatus,
+    clearPendingCleanup: internal.askKilianKnowledge.clearPendingRagEntryCleanupId,
+  },
+}: {
+  rag?: Pick<typeof askKilianRag, 'add' | 'delete'>
+  now?: () => number
+  refs?: {
+    listByStableKey: Parameters<ActionCtx['runQuery']>[0]
+    patchAdminManagedStatus: Parameters<ActionCtx['runMutation']>[0]
+    clearPendingCleanup: Parameters<ActionCtx['runMutation']>[0]
+  }
+} = {}) {
+  return async function reenableAdminKnowledgeEntryHandler(
+    ctx: Pick<ActionCtx, 'runQuery' | 'runMutation' | 'runAction'>,
+    args: { stableKey: string },
+  ) {
+    assertAdminStableKey(args.stableKey)
+    const rows = (await ctx.runQuery(refs.listByStableKey, {
+      stableKeys: [args.stableKey],
+    })) as ExistingKnowledgeEntry[]
+    const existing = rows[0]
+    if (!existing) throw new Error(`Ask Kilian entry not found: ${args.stableKey}`)
+    if (existing.source !== 'admin') throw new Error('Repo entries cannot be changed through Ask Kilian admin')
+    if (existing.status === 'retired') throw new Error('Retired Ask Kilian admin entries are inspect-only')
+
+    const entry = { ...existing, status: 'active' as const }
+    const result = await addKnowledgeEntryToRag(ctx, rag, entry)
+    const pendingRagEntryCleanupIds = uniqueCleanupIds([
+      result.replacedEntry?.entryId === result.entryId ? undefined : result.replacedEntry?.entryId,
+    ])
+    await ctx.runMutation(refs.patchAdminManagedStatus, {
+      stableKey: args.stableKey,
+      status: 'active',
+      ragEntryId: result.entryId,
+      ragStatus: result.status,
+      pendingRagEntryCleanupIds,
+      now: now(),
+    })
+    await cleanupRagEntries(ctx, rag, refs, args.stableKey, pendingRagEntryCleanupIds)
+
+    return {
+      stableKey: args.stableKey,
+      ragEntryId: result.entryId,
+      ragStatus: result.status,
+    }
+  }
+}
+
 export const listKnowledgeEntries = internalQuery({
   args: {},
   returns: v.array(knowledgeEntryWithoutTextValidator),
@@ -780,6 +1147,72 @@ export const upsertSyncedKnowledgeEntry = internalMutation({
   },
 })
 
+export const upsertAdminManagedKnowledgeEntry = internalMutation({
+  args: {
+    entry: askKilianKnowledgeEntryInputValidator,
+    ragEntryId: v.optional(v.string()),
+    ragStatus: v.optional(v.string()),
+    pendingRagEntryCleanupIds: v.optional(v.array(v.string())),
+    now: v.number(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query('askKilianKnowledgeEntries')
+      .withIndex('by_stableKey', q => q.eq('stableKey', args.entry.stableKey))
+      .unique()
+    if (existing && existing.source !== 'admin') throw new Error('Repo entries cannot be overwritten by admin saves')
+    const fields = {
+      ...args.entry,
+      status: args.entry.status,
+      ragEntryId: args.ragEntryId,
+      ragStatus: args.ragStatus,
+      ragFilterVersion: ASK_KILIAN_RAG_FILTER_VERSION,
+      pendingRagEntryCleanupIds: uniqueCleanupIds([
+        ...(existing?.pendingRagEntryCleanupIds ?? []),
+        ...(args.pendingRagEntryCleanupIds ?? []),
+      ]),
+      updatedAt: args.now,
+      retiredAt: undefined,
+    }
+    if (existing) await ctx.db.patch(existing._id, fields)
+    else await ctx.db.insert('askKilianKnowledgeEntries', { ...fields, createdAt: args.now })
+    return null
+  },
+})
+
+export const patchAdminManagedKnowledgeEntryStatus = internalMutation({
+  args: {
+    stableKey: v.string(),
+    status: askKilianStatusValidator,
+    ragEntryId: v.optional(v.string()),
+    ragStatus: v.optional(v.string()),
+    pendingRagEntryCleanupIds: v.optional(v.array(v.string())),
+    now: v.number(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query('askKilianKnowledgeEntries')
+      .withIndex('by_stableKey', q => q.eq('stableKey', args.stableKey))
+      .unique()
+    if (!existing) throw new Error(`Ask Kilian entry not found: ${args.stableKey}`)
+    if (existing.source !== 'admin') throw new Error('Repo entries cannot be changed through Ask Kilian admin')
+    await ctx.db.patch(existing._id, {
+      status: args.status,
+      ragEntryId: args.ragEntryId,
+      ragStatus: args.ragStatus,
+      pendingRagEntryCleanupIds: uniqueCleanupIds([
+        ...(existing.pendingRagEntryCleanupIds ?? []),
+        ...(args.pendingRagEntryCleanupIds ?? []),
+      ]),
+      updatedAt: args.now,
+      retiredAt: args.status === 'retired' ? args.now : existing.retiredAt,
+    })
+    return null
+  },
+})
+
 export const clearPendingRagEntryCleanupId = internalMutation({
   args: {
     stableKey: v.string(),
@@ -797,7 +1230,9 @@ export const clearPendingRagEntryCleanupId = internalMutation({
       await ctx.db.patch(existing._id, {
         pendingRagEntryCleanupIds,
         ragStatus:
-          existing.status === 'retired' && pendingRagEntryCleanupIds.length === 0 ? 'deleted' : existing.ragStatus,
+          (existing.status === 'retired' || existing.status === 'disabled') && pendingRagEntryCleanupIds.length === 0
+            ? 'deleted'
+            : existing.ragStatus,
       })
     }
 
@@ -856,6 +1291,175 @@ export const searchKnowledge = internalAction({
   },
   returns: v.array(searchResultValidator),
   handler: createSearchKnowledgeHandler(),
+})
+
+export const listAdminKnowledgeEntriesForAdmin = action({
+  args: {},
+  returns: v.array(askKilianKnowledgeEntryListDisplayValidator),
+  handler: async (ctx): Promise<AskKilianKnowledgeEntryListDisplay[]> => {
+    await requireAskKilianAdmin(ctx)
+    return (await ctx.runQuery(
+      internal.askKilianKnowledge.listKnowledgeEntries,
+      {},
+    )) as AskKilianKnowledgeEntryListDisplay[]
+  },
+})
+
+export const getAdminKnowledgeEntryForAdmin = action({
+  args: { stableKey: v.string() },
+  returns: v.union(askKilianKnowledgeEntryDetailDisplayValidator, v.null()),
+  handler: async (ctx, args): Promise<AskKilianKnowledgeEntryDetailDisplay | null> => {
+    await requireAskKilianAdmin(ctx)
+    const rows = (await ctx.runQuery(internal.askKilianKnowledge.listKnowledgeEntriesByStableKey, {
+      stableKeys: [args.stableKey],
+    })) as AskKilianKnowledgeEntryDetailDisplay[]
+    return rows[0] ?? null
+  },
+})
+
+export const saveAdminKnowledgeEntryForAdmin = action({
+  args: {
+    entry: askKilianKnowledgeEntryInputValidator,
+    originalStableKey: v.optional(v.string()),
+  },
+  returns: askKilianAdminMutationResultValidator,
+  handler: async (ctx, args): Promise<AskKilianAdminMutationResult> => {
+    await requireAskKilianAdmin(ctx)
+    requireAskKilianAiGatewayApiKey()
+    const result = await createSaveAdminKnowledgeEntryHandler()(ctx, {
+      entry: args.entry,
+      originalStableKey: args.originalStableKey,
+    })
+    return {
+      ...result,
+      status: result.status ?? 'active',
+    }
+  },
+})
+
+export const disableAdminKnowledgeEntryForAdmin = action({
+  args: { stableKey: v.string() },
+  returns: askKilianAdminMutationResultValidator,
+  handler: async (ctx, args): Promise<AskKilianAdminMutationResult> => {
+    await requireAskKilianAdmin(ctx)
+    return createDisableAdminKnowledgeEntryHandler()(ctx, { stableKey: args.stableKey })
+  },
+})
+
+export const reenableAdminKnowledgeEntryForAdmin = action({
+  args: { stableKey: v.string() },
+  returns: askKilianAdminMutationResultValidator,
+  handler: async (ctx, args): Promise<AskKilianAdminMutationResult> => {
+    await requireAskKilianAdmin(ctx)
+    requireAskKilianAiGatewayApiKey()
+    const result = await createReenableAdminKnowledgeEntryHandler()(ctx, { stableKey: args.stableKey })
+    return {
+      ...result,
+      status: 'active',
+    }
+  },
+})
+
+export const diffRepoKnowledgeForAdmin = action({
+  args: {
+    entries: v.array(askKilianKnowledgeEntryInputValidator),
+    isFullManifest: v.optional(v.boolean()),
+  },
+  returns: syncSummaryValidator,
+  handler: async (ctx, args) => {
+    await requireAskKilianAdmin(ctx)
+    if (args.isFullManifest === true && args.entries.length < MIN_FULL_MANIFEST_ENTRY_COUNT) {
+      throw new Error(
+        `Ask Kilian full-manifest diff built only ${args.entries.length} entries; refusing diff below ${MIN_FULL_MANIFEST_ENTRY_COUNT}`,
+      )
+    }
+    return createDiffRepoKnowledgeHandler()(ctx, {
+      entries: args.entries,
+      isFullManifest: args.isFullManifest,
+    })
+  },
+})
+
+export const syncRepoKnowledgeForAdmin = action({
+  args: {
+    entries: v.array(askKilianKnowledgeEntryInputValidator),
+    dryRun: v.optional(v.boolean()),
+    isFullManifest: v.optional(v.boolean()),
+  },
+  returns: syncSummaryValidator,
+  handler: async (ctx, args) => {
+    await requireAskKilianAdmin(ctx)
+    requireAskKilianAiGatewayApiKey()
+    if (args.isFullManifest === true && args.entries.length < MIN_FULL_MANIFEST_ENTRY_COUNT) {
+      throw new Error(
+        `Ask Kilian full-manifest sync built only ${args.entries.length} entries; refusing sync below ${MIN_FULL_MANIFEST_ENTRY_COUNT}`,
+      )
+    }
+    return createSyncRepoKnowledgeHandler()(ctx, {
+      entries: args.entries,
+      dryRun: args.dryRun,
+      isFullManifest: args.isFullManifest,
+    })
+  },
+})
+
+export const searchKnowledgeForAdmin = action({
+  args: {
+    query: v.string(),
+    tier: askKilianTierValidator,
+    includeSpoilers: v.optional(v.boolean()),
+    categories: v.optional(v.array(askKilianCategoryValidator)),
+    limit: v.optional(v.number()),
+  },
+  returns: v.array(searchResultValidator),
+  handler: async (ctx, args) => {
+    await requireAskKilianAdmin(ctx)
+    requireAskKilianAiGatewayApiKey()
+    return createSearchKnowledgeHandler()(ctx, {
+      query: args.query,
+      tier: args.tier,
+      includeSpoilers: args.includeSpoilers,
+      categories: args.categories,
+      limit: args.limit,
+    })
+  },
+})
+
+export const previewKnowledgeForAdmin = action({
+  args: {
+    query: v.string(),
+    tier: askKilianTierValidator,
+    includeSpoilers: v.optional(v.boolean()),
+    categories: v.optional(v.array(askKilianCategoryValidator)),
+    limit: v.optional(v.number()),
+  },
+  returns: v.array(searchResultValidator),
+  handler: async (ctx, args) => {
+    await requireAskKilianAdmin(ctx)
+    requireAskKilianAiGatewayApiKey()
+    return createPreviewKnowledgeHandler()(ctx, {
+      query: args.query,
+      tier: args.tier,
+      includeSpoilers: args.includeSpoilers,
+      categories: args.categories,
+      limit: args.limit,
+    })
+  },
+})
+
+export const verifyRuntimeEnvForAdmin = action({
+  args: {},
+  returns: runtimeEnvStatusValidator,
+  handler: async ctx => {
+    await requireAskKilianAdmin(ctx)
+    requireAskKilianAiGatewayApiKey()
+    const configuredToken = process.env.ASK_KILIAN_CONVEX_ACCESS_TOKEN?.trim()
+    return {
+      ok: true,
+      aiGatewayConfigured: true,
+      accessTokenConfigured: Boolean(configuredToken && !isPlaceholderSecret(configuredToken)),
+    }
+  },
 })
 
 export const syncRepoKnowledgeForServer = action({

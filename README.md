@@ -53,8 +53,8 @@ WORKOS_WEBHOOK_SECRET=your_workos_webhook_secret
 WORKOS_ACTION_SECRET=your_workos_action_secret
 WORKOS_COOKIE_PASSWORD=at_least_32_characters
 NEXT_PUBLIC_WORKOS_REDIRECT_URI=http://localhost:3000/auth/callback
-PET_GALLERY_WORKOS_ORG_ID=your_kil_dev_workos_org_id
-PET_GALLERY_ADMIN_EMAIL=you@example.com
+WORKOS_ORG_ID=your_kil_dev_workos_org_id
+ADMIN_EMAIL=you@example.com
 UPLOADTHING_TOKEN=your_uploadthing_token
 ```
 
@@ -63,7 +63,7 @@ Notes:
 - `NEXT_PUBLIC_POSTHOG_KEY` and `NEXT_PUBLIC_POSTHOG_HOST` are required for analytics to initialize.
 - Pet gallery media is managed through `/admin/pet-gallery`. UploadThing stores generated web-ready variants only, Convex stores draft metadata and the published public snapshot, and gallery images are not committed to the repo.
 - `BLOB_READ_WRITE_TOKEN` is optional and only used by `bun run migrate:pet-gallery:uploadthing` as a fallback when migrating old Blob-backed gallery files. Old Blob cleanup is manual/future work.
-- The private pet gallery admin uses WorkOS/AuthKit, Convex, and UploadThing. Keep `WORKOS_WEBHOOK_SECRET`, `WORKOS_ACTION_SECRET`, `WORKOS_CLIENT_ID`, `WORKOS_API_KEY`, `PET_GALLERY_WORKOS_ORG_ID`, and `PET_GALLERY_ADMIN_EMAIL` configured in the Convex deployment as well as the local/Vercel runtime where applicable.
+- The private pet gallery admin uses WorkOS/AuthKit, Convex, and UploadThing. Keep `WORKOS_WEBHOOK_SECRET`, `WORKOS_ACTION_SECRET`, `WORKOS_CLIENT_ID`, `WORKOS_API_KEY`, `WORKOS_ORG_ID`, and `ADMIN_EMAIL` configured in the Convex deployment as well as the local/Vercel runtime where applicable.
 
 ## Useful scripts
 

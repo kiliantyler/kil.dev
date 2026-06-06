@@ -1,7 +1,7 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "entry": [
-    "src/app/**/(page|layout|template|default|head|error|global-error|not-found|loading).{ts,tsx,js,jsx,mdx}",
+    "src/app/**/(page|layout|template|default|head|error|global-error|not-found|loading).{ts,tsx,js,jsx}",
     "src/app/**/(route|sitemap|robots).{ts,js}",
     "convex/**/*.{ts,js}",
     "scripts/**/*.{ts,js}"
@@ -10,18 +10,11 @@
     "convex/**/*.{ts,js}",
     "src/**/*.{ts,tsx,js,jsx,d.ts}",
     "scripts/**/*.{ts,js}",
-    "src/styles/**/*.{css,scss,sass,less,styl,stylus,postcss}",
-    "components.json",
-    "docs/**/*.{md,mdx}"
+    "src/styles/**/*.css"
   ],
   "ignoreDependencies": [],
   "ignore": [
-    "node_modules/**",
-    ".next/**",
-    ".vercel/**",
     "src/utils/presence-script.ts",
-    "src/utils/theme-script.ts",
-    "public/**",
-    "coverage/**"
+    "src/utils/theme-script.ts"
   ]
 }

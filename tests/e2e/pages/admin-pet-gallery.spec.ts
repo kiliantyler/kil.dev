@@ -91,7 +91,7 @@ test.describe('Admin pet gallery', () => {
   })
 
   test('signed-out admin requests are challenged before rendering admin UI', async ({ request }) => {
-    for (const path of ['/admin', '/admin/pet-gallery']) {
+    for (const path of ['/admin', '/admin/pet-gallery', '/admin/ask-kilian']) {
       const response = await request.get(path, { maxRedirects: 0 })
       const body = await response.text()
 

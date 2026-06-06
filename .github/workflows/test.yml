@@ -32,6 +32,9 @@ jobs:
       - name: Build Scripts
         run: bun run build:runtimes
 
+      - name: Install Playwright Chromium
+        run: bunx playwright install chromium
+
       - name: Run Vitest (with JUnit + GA reporters)
         id: vitest
         continue-on-error: true

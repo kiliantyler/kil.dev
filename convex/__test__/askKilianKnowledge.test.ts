@@ -1,5 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+const mockGetAuthUser = vi.hoisted(() => vi.fn())
+
+vi.mock('../auth', () => ({
+  getAuthKit: () => ({
+    getAuthUser: mockGetAuthUser,
+  }),
+}))
+
 import {
   ASK_KILIAN_CATEGORIES,
   ASK_KILIAN_SOURCES,
@@ -9,7 +17,9 @@ import {
 } from '../../src/lib/ask-kilian/types'
 import { api, internal } from '../_generated/api'
 import {
+  clearPendingRagEntryCleanupId,
   createDiffRepoKnowledgeHandler,
+  createPreviewKnowledgeHandler,
   createSearchKnowledgeHandler,
   createSyncRepoKnowledgeHandler,
   diffRepoKnowledgeEntries,
@@ -68,6 +78,43 @@ function incomingEntry(stableKey: string, overrides: Partial<AskKilianKnowledgeE
   } as AskKilianKnowledgeEntry
 }
 
+function askKilianAdminIdentity(overrides: Record<string, unknown> = {}) {
+  return {
+    subject: 'user_admin',
+    name: 'Admin User',
+    token: {
+      claims: {
+        org_id: 'org_good',
+      },
+    },
+    ...overrides,
+  }
+}
+
+function askKilianAdminCtx({
+  identity = askKilianAdminIdentity(),
+  authUser = { id: 'user_admin', email: 'Admin@Example.com', firstName: 'Admin', lastName: 'User' },
+  runQuery = vi.fn(async () => []),
+  runMutation = vi.fn(),
+  runAction = vi.fn(),
+}: {
+  identity?: unknown
+  authUser?: unknown
+  runQuery?: ReturnType<typeof vi.fn>
+  runMutation?: ReturnType<typeof vi.fn>
+  runAction?: ReturnType<typeof vi.fn>
+} = {}) {
+  mockGetAuthUser.mockResolvedValue(authUser)
+  return {
+    auth: {
+      getUserIdentity: vi.fn(async () => identity),
+    },
+    runQuery,
+    runMutation,
+    runAction,
+  }
+}
+
 function existingEntry(stableKey: string, overrides: Partial<ExistingKnowledgeEntry> = {}): ExistingKnowledgeEntry {
   return {
     ...incomingEntry(stableKey),
@@ -77,6 +124,474 @@ function existingEntry(stableKey: string, overrides: Partial<ExistingKnowledgeEn
     ...overrides,
   }
 }
+
+describe('admin-managed knowledge lifecycle', () => {
+  it('rejects non-admin rows in the admin save handler', async () => {
+    const { createSaveAdminKnowledgeEntryHandler } = await import('../askKilianKnowledge')
+    const ctx = {
+      runQuery: vi.fn(async () => []),
+      runMutation: vi.fn(),
+      runAction: vi.fn(),
+    }
+    const rag = { add: vi.fn(), delete: vi.fn() }
+    const handler = createSaveAdminKnowledgeEntryHandler({ rag: rag as never, now: () => 123 })
+
+    await expect(
+      handler(ctx, {
+        entry: incomingEntry('pet:lux'),
+      }),
+    ).rejects.toThrow('Only admin: stable keys can be saved through Ask Kilian admin')
+    expect(rag.add).not.toHaveBeenCalled()
+    expect(ctx.runMutation).not.toHaveBeenCalled()
+  })
+
+  it('saves active admin rows to RAG and patches metadata', async () => {
+    const { createSaveAdminKnowledgeEntryHandler } = await import('../askKilianKnowledge')
+    const adminEntry = incomingEntry('admin:manual', {
+      source: 'admin',
+      sourcePath: 'admin:/admin/ask-kilian',
+      category: 'fun',
+    })
+    const ctx = {
+      runQuery: vi.fn(async () => []),
+      runMutation: vi.fn(),
+      runAction: vi.fn(),
+    }
+    const rag = {
+      add: vi.fn(async () => ({ entryId: 'rag:admin:manual', status: 'ready' })),
+      delete: vi.fn(),
+    }
+    const handler = createSaveAdminKnowledgeEntryHandler({ rag: rag as never, now: () => 123 })
+
+    await expect(handler(ctx, { entry: adminEntry })).resolves.toEqual({
+      stableKey: 'admin:manual',
+      ragEntryId: 'rag:admin:manual',
+      ragStatus: 'ready',
+    })
+    expect(rag.add).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        namespace: 'public-site',
+        key: 'admin:manual',
+        title: 'admin:manual',
+        text: 'admin:manual text',
+      }),
+    )
+    expect(ctx.runMutation).toHaveBeenCalled()
+  })
+
+  it('disables and re-enables admin rows without deleting the metadata row', async () => {
+    const { createDisableAdminKnowledgeEntryHandler, createReenableAdminKnowledgeEntryHandler } =
+      await import('../askKilianKnowledge')
+    const existing = existingEntry('admin:manual', { source: 'admin', sourcePath: 'admin:/admin/ask-kilian' })
+    const ctx = {
+      runQuery: vi.fn(async () => [existing]),
+      runMutation: vi.fn(),
+      runAction: vi.fn(),
+    }
+    const rag = {
+      add: vi.fn(async () => ({ entryId: 'rag:admin:manual:new', status: 'ready' })),
+      delete: vi.fn(async () => null),
+    }
+
+    await expect(
+      createDisableAdminKnowledgeEntryHandler({ rag: rag as never, now: () => 200 })(ctx, {
+        stableKey: 'admin:manual',
+      }),
+    ).resolves.toEqual({ stableKey: 'admin:manual', status: 'disabled' })
+
+    await expect(
+      createReenableAdminKnowledgeEntryHandler({ rag: rag as never, now: () => 300 })(ctx, {
+        stableKey: 'admin:manual',
+      }),
+    ).resolves.toEqual({
+      stableKey: 'admin:manual',
+      ragEntryId: 'rag:admin:manual:new',
+      ragStatus: 'ready',
+    })
+  })
+
+  it('edits a disabled admin row without making it searchable until explicit re-enable', async () => {
+    const { createSaveAdminKnowledgeEntryHandler } = await import('../askKilianKnowledge')
+    const disabledEntry = existingEntry('admin:manual', {
+      source: 'admin',
+      status: 'disabled',
+      sourcePath: 'admin:/admin/ask-kilian',
+      ragEntryId: undefined,
+      ragStatus: 'deleted',
+    })
+    const edited = incomingEntry('admin:manual', {
+      source: 'admin',
+      status: 'disabled',
+      sourcePath: 'admin:/admin/ask-kilian',
+      text: 'Edited disabled text',
+      contentHash: 'edited-disabled-hash',
+    })
+    const ctx = {
+      runQuery: vi.fn(async () => [disabledEntry]),
+      runMutation: vi.fn(),
+      runAction: vi.fn(),
+    }
+    const rag = {
+      add: vi.fn(),
+      delete: vi.fn(),
+    }
+
+    await expect(
+      createSaveAdminKnowledgeEntryHandler({ rag: rag as never, now: () => 400 })(ctx, {
+        entry: edited,
+        originalStableKey: 'admin:manual',
+      }),
+    ).resolves.toEqual({ stableKey: 'admin:manual', status: 'disabled' })
+    expect(rag.add).not.toHaveBeenCalled()
+  })
+
+  it('rejects stale admin edits when the stored status changed after the editor opened', async () => {
+    const { createSaveAdminKnowledgeEntryHandler } = await import('../askKilianKnowledge')
+    const reenabledEntry = existingEntry('admin:manual', {
+      source: 'admin',
+      status: 'active',
+      sourcePath: 'admin:/admin/ask-kilian',
+      ragEntryId: 'rag:admin:manual:active',
+      ragStatus: 'ready',
+    })
+    const staleDisabledEdit = incomingEntry('admin:manual', {
+      source: 'admin',
+      status: 'disabled',
+      sourcePath: 'admin:/admin/ask-kilian',
+      text: 'Edited stale disabled text',
+      contentHash: 'edited-stale-disabled-hash',
+    })
+    const ctx = {
+      runQuery: vi.fn(async () => [reenabledEntry]),
+      runMutation: vi.fn(),
+      runAction: vi.fn(),
+    }
+    const rag = {
+      add: vi.fn(),
+      delete: vi.fn(),
+    }
+
+    await expect(
+      createSaveAdminKnowledgeEntryHandler({ rag: rag as never, now: () => 450 })(ctx, {
+        entry: staleDisabledEdit,
+        originalStableKey: 'admin:manual',
+      }),
+    ).rejects.toThrow('Ask Kilian admin entry status changed; reload before saving')
+    expect(rag.add).not.toHaveBeenCalled()
+    expect(rag.delete).not.toHaveBeenCalled()
+    expect(ctx.runMutation).not.toHaveBeenCalled()
+  })
+
+  it('retires the original disabled admin row when a disabled edit renames its stable key', async () => {
+    const { createSaveAdminKnowledgeEntryHandler } = await import('../askKilianKnowledge')
+    const disabledEntry = existingEntry('admin:manual', {
+      source: 'admin',
+      status: 'disabled',
+      sourcePath: 'admin:/admin/ask-kilian',
+      ragEntryId: undefined,
+      ragStatus: 'deleted',
+    })
+    const renamed = incomingEntry('admin:renamed-manual', {
+      source: 'admin',
+      status: 'disabled',
+      sourcePath: 'admin:/admin/ask-kilian',
+      text: 'Renamed disabled text',
+      contentHash: 'renamed-disabled-hash',
+    })
+    const ctx = {
+      runQuery: vi.fn(async () => [disabledEntry]),
+      runMutation: vi.fn(),
+      runAction: vi.fn(),
+    }
+    const rag = {
+      add: vi.fn(),
+      delete: vi.fn(),
+    }
+
+    await expect(
+      createSaveAdminKnowledgeEntryHandler({ rag: rag as never, now: () => 500 })(ctx, {
+        entry: renamed,
+        originalStableKey: 'admin:manual',
+      }),
+    ).resolves.toEqual({ stableKey: 'admin:renamed-manual', status: 'disabled' })
+    expect(rag.add).not.toHaveBeenCalled()
+    const mutationPayloads = ctx.runMutation.mock.calls.map(([, payload]) => payload)
+    expect(mutationPayloads).toContainEqual({
+      entry: expect.objectContaining({
+        stableKey: 'admin:renamed-manual',
+        status: 'disabled',
+      }),
+      ragEntryId: undefined,
+      ragStatus: 'deleted',
+      pendingRagEntryCleanupIds: [],
+      now: 500,
+    })
+    expect(mutationPayloads).toContainEqual({
+      stableKey: 'admin:manual',
+      status: 'retired',
+      ragEntryId: undefined,
+      ragStatus: 'deleted',
+      pendingRagEntryCleanupIds: [],
+      now: 500,
+    })
+  })
+
+  it('rejects edits to retired admin rows', async () => {
+    const { createSaveAdminKnowledgeEntryHandler } = await import('../askKilianKnowledge')
+    const retiredEntry = existingEntry('admin:manual', {
+      source: 'admin',
+      status: 'retired',
+      sourcePath: 'admin:/admin/ask-kilian',
+      ragStatus: 'deleted',
+    })
+    const edited = incomingEntry('admin:manual', {
+      source: 'admin',
+      sourcePath: 'admin:/admin/ask-kilian',
+      text: 'Edited retired text',
+    })
+    const ctx = {
+      runQuery: vi.fn(async () => [retiredEntry]),
+      runMutation: vi.fn(),
+      runAction: vi.fn(),
+    }
+    const rag = { add: vi.fn(), delete: vi.fn() }
+
+    await expect(
+      createSaveAdminKnowledgeEntryHandler({ rag: rag as never })(ctx, {
+        entry: edited,
+        originalStableKey: 'admin:manual',
+      }),
+    ).rejects.toThrow('Retired Ask Kilian admin entries are inspect-only')
+    expect(rag.add).not.toHaveBeenCalled()
+    expect(ctx.runMutation).not.toHaveBeenCalled()
+  })
+
+  it('rejects disable and re-enable actions for retired admin rows', async () => {
+    const { createDisableAdminKnowledgeEntryHandler, createReenableAdminKnowledgeEntryHandler } =
+      await import('../askKilianKnowledge')
+    const retiredEntry = existingEntry('admin:manual', {
+      source: 'admin',
+      status: 'retired',
+      sourcePath: 'admin:/admin/ask-kilian',
+      ragStatus: 'deleted',
+    })
+    const ctx = {
+      runQuery: vi.fn(async () => [retiredEntry]),
+      runMutation: vi.fn(),
+      runAction: vi.fn(),
+    }
+    const rag = { add: vi.fn(), delete: vi.fn() }
+
+    await expect(
+      createDisableAdminKnowledgeEntryHandler({ rag: rag as never })(ctx, { stableKey: 'admin:manual' }),
+    ).rejects.toThrow('Retired Ask Kilian admin entries are inspect-only')
+    await expect(
+      createReenableAdminKnowledgeEntryHandler({ rag: rag as never })(ctx, { stableKey: 'admin:manual' }),
+    ).rejects.toThrow('Retired Ask Kilian admin entries are inspect-only')
+    expect(rag.add).not.toHaveBeenCalled()
+    expect(rag.delete).not.toHaveBeenCalled()
+    expect(ctx.runMutation).not.toHaveBeenCalled()
+  })
+})
+
+describe('Ask Kilian admin auth guard', () => {
+  beforeEach(() => {
+    vi.stubEnv('ADMIN_EMAIL', 'admin@example.com')
+    vi.stubEnv('WORKOS_ORG_ID', 'org_good')
+    vi.stubEnv('VERCEL_PROJECT_ID', 'prj_test')
+    vi.stubEnv('AI_GATEWAY_API_KEY', 'ai-gateway-key')
+    vi.stubEnv('ASK_KILIAN_CONVEX_ACCESS_TOKEN', '')
+    mockGetAuthUser.mockReset()
+  })
+
+  it('rejects missing Convex identity', async () => {
+    const { requireAskKilianAdmin } = await import('../askKilianKnowledge')
+    const ctx = askKilianAdminCtx({ identity: null })
+
+    await expect(requireAskKilianAdmin(ctx as never)).rejects.toThrow('Ask Kilian admin access denied')
+    expect(mockGetAuthUser).not.toHaveBeenCalled()
+  })
+
+  it('rejects an AuthKit user id different from the Convex identity subject', async () => {
+    const { requireAskKilianAdmin } = await import('../askKilianKnowledge')
+    const ctx = askKilianAdminCtx({ authUser: { id: 'user_other', email: 'admin@example.com' } })
+
+    await expect(requireAskKilianAdmin(ctx as never)).rejects.toThrow('Ask Kilian admin access denied')
+  })
+
+  it('rejects the wrong admin email', async () => {
+    const { requireAskKilianAdmin } = await import('../askKilianKnowledge')
+    const ctx = askKilianAdminCtx({ authUser: { id: 'user_admin', email: 'other@example.com' } })
+
+    await expect(requireAskKilianAdmin(ctx as never)).rejects.toThrow('Ask Kilian admin access denied')
+  })
+
+  it('rejects the wrong WorkOS organization', async () => {
+    const { requireAskKilianAdmin } = await import('../askKilianKnowledge')
+    const ctx = askKilianAdminCtx({
+      identity: askKilianAdminIdentity({ token: { claims: { org_id: 'org_bad' } } }),
+    })
+
+    await expect(requireAskKilianAdmin(ctx as never)).rejects.toThrow('Ask Kilian admin access denied')
+  })
+
+  it('rejects when the configured admin email or organization env is missing', async () => {
+    const { requireAskKilianAdmin } = await import('../askKilianKnowledge')
+
+    vi.stubEnv('ADMIN_EMAIL', '')
+    await expect(requireAskKilianAdmin(askKilianAdminCtx() as never)).rejects.toThrow('Ask Kilian admin access denied')
+
+    vi.stubEnv('ADMIN_EMAIL', 'admin@example.com')
+    vi.stubEnv('WORKOS_ORG_ID', '')
+    await expect(requireAskKilianAdmin(askKilianAdminCtx() as never)).rejects.toThrow('Ask Kilian admin access denied')
+  })
+
+  it('allows a valid Convex identity plus matching AuthKit user', async () => {
+    const { requireAskKilianAdmin } = await import('../askKilianKnowledge')
+
+    await expect(requireAskKilianAdmin(askKilianAdminCtx() as never)).resolves.toEqual({
+      workosUserId: 'user_admin',
+      workosOrgId: 'org_good',
+      email: 'admin@example.com',
+    })
+  })
+
+  it('admin UI ForAdmin action args omit accessToken and do not require ASK_KILIAN_CONVEX_ACCESS_TOKEN', async () => {
+    const { listAdminKnowledgeEntriesForAdmin } = await import('../askKilianKnowledge')
+    const projectedManualEntry = existingEntry('admin:manual', {
+      source: 'admin',
+      sourcePath: 'admin:/admin/ask-kilian',
+    })
+    delete (projectedManualEntry as Partial<typeof projectedManualEntry>).text
+    const ctx = askKilianAdminCtx({
+      runQuery: vi.fn(async () => [
+        {
+          ...projectedManualEntry,
+          textSummary: 'admin:manual text',
+          createdAt: 100,
+          updatedAt: 200,
+          retiredAt: undefined,
+        },
+      ]),
+    })
+
+    await expect(getActionHandler(listAdminKnowledgeEntriesForAdmin)(ctx, {})).resolves.toEqual([
+      expect.objectContaining({
+        stableKey: 'admin:manual',
+        textSummary: 'admin:manual text',
+        createdAt: 100,
+        updatedAt: 200,
+      }),
+    ])
+    const [row] = (await getActionHandler(listAdminKnowledgeEntriesForAdmin)(ctx, {})) as Array<Record<string, unknown>>
+    expect(row).not.toHaveProperty('text')
+    expect(ctx.runQuery).toHaveBeenCalled()
+  })
+
+  it('projects internal admin list rows with bounded summaries and without source text', async () => {
+    const { listKnowledgeEntries } = await import('../askKilianKnowledge')
+    const longText = `${'summary '.repeat(80)}tail`
+    const collect = vi.fn(async () => [
+      {
+        ...existingEntry('admin:manual', {
+          source: 'admin',
+          sourcePath: 'admin:/admin/ask-kilian',
+          text: longText,
+        }),
+        createdAt: 100,
+        updatedAt: 200,
+      },
+    ])
+    const ctx = {
+      db: {
+        query: vi.fn(() => ({ collect })),
+      },
+    }
+
+    const result = (await getActionHandler(listKnowledgeEntries)(ctx, {})) as Array<Record<string, unknown>>
+    expect(result).toHaveLength(1)
+    const row = result[0]
+    expect(row).toBeDefined()
+
+    expect(row).not.toHaveProperty('text')
+    expect(row?.textSummary).toEqual(longText.trim().replaceAll(/\s+/g, ' ').slice(0, 240))
+    expect((row?.textSummary as string).length).toBeLessThanOrEqual(240)
+  })
+
+  it('requires AI Gateway configuration before running admin preview retrieval', async () => {
+    const { previewKnowledgeForAdmin } = await import('../askKilianKnowledge')
+    vi.stubEnv('AI_GATEWAY_API_KEY', '')
+    const ctx = askKilianAdminCtx({
+      runQuery: vi.fn(async () => [
+        incomingEntry('project:ask-kilian', {
+          category: 'projects',
+          title: 'Ask Kilian',
+          text: 'Ask Kilian admin cockpit and retrieval preview context.',
+        }),
+      ]),
+    })
+
+    await expect(
+      getActionHandler(previewKnowledgeForAdmin)(ctx, {
+        query: 'admin cockpit',
+        tier: 0,
+        includeSpoilers: false,
+        categories: ['projects'],
+        limit: 4,
+      }),
+    ).rejects.toThrow('Missing AI_GATEWAY_API_KEY')
+    expect(ctx.runQuery).not.toHaveBeenCalled()
+  })
+
+  it('rejects every public ForAdmin wrapper before Convex work when the admin identity is unauthorized', async () => {
+    const {
+      diffRepoKnowledgeForAdmin,
+      disableAdminKnowledgeEntryForAdmin,
+      getAdminKnowledgeEntryForAdmin,
+      listAdminKnowledgeEntriesForAdmin,
+      previewKnowledgeForAdmin,
+      reenableAdminKnowledgeEntryForAdmin,
+      saveAdminKnowledgeEntryForAdmin,
+      searchKnowledgeForAdmin,
+      syncRepoKnowledgeForAdmin,
+      verifyRuntimeEnvForAdmin,
+    } = await import('../askKilianKnowledge')
+    const ctx = askKilianAdminCtx({ identity: null })
+    const adminEntry = incomingEntry('admin:manual', {
+      source: 'admin',
+      sourcePath: 'admin:/admin/ask-kilian',
+      category: 'fun',
+    })
+    const previewArgs = {
+      query: 'hello',
+      tier: 0,
+      includeSpoilers: false,
+      categories: ['fun'],
+      limit: 4,
+    }
+    const cases = [
+      [listAdminKnowledgeEntriesForAdmin, {}],
+      [getAdminKnowledgeEntryForAdmin, { stableKey: 'admin:manual' }],
+      [saveAdminKnowledgeEntryForAdmin, { entry: adminEntry }],
+      [disableAdminKnowledgeEntryForAdmin, { stableKey: 'admin:manual' }],
+      [reenableAdminKnowledgeEntryForAdmin, { stableKey: 'admin:manual' }],
+      [diffRepoKnowledgeForAdmin, { entries: [incomingEntry('pet:lux')], isFullManifest: true }],
+      [syncRepoKnowledgeForAdmin, { entries: [incomingEntry('pet:lux')], dryRun: false, isFullManifest: true }],
+      [searchKnowledgeForAdmin, previewArgs],
+      [previewKnowledgeForAdmin, previewArgs],
+      [verifyRuntimeEnvForAdmin, {}],
+    ] as const
+
+    for (const [actionForAdmin, args] of cases) {
+      await expect(getActionHandler(actionForAdmin)(ctx, args)).rejects.toThrow('Ask Kilian admin access denied')
+    }
+
+    expect(ctx.runQuery).not.toHaveBeenCalled()
+    expect(ctx.runMutation).not.toHaveBeenCalled()
+    expect(ctx.runAction).not.toHaveBeenCalled()
+  })
+})
 
 describe('diffRepoKnowledgeEntries', () => {
   it('separates created, changed, unchanged, retired, and ignored admin rows', () => {
@@ -700,6 +1215,83 @@ describe('upsertSyncedKnowledgeEntry', () => {
   })
 })
 
+describe('clearPendingRagEntryCleanupId', () => {
+  it('marks disabled entries deleted after the final pending cleanup id is cleared', async () => {
+    const unique = vi.fn(async () => ({
+      _id: 'row-id',
+      ...existingEntry('admin:manual', {
+        source: 'admin',
+        status: 'disabled',
+        ragEntryId: undefined,
+        ragStatus: 'cleanupPending',
+      }),
+      pendingRagEntryCleanupIds: ['rag-old'],
+    }))
+    const query = vi.fn(() => ({
+      withIndex: vi.fn((_name, callback) => {
+        callback({ eq: vi.fn() })
+        return { unique }
+      }),
+    }))
+    const patch = vi.fn()
+    const ctx = { db: { query, patch } }
+    const handler = getActionHandler(clearPendingRagEntryCleanupId)
+
+    await handler(ctx, { stableKey: 'admin:manual', entryId: 'rag-old' })
+
+    expect(patch).toHaveBeenCalledWith('row-id', {
+      pendingRagEntryCleanupIds: [],
+      ragStatus: 'deleted',
+    })
+  })
+})
+
+describe('knowledge entry projections', () => {
+  it('includes lifecycle timestamps in admin list and detail projections', async () => {
+    const { listKnowledgeEntries, listKnowledgeEntriesByStableKey } = await import('../askKilianKnowledge')
+    const row = {
+      _id: 'row-id',
+      _creationTime: 1,
+      ...existingEntry('admin:manual', {
+        source: 'admin',
+        sourcePath: 'admin:/admin/ask-kilian',
+        status: 'retired',
+      }),
+      createdAt: 100,
+      updatedAt: 200,
+      retiredAt: 300,
+    }
+    const query = vi.fn(() => ({
+      collect: vi.fn(async () => [row]),
+      withIndex: vi.fn((_name, callback) => {
+        callback({ eq: vi.fn() })
+        return { unique: vi.fn(async () => row) }
+      }),
+    }))
+    const ctx = { db: { query } }
+
+    await expect(getActionHandler(listKnowledgeEntries)(ctx, {})).resolves.toEqual([
+      expect.objectContaining({
+        stableKey: 'admin:manual',
+        createdAt: 100,
+        updatedAt: 200,
+        retiredAt: 300,
+      }),
+    ])
+    await expect(
+      getActionHandler(listKnowledgeEntriesByStableKey)(ctx, { stableKeys: ['admin:manual'] }),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        stableKey: 'admin:manual',
+        text: 'admin:manual text',
+        createdAt: 100,
+        updatedAt: 200,
+        retiredAt: 300,
+      }),
+    ])
+  })
+})
+
 describe('shapeSearchKnowledgeResults', () => {
   it('applies tier and category filters after RAG search results', () => {
     const rows = [
@@ -1023,6 +1615,51 @@ describe('createSearchKnowledgeHandler', () => {
   })
 })
 
+describe('createPreviewKnowledgeHandler', () => {
+  it('uses the same RAG retrieval path as production search preview', async () => {
+    const rows = [
+      incomingEntry('project:ask-kilian', {
+        category: 'projects',
+        title: 'Ask Kilian',
+        text: 'Ask Kilian admin cockpit and retrieval preview context.',
+      }),
+      incomingEntry('pet:lux', { category: 'pets', title: 'Lux', text: 'Golden Retriever' }),
+    ]
+    const search = vi.fn().mockResolvedValueOnce({
+      results: [{ entryId: 'rag-project', score: 0.91 }],
+      entries: [{ entryId: 'rag-project', metadata: { stableKey: 'project:ask-kilian' } }],
+    })
+    const ctx = { runQuery: vi.fn(async () => rows) }
+    const handler = createPreviewKnowledgeHandler({ rag: { search } })
+
+    await expect(
+      handler(ctx, {
+        query: 'semantic admin retrieval prompt',
+        tier: 0,
+        includeSpoilers: false,
+        categories: ['projects'],
+        limit: 8,
+      }),
+    ).resolves.toEqual([
+      {
+        stableKey: 'project:ask-kilian',
+        title: 'Ask Kilian',
+        category: 'projects',
+        score: 0.91,
+        text: 'Ask Kilian admin cockpit and retrieval preview context.',
+      },
+    ])
+    expect(search).toHaveBeenCalledWith(
+      ctx,
+      expect.objectContaining({
+        query: 'semantic admin retrieval prompt',
+        filters: [{ name: 'categoryStatus', value: 'projects:active' }],
+      }),
+    )
+    expect(ctx.runQuery).toHaveBeenCalledWith(internal.askKilianKnowledge.listSearchableKnowledgeEntries, {})
+  })
+})
+
 describe('generated API exposure', () => {
   it('keeps raw sync, search, and metadata listing internal-only behind guarded public wrappers', () => {
     expect(internal.askKilianKnowledge.syncRepoKnowledge).toBeDefined()
@@ -1033,17 +1670,16 @@ describe('generated API exposure', () => {
     expect(api.askKilianKnowledge.diffRepoKnowledgeForServer).toBeDefined()
     expect(api.askKilianKnowledge.searchKnowledgeForServer).toBeDefined()
     expect(api.askKilianKnowledge.verifyRuntimeEnvForServer).toBeDefined()
-
-    if (false) {
-      // @ts-expect-error syncRepoKnowledge must not be publicly callable.
-      void api.askKilianKnowledge.syncRepoKnowledge
-      // @ts-expect-error searchKnowledge must not be publicly callable.
-      void api.askKilianKnowledge.searchKnowledge
-      // @ts-expect-error listKnowledgeEntries must not be publicly callable.
-      void api.askKilianKnowledge.listKnowledgeEntries
-      // @ts-expect-error listSearchableKnowledgeEntries must not be publicly callable.
-      void api.askKilianKnowledge.listSearchableKnowledgeEntries
-    }
+    expect(api.askKilianKnowledge.listAdminKnowledgeEntriesForAdmin).toBeDefined()
+    expect(api.askKilianKnowledge.getAdminKnowledgeEntryForAdmin).toBeDefined()
+    expect(api.askKilianKnowledge.saveAdminKnowledgeEntryForAdmin).toBeDefined()
+    expect(api.askKilianKnowledge.disableAdminKnowledgeEntryForAdmin).toBeDefined()
+    expect(api.askKilianKnowledge.reenableAdminKnowledgeEntryForAdmin).toBeDefined()
+    expect(api.askKilianKnowledge.diffRepoKnowledgeForAdmin).toBeDefined()
+    expect(api.askKilianKnowledge.syncRepoKnowledgeForAdmin).toBeDefined()
+    expect(api.askKilianKnowledge.searchKnowledgeForAdmin).toBeDefined()
+    expect(api.askKilianKnowledge.previewKnowledgeForAdmin).toBeDefined()
+    expect(api.askKilianKnowledge.verifyRuntimeEnvForAdmin).toBeDefined()
   })
 })
 

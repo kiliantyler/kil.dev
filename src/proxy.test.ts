@@ -95,7 +95,9 @@ describe('auth proxy', () => {
       undefined as never,
     )
 
-    expect(authkit).toHaveBeenCalledWith(expect.objectContaining({ url: 'https://kil.dev/admin' }))
+    expect(authkit).toHaveBeenCalledWith(expect.objectContaining({ url: 'https://kil.dev/admin' }), {
+      redirectUri: 'https://kil.dev/auth/callback',
+    })
     expect(handleAuthkitHeaders).toHaveBeenCalledWith(
       expect.objectContaining({ url: 'https://kil.dev/admin' }),
       expect.any(Headers),
@@ -117,6 +119,9 @@ describe('auth proxy', () => {
       undefined as never,
     )
 
+    expect(authkit).toHaveBeenCalledWith(expect.objectContaining({ url: 'https://kil.dev/admin' }), {
+      redirectUri: 'https://kil.dev/auth/callback',
+    })
     expect(handleAuthkitHeaders).toHaveBeenCalledWith(expect.anything(), headers)
     expect(response.status).toBe(200)
     expect(response.headers.get('Vary')).toBe('Accept-Encoding, Cookie')
