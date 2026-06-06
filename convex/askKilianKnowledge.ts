@@ -689,14 +689,18 @@ export function createSearchKnowledgeHandler({
 }
 
 export function createPreviewKnowledgeHandler({
+  rag = askKilianRag,
   refs = {
     listSearchable: internal.askKilianKnowledge.listSearchableKnowledgeEntries,
   },
 }: {
+  rag?: Pick<typeof askKilianRag, 'search'>
   refs?: {
     listSearchable: Parameters<ActionCtx['runQuery']>[0]
   }
 } = {}) {
+  const searchKnowledgeHandler = createSearchKnowledgeHandler({ rag, refs })
+
   return async function previewKnowledgeHandler(
     ctx: Pick<ActionCtx, 'runQuery'>,
     args: {
@@ -707,20 +711,7 @@ export function createPreviewKnowledgeHandler({
       limit?: number
     },
   ) {
-    const cappedLimit = normalizeSearchLimit(args.limit)
-    const categories = normalizeSearchCategories(args.categories)
-    const query = normalizeSearchQuery(args.query)
-    if (!query) return []
-
-    const rows = (await ctx.runQuery(refs.listSearchable, {})) as SearchableKnowledgeEntry[]
-    const lexicalEntries = scoreLexicalKnowledgeEntries(query, rows)
-    if (lexicalEntries.length === 0) return []
-
-    return shapeSearchKnowledgeResults(lexicalEntries, rows, {
-      tier: args.tier,
-      includeSpoilers: args.includeSpoilers ?? false,
-      categories,
-    }).slice(0, cappedLimit)
+    return searchKnowledgeHandler(ctx, args)
   }
 }
 
@@ -1445,6 +1436,7 @@ export const previewKnowledgeForAdmin = action({
   returns: v.array(searchResultValidator),
   handler: async (ctx, args) => {
     await requireAskKilianAdmin(ctx)
+    requireAskKilianAiGatewayApiKey()
     return createPreviewKnowledgeHandler()(ctx, {
       query: args.query,
       tier: args.tier,

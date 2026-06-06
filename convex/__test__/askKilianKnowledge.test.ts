@@ -519,7 +519,7 @@ describe('Ask Kilian admin auth guard', () => {
     expect((row?.textSummary as string).length).toBeLessThanOrEqual(240)
   })
 
-  it('runs the admin preview action without AI Gateway configuration', async () => {
+  it('requires AI Gateway configuration before running admin preview retrieval', async () => {
     const { previewKnowledgeForAdmin } = await import('../askKilianKnowledge')
     vi.stubEnv('AI_GATEWAY_API_KEY', '')
     const ctx = askKilianAdminCtx({
@@ -540,12 +540,8 @@ describe('Ask Kilian admin auth guard', () => {
         categories: ['projects'],
         limit: 4,
       }),
-    ).resolves.toEqual([
-      expect.objectContaining({
-        stableKey: 'project:ask-kilian',
-        score: 0.82,
-      }),
-    ])
+    ).rejects.toThrow('Missing AI_GATEWAY_API_KEY')
+    expect(ctx.runQuery).not.toHaveBeenCalled()
   })
 
   it('rejects every public ForAdmin wrapper before Convex work when the admin identity is unauthorized', async () => {
@@ -1620,7 +1616,7 @@ describe('createSearchKnowledgeHandler', () => {
 })
 
 describe('createPreviewKnowledgeHandler', () => {
-  it('uses lexical stored-row matching without calling RAG search', async () => {
+  it('uses the same RAG retrieval path as production search preview', async () => {
     const rows = [
       incomingEntry('project:ask-kilian', {
         category: 'projects',
@@ -1629,12 +1625,16 @@ describe('createPreviewKnowledgeHandler', () => {
       }),
       incomingEntry('pet:lux', { category: 'pets', title: 'Lux', text: 'Golden Retriever' }),
     ]
+    const search = vi.fn().mockResolvedValueOnce({
+      results: [{ entryId: 'rag-project', score: 0.91 }],
+      entries: [{ entryId: 'rag-project', metadata: { stableKey: 'project:ask-kilian' } }],
+    })
     const ctx = { runQuery: vi.fn(async () => rows) }
-    const handler = createPreviewKnowledgeHandler()
+    const handler = createPreviewKnowledgeHandler({ rag: { search } })
 
     await expect(
       handler(ctx, {
-        query: 'admin cockpit',
+        query: 'semantic admin retrieval prompt',
         tier: 0,
         includeSpoilers: false,
         categories: ['projects'],
@@ -1645,10 +1645,17 @@ describe('createPreviewKnowledgeHandler', () => {
         stableKey: 'project:ask-kilian',
         title: 'Ask Kilian',
         category: 'projects',
-        score: 0.82,
+        score: 0.91,
         text: 'Ask Kilian admin cockpit and retrieval preview context.',
       },
     ])
+    expect(search).toHaveBeenCalledWith(
+      ctx,
+      expect.objectContaining({
+        query: 'semantic admin retrieval prompt',
+        filters: [{ name: 'categoryStatus', value: 'projects:active' }],
+      }),
+    )
     expect(ctx.runQuery).toHaveBeenCalledWith(internal.askKilianKnowledge.listSearchableKnowledgeEntries, {})
   })
 })

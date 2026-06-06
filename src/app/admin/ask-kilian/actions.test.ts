@@ -139,7 +139,7 @@ describe('Ask Kilian admin server actions', () => {
     expect(Object.keys(actions).some(name => /chat|generate|stream/i.test(name))).toBe(false)
   })
 
-  it('retrieval preview calls only the non-paid Convex preview action and never AI generation routes', async () => {
+  it('retrieval preview calls the Convex preview action and never AI generation routes', async () => {
     const convex = { action: vi.fn(async () => []) }
     createAskKilianConvexServerClient.mockResolvedValue(convex)
     const { previewAskKilianRetrievalAction } = await import('./actions')
