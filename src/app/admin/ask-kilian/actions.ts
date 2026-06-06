@@ -8,7 +8,6 @@ import {
 import { buildAskKilianAdminContextPreview } from '@/lib/ask-kilian/admin-context-preview'
 import { buildAdminKnowledgeEntry } from '@/lib/ask-kilian/admin-workspace'
 import {
-  assertAdminCreateDoesNotCollide,
   assertAdminEditStableKeyAllowed,
   type AdminKnowledgeEntrySaveInput,
   type AskKilianAdminStatus,
@@ -183,13 +182,12 @@ export async function getAskKilianKnowledgeEntryAction(stableKey: string) {
 export async function saveAskKilianAdminEntryAction(input: AdminKnowledgeEntrySaveInput) {
   const state = await getAskKilianAdminWorkspaceStateAction()
   const existingStableKeys = new Set(state.entries.map(entry => entry.stableKey))
-  if (input.mode === 'create') assertAdminCreateDoesNotCollide(input, existingStableKeys)
-  else assertAdminEditStableKeyAllowed(input, existingStableKeys)
+  assertAdminEditStableKeyAllowed(input, existingStableKeys)
   const entry = buildAdminKnowledgeEntry(input)
   const client = await createAskKilianConvexServerClient()
   await client.action(api.askKilianKnowledge.saveAdminKnowledgeEntryForAdmin, {
     entry,
-    originalStableKey: input.mode === 'edit' ? input.originalStableKey : undefined,
+    originalStableKey: input.originalStableKey,
   })
   revalidatePath('/admin/ask-kilian')
   return getAskKilianAdminWorkspaceStateAction()

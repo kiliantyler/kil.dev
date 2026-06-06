@@ -9,7 +9,8 @@ export function requestUrlWithActualHost(request: Pick<NextRequest, 'url' | 'hea
   const host = request.headers.get('host')?.trim()
   if (!host) return requestUrl
 
-  const protocol = request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim() || requestUrl.protocol.replace(':', '')
+  const protocol =
+    request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim() || requestUrl.protocol.replace(':', '')
   return new URL(`${protocol}://${host}${requestUrl.pathname}${requestUrl.search}`)
 }
 

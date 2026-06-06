@@ -9,9 +9,7 @@ describe('adminAuthRedirectUri', () => {
   it('uses the configured local redirect URI for local requests', () => {
     vi.stubEnv('NEXT_PUBLIC_WORKOS_REDIRECT_URI', 'http://127.0.0.1:3000/auth/callback')
 
-    expect(adminAuthRedirectUri(new Request('http://localhost:3000/admin'))).toBe(
-      'http://127.0.0.1:3000/auth/callback',
-    )
+    expect(adminAuthRedirectUri(new Request('http://localhost:3000/admin'))).toBe('http://127.0.0.1:3000/auth/callback')
   })
 
   it('does not apply a local redirect URI to a deployed request origin', () => {
@@ -39,9 +37,7 @@ describe('adminAuthRedirectUri', () => {
     vi.stubEnv('VERCEL_ENV', 'preview')
     vi.stubEnv('NEXT_PUBLIC_WORKOS_REDIRECT_URI', 'http://127.0.0.1:3000/auth/callback')
 
-    expect(adminAuthRedirectUri(new Request('http://localhost:3000/admin'))).toBe(
-      'http://127.0.0.1:3000/auth/callback',
-    )
+    expect(adminAuthRedirectUri(new Request('http://localhost:3000/admin'))).toBe('http://127.0.0.1:3000/auth/callback')
   })
 
   it('uses the Host header when Next normalizes the request URL host', () => {

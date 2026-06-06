@@ -7,7 +7,9 @@ describe('Ask Kilian admin workspace helpers', () => {
     expect(normalizeAdminKnowledgeSlug('  Cool Fact!! 2026 ')).toBe('cool-fact-2026')
     expect(
       buildAdminKnowledgeEntry({
-        mode: 'create',
+        mode: 'edit',
+        originalStableKey: 'admin:old-fact',
+        currentStatus: 'active',
         slug: 'Cool Fact',
         title: 'Cool Fact',
         category: 'fun',

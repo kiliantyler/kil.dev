@@ -107,20 +107,22 @@ export function KnowledgeTab({ workspace }: { workspace: AskKilianAdminWorkspace
           <KnowledgeDetail entry={workspace.selectedDetail} onEditEntry={openEditEditor} />
         </DialogContent>
       </Dialog>
-      <EntryEditorDialog
-        open={editorOpen && editingEntry !== null}
-        entry={editingEntry}
-        entries={workspace.state.entries}
-        onOpenChange={open => {
-          setEditorOpen(open)
-          if (!open) {
-            setEditingStableKey(null)
-            setEditingEntryDetail(null)
-          }
-        }}
-        onSave={workspace.actions.saveEntry}
-        isPending={workspace.isPending}
-      />
+      {editingEntry ? (
+        <EntryEditorDialog
+          open={editorOpen}
+          entry={editingEntry}
+          entries={workspace.state.entries}
+          onOpenChange={open => {
+            setEditorOpen(open)
+            if (!open) {
+              setEditingStableKey(null)
+              setEditingEntryDetail(null)
+            }
+          }}
+          onSave={workspace.actions.saveEntry}
+          isPending={workspace.isPending}
+        />
+      ) : null}
     </AdminPanel>
   )
 }

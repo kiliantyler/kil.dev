@@ -22,17 +22,13 @@ export type AdminKnowledgeEntryInput = {
   importance: number
 }
 
-export type AdminKnowledgeEntryCreateInput = AdminKnowledgeEntryInput & {
-  mode: 'create'
-}
-
 export type AdminKnowledgeEntryEditInput = AdminKnowledgeEntryInput & {
   mode: 'edit'
   originalStableKey: `admin:${string}`
   currentStatus: 'active' | 'disabled'
 }
 
-export type AdminKnowledgeEntrySaveInput = AdminKnowledgeEntryCreateInput | AdminKnowledgeEntryEditInput
+export type AdminKnowledgeEntrySaveInput = AdminKnowledgeEntryEditInput
 
 export type AdminKnowledgeEntryValidation = {
   ok: boolean
@@ -107,16 +103,6 @@ export function validateAdminKnowledgeEntryInput(input: AdminKnowledgeEntryInput
   }
 
   return { ok: Object.keys(errors).length === 0, errors, normalizedSlug }
-}
-
-export function assertAdminCreateDoesNotCollide(
-  input: AdminKnowledgeEntryCreateInput,
-  existingStableKeys: Set<string>,
-) {
-  const stableKey = `admin:${normalizeAdminKnowledgeSlug(input.slug)}`
-  if (existingStableKeys.has(stableKey)) {
-    throw new Error(`Ask Kilian admin entry already exists: ${stableKey}`)
-  }
 }
 
 export function assertAdminEditStableKeyAllowed(input: AdminKnowledgeEntryEditInput, existingStableKeys: Set<string>) {

@@ -163,11 +163,25 @@ describe('Ask Kilian admin server actions', () => {
     expect(convex.action).toHaveBeenCalledTimes(1)
   })
 
-  it('rejects create collisions before calling the protected save action', async () => {
+  it('rejects edit rename collisions before calling the protected save action', async () => {
     const convex = { action: vi.fn() }
     convex.action
       .mockResolvedValueOnce({ ok: true, aiGatewayConfigured: true, accessTokenConfigured: true })
       .mockResolvedValueOnce([
+        {
+          stableKey: 'admin:existing-entry',
+          source: 'admin',
+          status: 'active',
+          category: 'fun',
+          title: 'Existing entry',
+          contentHash: 'hash-existing',
+          sourcePath: 'admin:/admin/ask-kilian',
+          minTier: 0,
+          spoilerLevel: 'none',
+          importance: 0.5,
+          updatedAt: 1,
+          ragStatus: 'ready',
+        },
         {
           stableKey: 'admin:dupe',
           source: 'admin',
@@ -188,7 +202,9 @@ describe('Ask Kilian admin server actions', () => {
 
     await expect(
       saveAskKilianAdminEntryAction({
-        mode: 'create',
+        mode: 'edit',
+        originalStableKey: 'admin:existing-entry',
+        currentStatus: 'active',
         slug: 'dupe',
         title: 'Dupe',
         category: 'fun',
@@ -206,7 +222,21 @@ describe('Ask Kilian admin server actions', () => {
     expect(revalidatePath).not.toHaveBeenCalled()
   })
 
-  it('saves admin entries, revalidates, and returns refreshed state', async () => {
+  it('saves admin entry edits, revalidates, and returns refreshed state', async () => {
+    const existingEntry = {
+      stableKey: 'admin:existing-entry',
+      source: 'admin',
+      status: 'active',
+      category: 'fun',
+      title: 'Existing Entry',
+      contentHash: 'existing-hash',
+      sourcePath: 'admin:/admin/ask-kilian',
+      minTier: 1,
+      spoilerLevel: 'hint',
+      importance: 0.7,
+      updatedAt: 1,
+      ragStatus: 'ready',
+    }
     const refreshedEntry = {
       stableKey: 'admin:new-entry',
       source: 'admin',
@@ -224,7 +254,7 @@ describe('Ask Kilian admin server actions', () => {
     const convex = { action: vi.fn() }
     convex.action
       .mockResolvedValueOnce({ ok: true, aiGatewayConfigured: true, accessTokenConfigured: true })
-      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([existingEntry])
       .mockResolvedValueOnce({ ok: true })
       .mockResolvedValueOnce({ ok: true, aiGatewayConfigured: true, accessTokenConfigured: true })
       .mockResolvedValueOnce([refreshedEntry])
@@ -233,7 +263,9 @@ describe('Ask Kilian admin server actions', () => {
 
     await expect(
       saveAskKilianAdminEntryAction({
-        mode: 'create',
+        mode: 'edit',
+        originalStableKey: 'admin:existing-entry',
+        currentStatus: 'active',
         slug: 'new entry',
         title: 'New Entry',
         category: 'fun',
@@ -255,7 +287,7 @@ describe('Ask Kilian admin server actions', () => {
         status: 'active',
         title: 'New Entry',
       }),
-      originalStableKey: undefined,
+      originalStableKey: 'admin:existing-entry',
     })
     expect(revalidatePath).toHaveBeenCalledWith('/admin/ask-kilian')
   })

@@ -352,11 +352,13 @@ describe('useAskKilianAdminWorkspace', () => {
 
       await page.evaluate(() => {
         void (globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.actions.saveEntry({
-          source: 'admin',
-          status: 'active',
+          mode: 'edit',
+          originalStableKey: 'admin:manual',
+          currentStatus: 'active',
+          slug: 'manual',
           category: 'fun',
-          title: 'Second manual entry',
-          text: 'Second full detail text',
+          title: 'Manual entry updated',
+          text: 'Updated full detail text',
           minTier: 0,
           spoilerLevel: 'none',
           importance: 0.4,

@@ -18,7 +18,7 @@ export function buildAdminKnowledgeEntry(input: AdminKnowledgeEntrySaveInput): A
   const entryWithoutHash = {
     stableKey: `admin:${validation.normalizedSlug}`,
     source: 'admin' as const,
-    status: input.mode === 'edit' ? input.currentStatus : ('active' as const),
+    status: input.currentStatus,
     category: input.category,
     title: input.title.trim(),
     text: input.text.trim(),

@@ -20,7 +20,6 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
-  assertAdminCreateDoesNotCollide,
   assertAdminEditStableKeyAllowed,
   normalizeAdminKnowledgeSlug,
   validateAdminKnowledgeEntryInput,
@@ -61,19 +60,7 @@ function slugFromStableKey(stableKey: string) {
   return stableKey.startsWith('admin:') ? stableKey.slice('admin:'.length) : stableKey
 }
 
-export function buildEntryEditorDraft(entry: AdminWorkspaceKnowledgeEntry | null): EntryEditorDraft {
-  if (!entry) {
-    return {
-      slug: '',
-      title: '',
-      category: 'fun',
-      minTier: 0,
-      spoilerLevel: 'none',
-      importance: 0.7,
-      text: '',
-    }
-  }
-
+export function buildEntryEditorDraft(entry: AdminWorkspaceKnowledgeEntry): EntryEditorDraft {
   return {
     slug: slugFromStableKey(entry.stableKey),
     title: entry.title,
@@ -85,28 +72,18 @@ export function buildEntryEditorDraft(entry: AdminWorkspaceKnowledgeEntry | null
   }
 }
 
-export function applyEntryEditorTitleChange(
-  draft: EntryEditorDraft,
-  nextTitle: string,
-  entry: AdminWorkspaceKnowledgeEntry | null,
-): EntryEditorDraft {
-  if (entry) return { ...draft, title: nextTitle }
-
-  const currentTitleSlug = normalizeAdminKnowledgeSlug(draft.title)
-  const slugTracksTitle = !draft.slug || draft.slug === currentTitleSlug
-
-  return {
-    ...draft,
-    title: nextTitle,
-    slug: slugTracksTitle ? normalizeAdminKnowledgeSlug(nextTitle) : draft.slug,
-  }
+export function applyEntryEditorTitleChange(draft: EntryEditorDraft, nextTitle: string): EntryEditorDraft {
+  return { ...draft, title: nextTitle }
 }
 
 export function buildEntryEditorSaveInput(
   draft: EntryEditorDraft,
-  entry: AdminWorkspaceKnowledgeEntry | null,
+  entry: AdminWorkspaceKnowledgeEntry,
 ): AdminKnowledgeEntrySaveInput {
-  const base = {
+  return {
+    mode: 'edit',
+    originalStableKey: entry.stableKey as `admin:${string}`,
+    currentStatus: entry.status === 'disabled' ? 'disabled' : 'active',
     slug: draft.slug,
     title: draft.title,
     category: draft.category,
@@ -115,20 +92,11 @@ export function buildEntryEditorSaveInput(
     importance: draft.importance,
     text: draft.text,
   }
-
-  if (!entry) return { mode: 'create', ...base }
-
-  return {
-    mode: 'edit',
-    originalStableKey: entry.stableKey as `admin:${string}`,
-    currentStatus: entry.status === 'disabled' ? 'disabled' : 'active',
-    ...base,
-  }
 }
 
 export function validateEntryEditorDraftForSave(
   draft: EntryEditorDraft,
-  entry: AdminWorkspaceKnowledgeEntry | null,
+  entry: AdminWorkspaceKnowledgeEntry,
   existingStableKeys: Set<string>,
 ): EntryEditorValidationResult {
   const validation = validateAdminKnowledgeEntryInput(draft)
@@ -143,8 +111,7 @@ export function validateEntryEditorDraftForSave(
 
   const input = buildEntryEditorSaveInput(draft, entry)
   try {
-    if (input.mode === 'create') assertAdminCreateDoesNotCollide(input, existingStableKeys)
-    else assertAdminEditStableKeyAllowed(input, existingStableKeys)
+    assertAdminEditStableKeyAllowed(input, existingStableKeys)
   } catch (error) {
     return {
       ok: false,
@@ -156,7 +123,7 @@ export function validateEntryEditorDraftForSave(
   return { ok: true, input, normalizedSlug: validation.normalizedSlug }
 }
 
-export function isEntryEditorDraftDirty(draft: EntryEditorDraft, entry: AdminWorkspaceKnowledgeEntry | null) {
+export function isEntryEditorDraftDirty(draft: EntryEditorDraft, entry: AdminWorkspaceKnowledgeEntry) {
   const baseline = buildEntryEditorDraft(entry)
   return JSON.stringify(draft) !== JSON.stringify(baseline)
 }
@@ -170,7 +137,7 @@ export function resolveEntryEditorCloseRequest({
   saving: boolean
   nextOpen: boolean
   draft: EntryEditorDraft
-  entry: AdminWorkspaceKnowledgeEntry | null
+  entry: AdminWorkspaceKnowledgeEntry
 }) {
   if (!nextOpen && saving) return 'keep-open'
   if (nextOpen || !isEntryEditorDraftDirty(draft, entry)) return 'set-open'
@@ -179,7 +146,7 @@ export function resolveEntryEditorCloseRequest({
 
 type EntryEditorDialogProps = {
   open: boolean
-  entry: AdminWorkspaceKnowledgeEntry | null
+  entry: AdminWorkspaceKnowledgeEntry
   entries: AdminWorkspaceKnowledgeEntry[]
   onOpenChange: (open: boolean) => void
   onSave: (input: AdminKnowledgeEntrySaveInput) => Promise<void> | void
@@ -230,7 +197,7 @@ export function EntryEditorDialog({
   }
 
   function updateTitle(title: string) {
-    setDraft(current => applyEntryEditorTitleChange(current, title, entry))
+    setDraft(current => applyEntryEditorTitleChange(current, title))
     setFieldErrors(current => ({ ...current, title: undefined, slug: undefined }))
     setError(null)
   }
@@ -259,7 +226,7 @@ export function EntryEditorDialog({
       <Dialog open={open} onOpenChange={requestOpenChange}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{entry ? 'Edit admin entry' : 'New admin entry'}</DialogTitle>
+            <DialogTitle>Edit admin entry</DialogTitle>
             <DialogDescription>Manage manually curated Ask Kilian knowledge entries.</DialogDescription>
           </DialogHeader>
           {repoEntryPassed ? (
