@@ -6,14 +6,14 @@ import {
   isAdminTestBypassEnvEnabled,
 } from '@/lib/admin-test-bypass'
 import { buildAskKilianAdminContextPreview } from '@/lib/ask-kilian/admin-context-preview'
+import { buildAdminKnowledgeEntry } from '@/lib/ask-kilian/admin-workspace'
 import {
   assertAdminCreateDoesNotCollide,
   assertAdminEditStableKeyAllowed,
-  buildAdminKnowledgeEntry,
   type AdminKnowledgeEntrySaveInput,
   type AskKilianAdminStatus,
   type AskKilianAdminWorkspaceState,
-} from '@/lib/ask-kilian/admin-workspace'
+} from '@/lib/ask-kilian/admin-workspace-shared'
 import { createAskKilianConvexServerClient } from '@/lib/ask-kilian/convex-server-client'
 import { buildAskKilianKnowledgeEntries } from '@/lib/ask-kilian/knowledge-sources'
 import type { AskKilianKnowledgeCategory, AskKilianTier } from '@/lib/ask-kilian/types'
@@ -77,53 +77,67 @@ async function isTestBypassRequest() {
   return requestCookies.get(ADMIN_TEST_BYPASS_COOKIE)?.value === ADMIN_TEST_BYPASS_COOKIE_VALUE
 }
 
+function createTestBypassAskKilianKnowledgeEntries(updatedAt = Date.now()): AskKilianAdminWorkspaceState['entries'] {
+  return [
+    {
+      stableKey: 'test:public-project',
+      source: 'repo',
+      status: 'active',
+      category: 'projects',
+      title: 'Public project fixture',
+      text: 'Safe fixture detail for a public project entry in the Ask Kilian admin test harness.',
+      contentHash: 'test-public-project-hash',
+      sourcePath: 'src/lib/ask-kilian/test-fixtures.ts',
+      minTier: 0,
+      spoilerLevel: 'none',
+      importance: 0.8,
+      updatedAt,
+      ragStatus: 'ready',
+    },
+    {
+      stableKey: 'test:access-one-note',
+      source: 'repo',
+      status: 'active',
+      category: 'persona',
+      title: 'Access one fixture',
+      text: 'Safe fixture detail for tier one Ask Kilian persona retrieval checks.',
+      contentHash: 'test-access-one-note-hash',
+      sourcePath: 'src/lib/ask-kilian/test-fixtures.ts',
+      minTier: 1,
+      spoilerLevel: 'hint',
+      importance: 0.7,
+      updatedAt,
+      ragStatus: 'ready',
+    },
+    {
+      stableKey: 'test:private-note',
+      source: 'repo',
+      status: 'active',
+      category: 'fun',
+      title: 'Private fixture',
+      text: 'Safe fixture detail for spoiler-gated private-fact handling in the admin test harness.',
+      contentHash: 'test-private-note-hash',
+      sourcePath: 'src/lib/ask-kilian/test-fixtures.ts',
+      minTier: 2,
+      spoilerLevel: 'spoiler',
+      importance: 0.5,
+      updatedAt,
+      ragStatus: 'ready',
+    },
+  ]
+}
+
+function omitFixtureDetailText(entry: AskKilianAdminWorkspaceState['entries'][number]) {
+  const { text: _text, ...entryWithoutText } = entry
+  void _text
+  return entryWithoutText
+}
+
 function createTestBypassAskKilianAdminWorkspaceState(): AskKilianAdminWorkspaceState {
   const updatedAt = Date.now()
+  const entries = createTestBypassAskKilianKnowledgeEntries(updatedAt).map(omitFixtureDetailText)
   return {
-    entries: [
-      {
-        stableKey: 'test:public-project',
-        source: 'repo',
-        status: 'active',
-        category: 'projects',
-        title: 'Public project fixture',
-        contentHash: 'test-public-project-hash',
-        sourcePath: 'src/lib/ask-kilian/test-fixtures.ts',
-        minTier: 0,
-        spoilerLevel: 'none',
-        importance: 0.8,
-        updatedAt,
-        ragStatus: 'ready',
-      },
-      {
-        stableKey: 'test:access-one-note',
-        source: 'repo',
-        status: 'active',
-        category: 'persona',
-        title: 'Access one fixture',
-        contentHash: 'test-access-one-note-hash',
-        sourcePath: 'src/lib/ask-kilian/test-fixtures.ts',
-        minTier: 1,
-        spoilerLevel: 'hint',
-        importance: 0.7,
-        updatedAt,
-        ragStatus: 'ready',
-      },
-      {
-        stableKey: 'test:private-note',
-        source: 'repo',
-        status: 'active',
-        category: 'fun',
-        title: 'Private fixture',
-        contentHash: 'test-private-note-hash',
-        sourcePath: 'src/lib/ask-kilian/test-fixtures.ts',
-        minTier: 2,
-        spoilerLevel: 'spoiler',
-        importance: 0.5,
-        updatedAt,
-        ragStatus: 'ready',
-      },
-    ],
+    entries,
     runtimeStatus: {
       label: 'Runtime',
       level: 'degraded',
@@ -158,6 +172,10 @@ export async function getAskKilianAdminWorkspaceStateAction(): Promise<AskKilian
 }
 
 export async function getAskKilianKnowledgeEntryAction(stableKey: string) {
+  if (await isTestBypassRequest()) {
+    return createTestBypassAskKilianKnowledgeEntries().find(entry => entry.stableKey === stableKey) ?? null
+  }
+
   const client = await createAskKilianConvexServerClient()
   return client.action(api.askKilianKnowledge.getAdminKnowledgeEntryForAdmin, { stableKey })
 }

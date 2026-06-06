@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import type { AdminWorkspaceKnowledgeEntry } from '@/lib/ask-kilian/admin-workspace'
+import type { AdminWorkspaceKnowledgeEntry } from '@/lib/ask-kilian/admin-workspace-shared'
 
 type KnowledgeDetailProps = {
   entry: AdminWorkspaceKnowledgeEntry | null

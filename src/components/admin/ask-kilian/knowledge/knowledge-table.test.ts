@@ -1,4 +1,4 @@
-import type { AdminWorkspaceKnowledgeEntry } from '@/lib/ask-kilian/admin-workspace'
+import type { AdminWorkspaceKnowledgeEntry } from '@/lib/ask-kilian/admin-workspace-shared'
 import { describe, expect, test } from 'vitest'
 import {
   applyKnowledgeColumnVisibilityToggle,
@@ -16,7 +16,7 @@ import {
   removeLastKnowledgeFilterValue,
   sortKnowledgeEntries,
   toggleKnowledgeFilterValue,
-} from './knowledge-table'
+} from './knowledge-table-helpers'
 
 function entry(overrides: Partial<AdminWorkspaceKnowledgeEntry>): AdminWorkspaceKnowledgeEntry {
   return {

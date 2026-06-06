@@ -1,8 +1,8 @@
 'use client'
 
-import { AdminAlert, AdminPanel } from '@/components/admin/pet-gallery/admin-panel'
+import { AdminAlert, AdminPanel } from '@/components/admin/admin-panel'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import type { AdminWorkspaceKnowledgeEntry } from '@/lib/ask-kilian/admin-workspace'
+import type { AdminWorkspaceKnowledgeEntry } from '@/lib/ask-kilian/admin-workspace-shared'
 import { useRef, useState } from 'react'
 import type { AskKilianAdminWorkspaceController } from '../use-ask-kilian-admin-workspace'
 import { EntryEditorDialog } from './entry-editor-dialog'

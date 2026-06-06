@@ -1,7 +1,7 @@
 'use client'
 
 import { AdminLavaTabs } from '@/components/admin/admin-lava-tabs'
-import type { AskKilianAdminWorkspaceState } from '@/lib/ask-kilian/admin-workspace'
+import type { AskKilianAdminWorkspaceState } from '@/lib/ask-kilian/admin-workspace-shared'
 import { useEffect, useState } from 'react'
 import { AskKilianStatusLights } from './ask-kilian-status-lights'
 import { KnowledgeTab } from './knowledge/knowledge-tab'

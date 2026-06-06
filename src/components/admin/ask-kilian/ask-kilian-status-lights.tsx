@@ -1,7 +1,7 @@
 'use client'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import type { AskKilianAdminStatus } from '@/lib/ask-kilian/admin-workspace'
+import type { AskKilianAdminStatus } from '@/lib/ask-kilian/admin-workspace-shared'
 import { cn } from '@/utils/utils'
 
 function statusDotClass(level: AskKilianAdminStatus['level']) {

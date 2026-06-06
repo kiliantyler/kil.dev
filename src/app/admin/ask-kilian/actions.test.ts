@@ -119,6 +119,21 @@ describe('Ask Kilian admin server actions', () => {
     expect(createAskKilianConvexServerClient).not.toHaveBeenCalled()
   })
 
+  it('returns safe fixture detail without Convex when the admin test bypass cookie is present', async () => {
+    isAdminTestBypassEnvEnabled.mockReturnValue(true)
+    cookieGet.mockReturnValue({ value: '1' })
+
+    const { getAskKilianKnowledgeEntryAction } = await import('./actions')
+    await expect(getAskKilianKnowledgeEntryAction('test:public-project')).resolves.toMatchObject({
+      stableKey: 'test:public-project',
+      text: 'Safe fixture detail for a public project entry in the Ask Kilian admin test harness.',
+      ragStatus: 'ready',
+    })
+    await expect(getAskKilianKnowledgeEntryAction('test:missing')).resolves.toBeNull()
+
+    expect(createAskKilianConvexServerClient).not.toHaveBeenCalled()
+  })
+
   it('does not expose generation actions', async () => {
     const actions = await import('./actions')
     expect(Object.keys(actions).some(name => /chat|generate|stream/i.test(name))).toBe(false)
@@ -431,6 +446,33 @@ describe('Ask Kilian admin server actions', () => {
 
     convex.action.mockClear()
     convex.action.mockResolvedValueOnce(currentPreview)
+
+    await expect(applyAskKilianRepoSyncAction(preview.confirmationToken)).rejects.toThrow(
+      'Repo sync preview is stale. Preview again before applying changes.',
+    )
+    expect(convex.action).not.toHaveBeenCalledWith(api.askKilianKnowledge.syncRepoKnowledgeForAdmin, expect.anything())
+  })
+
+  it('rejects repo sync apply when manifest hashes or statuses change with identical summary counts and keys', async () => {
+    const stableSummary = {
+      dryRun: true,
+      counts: { created: 0, changed: 1, unchanged: 0, retired: 0, ignoredAdmin: 0 },
+      keys: {
+        created: [],
+        changed: ['project:ask-kilian'],
+        unchanged: [],
+        retired: [],
+        ignoredAdmin: [],
+      },
+    }
+    const originalEntry = { ...repoEntries[0]!, contentHash: 'old-hash', status: 'active' as const }
+    const changedEntry = { ...repoEntries[0]!, contentHash: 'new-hash', status: 'disabled' as const }
+    const convex = { action: vi.fn(async () => stableSummary) }
+    buildAskKilianKnowledgeEntries.mockReturnValueOnce([originalEntry]).mockReturnValueOnce([changedEntry])
+    createAskKilianConvexServerClient.mockResolvedValue(convex)
+    const { applyAskKilianRepoSyncAction, previewAskKilianRepoSyncAction } = await import('./actions')
+
+    const preview = await previewAskKilianRepoSyncAction()
 
     await expect(applyAskKilianRepoSyncAction(preview.confirmationToken)).rejects.toThrow(
       'Repo sync preview is stale. Preview again before applying changes.',

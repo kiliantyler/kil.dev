@@ -1,4 +1,4 @@
-import type { AdminWorkspaceKnowledgeEntry } from '@/lib/ask-kilian/admin-workspace'
+import type { AdminWorkspaceKnowledgeEntry } from '@/lib/ask-kilian/admin-workspace-shared'
 import { describe, expect, test } from 'vitest'
 import { getEditableEntryForEditor } from './knowledge-tab'
 

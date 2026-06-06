@@ -2,6 +2,7 @@ import { v } from 'convex/values'
 
 import type { EntryId } from '@convex-dev/rag'
 import type { Infer } from 'convex/values'
+import { ASK_KILIAN_ADMIN_SOURCE_PATH } from '../src/lib/ask-kilian/admin-workspace-shared'
 import type { AskKilianKnowledgeCategory, AskKilianKnowledgeEntry, AskKilianTier } from '../src/lib/ask-kilian/types'
 import { isPlaceholderSecret } from '../src/lib/env-secrets'
 import { internal } from './_generated/api'
@@ -356,8 +357,8 @@ function assertAdminManagedEntry(entry: AskKilianKnowledgeEntry) {
   if (entry.source !== 'admin' || !entry.stableKey.startsWith('admin:')) {
     throw new Error('Only admin: stable keys can be saved through Ask Kilian admin')
   }
-  if (entry.sourcePath !== 'admin:/admin/ask-kilian') {
-    throw new Error('Ask Kilian admin entries must use admin:/admin/ask-kilian as sourcePath')
+  if (entry.sourcePath !== ASK_KILIAN_ADMIN_SOURCE_PATH) {
+    throw new Error(`Ask Kilian admin entries must use ${ASK_KILIAN_ADMIN_SOURCE_PATH} as sourcePath`)
   }
 }
 
@@ -883,6 +884,9 @@ export function createSaveAdminKnowledgeEntryHandler({
     }
     if (existingOriginal?.status === 'retired') {
       throw new Error('Retired Ask Kilian admin entries are inspect-only')
+    }
+    if (existingOriginal && existingOriginal.status !== args.entry.status) {
+      throw new Error('Ask Kilian admin entry status changed; reload before saving')
     }
     if (existingTarget && existingTarget.source !== 'admin') {
       throw new Error('Repo entries cannot be overwritten by admin saves')

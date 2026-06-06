@@ -1,6 +1,6 @@
 'use client'
 
-import { AdminAlert, AdminPanel } from '@/components/admin/pet-gallery/admin-panel'
+import { AdminAlert, AdminPanel } from '@/components/admin/admin-panel'
 import {
   AlertDialog,
   AlertDialogAction,

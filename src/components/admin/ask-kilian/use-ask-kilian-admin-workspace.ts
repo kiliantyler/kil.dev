@@ -14,7 +14,7 @@ import type {
   AdminKnowledgeEntrySaveInput,
   AdminWorkspaceKnowledgeEntry,
   AskKilianAdminWorkspaceState,
-} from '@/lib/ask-kilian/admin-workspace'
+} from '@/lib/ask-kilian/admin-workspace-shared'
 import type { AskKilianKnowledgeCategory, AskKilianTier } from '@/lib/ask-kilian/types'
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { hasAskKilianRepoSyncChanges } from './repo-sync-preview'

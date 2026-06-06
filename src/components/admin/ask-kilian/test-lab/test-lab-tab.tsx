@@ -5,7 +5,7 @@ import {
   AdminPanel,
   adminSmallInputClassName,
   adminTextareaClassName,
-} from '@/components/admin/pet-gallery/admin-panel'
+} from '@/components/admin/admin-panel'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/motion-switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -197,7 +197,7 @@ export function TestLabTab({ workspace }: { workspace: AskKilianAdminWorkspaceCo
 
         <div>
           <Button type="submit" disabled={workspace.isPending}>
-            Preview retrieval
+            {TEST_LAB_ACTION_TEXT[0]}
           </Button>
         </div>
       </form>

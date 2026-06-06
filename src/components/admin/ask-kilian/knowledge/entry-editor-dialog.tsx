@@ -5,7 +5,7 @@ import {
   adminInputClassName,
   adminSmallInputClassName,
   adminTextareaClassName,
-} from '@/components/admin/pet-gallery/admin-panel'
+} from '@/components/admin/admin-panel'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,7 +26,7 @@ import {
   validateAdminKnowledgeEntryInput,
   type AdminKnowledgeEntrySaveInput,
   type AdminWorkspaceKnowledgeEntry,
-} from '@/lib/ask-kilian/admin-workspace'
+} from '@/lib/ask-kilian/admin-workspace-shared'
 import {
   ASK_KILIAN_CATEGORIES,
   ASK_KILIAN_SPOILER_LEVELS,
