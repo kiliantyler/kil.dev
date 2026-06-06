@@ -44,3 +44,22 @@ export const askKilianKnowledgeEntryCoreFields = {
 export const askKilianKnowledgeEntryInputValidator = v.object(askKilianKnowledgeEntryCoreFields)
 
 export const askKilianRagFilterVersionValidator = v.number()
+
+export const askKilianKnowledgeEntryDisplayValidator = v.object({
+  ...askKilianKnowledgeEntryCoreFields,
+  text: v.optional(v.string()),
+  ragEntryId: v.optional(v.string()),
+  ragStatus: v.optional(v.string()),
+  ragFilterVersion: v.optional(askKilianRagFilterVersionValidator),
+  pendingRagEntryCleanupIds: v.optional(v.array(v.string())),
+  createdAt: v.optional(v.number()),
+  updatedAt: v.number(),
+  retiredAt: v.optional(v.number()),
+})
+
+export const askKilianAdminMutationResultValidator = v.object({
+  stableKey: v.string(),
+  status: askKilianStatusValidator,
+  ragEntryId: v.optional(v.string()),
+  ragStatus: v.optional(v.string()),
+})
