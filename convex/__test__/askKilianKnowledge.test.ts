@@ -17,6 +17,7 @@ import {
 } from '../../src/lib/ask-kilian/types'
 import { api, internal } from '../_generated/api'
 import {
+  clearPendingRagEntryCleanupId,
   createDiffRepoKnowledgeHandler,
   createSearchKnowledgeHandler,
   createSyncRepoKnowledgeHandler,
@@ -1004,6 +1005,37 @@ describe('upsertSyncedKnowledgeEntry', () => {
         updatedAt: 456,
       }),
     )
+  })
+})
+
+describe('clearPendingRagEntryCleanupId', () => {
+  it('marks disabled entries deleted after the final pending cleanup id is cleared', async () => {
+    const unique = vi.fn(async () => ({
+      _id: 'row-id',
+      ...existingEntry('admin:manual', {
+        source: 'admin',
+        status: 'disabled',
+        ragEntryId: undefined,
+        ragStatus: 'cleanupPending',
+      }),
+      pendingRagEntryCleanupIds: ['rag-old'],
+    }))
+    const query = vi.fn(() => ({
+      withIndex: vi.fn((_name, callback) => {
+        callback({ eq: vi.fn() })
+        return { unique }
+      }),
+    }))
+    const patch = vi.fn()
+    const ctx = { db: { query, patch } }
+    const handler = getActionHandler(clearPendingRagEntryCleanupId)
+
+    await handler(ctx, { stableKey: 'admin:manual', entryId: 'rag-old' })
+
+    expect(patch).toHaveBeenCalledWith('row-id', {
+      pendingRagEntryCleanupIds: [],
+      ragStatus: 'deleted',
+    })
   })
 })
 

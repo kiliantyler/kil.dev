@@ -149,7 +149,7 @@ type EntryEditorDialogProps = {
   entry: AdminWorkspaceKnowledgeEntry | null
   entries: AdminWorkspaceKnowledgeEntry[]
   onOpenChange: (open: boolean) => void
-  onSave: (input: AdminKnowledgeEntrySaveInput) => void
+  onSave: (input: AdminKnowledgeEntrySaveInput) => Promise<void> | void
   isPending?: boolean
 }
 
@@ -165,6 +165,7 @@ export function EntryEditorDialog({
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof EntryEditorDraft, string>>>({})
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
   const existingStableKeys = useMemo(() => new Set(entries.map(knowledgeEntry => knowledgeEntry.stableKey)), [entries])
   const normalizedSlug = normalizeAdminKnowledgeSlug(draft.slug)
   const finalStableKey = normalizedSlug ? `admin:${normalizedSlug}` : 'admin:'
@@ -176,6 +177,7 @@ export function EntryEditorDialog({
     setError(null)
     setFieldErrors({})
     setConfirmDiscardOpen(false)
+    setSaving(false)
   }, [entry, open])
 
   function requestOpenChange(nextOpen: boolean) {
@@ -192,7 +194,7 @@ export function EntryEditorDialog({
     setError(null)
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (repoEntryPassed) return
     const result = validateEntryEditorDraftForSave(draft, entry, existingStableKeys)
     if (!result.ok) {
@@ -200,8 +202,15 @@ export function EntryEditorDialog({
       setFieldErrors(result.fieldErrors ?? {})
       return
     }
-    onSave(result.input)
-    onOpenChange(false)
+    setSaving(true)
+    try {
+      await onSave(result.input)
+      onOpenChange(false)
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : 'Unable to save Ask Kilian entry')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -219,7 +228,7 @@ export function EntryEditorDialog({
               className="flex flex-col gap-4"
               onSubmit={event => {
                 event.preventDefault()
-                handleSave()
+                void handleSave()
               }}>
               {error ? <AdminAlert>{error}</AdminAlert> : null}
               <div className="grid gap-3 sm:grid-cols-2">
@@ -250,7 +259,7 @@ export function EntryEditorDialog({
                   <Select
                     value={draft.category}
                     onValueChange={value => updateDraft('category', value as AskKilianKnowledgeCategory)}>
-                    <SelectTrigger className="w-full" size="sm">
+                    <SelectTrigger aria-label="Category" className="w-full" size="sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -268,7 +277,7 @@ export function EntryEditorDialog({
                   <Select
                     value={String(draft.minTier)}
                     onValueChange={value => updateDraft('minTier', Number(value) as AskKilianTier)}>
-                    <SelectTrigger className="w-full" size="sm">
+                    <SelectTrigger aria-label="Minimum tier" className="w-full" size="sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -286,7 +295,7 @@ export function EntryEditorDialog({
                   <Select
                     value={draft.spoilerLevel}
                     onValueChange={value => updateDraft('spoilerLevel', value as AskKilianSpoilerLevel)}>
-                    <SelectTrigger className="w-full" size="sm">
+                    <SelectTrigger aria-label="Spoiler level" className="w-full" size="sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -325,8 +334,8 @@ export function EntryEditorDialog({
                 <Button type="button" variant="outline" onClick={() => requestOpenChange(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isPending}>
-                  Save entry
+                <Button type="submit" disabled={isPending || saving}>
+                  {saving ? 'Saving entry' : 'Save entry'}
                 </Button>
               </div>
             </form>

@@ -9,7 +9,8 @@ import {
   BottomDrawerTitle,
 } from '@/components/ui/bottom-drawer'
 import { Button } from '@/components/ui/button'
-import { useState } from 'react'
+import { X } from 'lucide-react'
+import { useRef, useState } from 'react'
 import type { AskKilianAdminWorkspaceController } from '../use-ask-kilian-admin-workspace'
 import { EntryEditorDialog } from './entry-editor-dialog'
 import { KnowledgeDetail } from './knowledge-detail'
@@ -19,6 +20,7 @@ export function KnowledgeTab({ workspace }: { workspace: AskKilianAdminWorkspace
   const [editorOpen, setEditorOpen] = useState(false)
   const [editingStableKey, setEditingStableKey] = useState<string | null>(null)
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false)
+  const stableKeyButtonRefs = useRef(new Map<string, HTMLButtonElement>())
   const editingEntry =
     editingStableKey === null
       ? null
@@ -48,6 +50,18 @@ export function KnowledgeTab({ workspace }: { workspace: AskKilianAdminWorkspace
     }
   }
 
+  function setStableKeyButtonRef(stableKey: string, element: HTMLButtonElement | null) {
+    if (element) stableKeyButtonRefs.current.set(stableKey, element)
+    else stableKeyButtonRefs.current.delete(stableKey)
+  }
+
+  function closeMobileDetail() {
+    setMobileDetailOpen(false)
+    const stableKey = workspace.selectedEntry?.stableKey
+    if (!stableKey) return
+    globalThis.requestAnimationFrame(() => stableKeyButtonRefs.current.get(stableKey)?.focus())
+  }
+
   return (
     <AdminPanel data-testid="ask-kilian-knowledge-tab" className="flex min-w-0 flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -68,19 +82,34 @@ export function KnowledgeTab({ workspace }: { workspace: AskKilianAdminWorkspace
           onEditEntry={openEditEditor}
           onDisableEntry={workspace.actions.disableEntry}
           onReenableEntry={workspace.actions.reenableEntry}
+          onStableKeyButtonRef={setStableKeyButtonRef}
           isPending={workspace.isPending}
         />
         <aside className="hidden min-h-0 lg:block">
           <KnowledgeDetail entry={workspace.selectedDetail} onEditEntry={openEditEditor} />
         </aside>
       </div>
-      <BottomDrawer open={mobileDetailOpen} onOpenChange={setMobileDetailOpen}>
+      <BottomDrawer
+        open={mobileDetailOpen}
+        onOpenChange={open => (open ? setMobileDetailOpen(true) : closeMobileDetail())}>
         <BottomDrawerContent className="max-h-[85vh] px-4 pb-4 lg:hidden">
-          <BottomDrawerHeader className="px-0">
-            <BottomDrawerTitle>Knowledge detail</BottomDrawerTitle>
-            <BottomDrawerDescription>
-              {workspace.selectedDetail?.stableKey ?? 'No entry selected'}
-            </BottomDrawerDescription>
+          <BottomDrawerHeader className="px-0 text-left">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <BottomDrawerTitle>Knowledge detail</BottomDrawerTitle>
+                <BottomDrawerDescription>
+                  {workspace.selectedDetail?.stableKey ?? 'No entry selected'}
+                </BottomDrawerDescription>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Close knowledge detail"
+                onClick={closeMobileDetail}>
+                <X aria-hidden="true" />
+              </Button>
+            </div>
           </BottomDrawerHeader>
           <KnowledgeDetail entry={workspace.selectedDetail} onEditEntry={openEditEditor} />
         </BottomDrawerContent>

@@ -18,6 +18,7 @@ function syncPreview(overrides: Partial<AskKilianOpsSyncPreview> = {}): AskKilia
       retired: ['repo:retired-echo', 'repo:retired-foxtrot', 'repo:retired-golf'],
       ignoredAdmin: ['admin:manual-hotel'],
     },
+    confirmationToken: 'preview-token',
     ...overrides,
   }
 }
@@ -42,16 +43,21 @@ describe('buildRepoSyncConfirmationSummary', () => {
     expect(buildRepoSyncConfirmationSummary(syncPreview()).countRows).toEqual([
       { label: 'Created', value: 2 },
       { label: 'Changed', value: 1 },
+      { label: 'Unchanged', value: 4 },
       { label: 'Retired', value: 3 },
+      { label: 'Ignored admin', value: 5 },
     ])
   })
 
-  test('confirmation summary includes changed and retired keys before apply', () => {
+  test('confirmation summary includes every key bucket before apply', () => {
     const summary = buildRepoSyncConfirmationSummary(syncPreview())
 
     expect(summary.sections).toEqual([
+      { label: 'Created keys', keys: ['repo:new-alpha', 'repo:new-bravo'] },
       { label: 'Changed keys', keys: ['repo:changed-charlie'] },
+      { label: 'Unchanged keys', keys: ['repo:stable-delta'] },
       { label: 'Retired keys', keys: ['repo:retired-echo', 'repo:retired-foxtrot', 'repo:retired-golf'] },
+      { label: 'Ignored admin keys', keys: ['admin:manual-hotel'] },
     ])
   })
 })

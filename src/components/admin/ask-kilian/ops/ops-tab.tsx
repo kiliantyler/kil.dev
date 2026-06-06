@@ -20,8 +20,11 @@ export type AskKilianOpsSyncPreview = NonNullable<AskKilianAdminWorkspaceControl
 
 export type RepoSyncConfirmationSummary = {
   leadText: string
-  countRows: { label: 'Created' | 'Changed' | 'Retired'; value: number }[]
-  sections: { label: 'Changed keys' | 'Retired keys'; keys: string[] }[]
+  countRows: { label: 'Created' | 'Changed' | 'Unchanged' | 'Retired' | 'Ignored admin'; value: number }[]
+  sections: {
+    label: 'Created keys' | 'Changed keys' | 'Unchanged keys' | 'Retired keys' | 'Ignored admin keys'
+    keys: string[]
+  }[]
 }
 
 export function canApplyRepoSync({
@@ -33,18 +36,23 @@ export function canApplyRepoSync({
 }
 
 export function buildRepoSyncConfirmationSummary(syncPreview: AskKilianOpsSyncPreview): RepoSyncConfirmationSummary {
-  const { created, changed, retired } = syncPreview.counts
+  const { created, changed, unchanged, retired, ignoredAdmin } = syncPreview.counts
 
   return {
-    leadText: `Latest preview will create ${created} entries, change ${changed} entries, and retire ${retired} entries.`,
+    leadText: `Latest preview will create ${created} entries, change ${changed} entries, leave ${unchanged} entries unchanged, retire ${retired} entries, and ignore ${ignoredAdmin} admin entries.`,
     countRows: [
       { label: 'Created', value: created },
       { label: 'Changed', value: changed },
+      { label: 'Unchanged', value: unchanged },
       { label: 'Retired', value: retired },
+      { label: 'Ignored admin', value: ignoredAdmin },
     ],
     sections: [
+      { label: 'Created keys', keys: syncPreview.keys.created },
       { label: 'Changed keys', keys: syncPreview.keys.changed },
+      { label: 'Unchanged keys', keys: syncPreview.keys.unchanged },
       { label: 'Retired keys', keys: syncPreview.keys.retired },
+      { label: 'Ignored admin keys', keys: syncPreview.keys.ignoredAdmin },
     ],
   }
 }
@@ -52,6 +60,7 @@ export function buildRepoSyncConfirmationSummary(syncPreview: AskKilianOpsSyncPr
 export function OpsTab({ workspace }: { workspace: AskKilianAdminWorkspaceController }) {
   const syncPreview = workspace.syncPreview
   const confirmationSummary = syncPreview ? buildRepoSyncConfirmationSummary(syncPreview) : null
+  const applyDisabled = !canApplyRepoSync(workspace)
 
   return (
     <AdminPanel data-testid="ask-kilian-ops-tab" className="flex min-w-0 flex-col gap-4">
@@ -66,9 +75,7 @@ export function OpsTab({ workspace }: { workspace: AskKilianAdminWorkspaceContro
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button
-                type="button"
-                disabled={!workspace.syncPreview || workspace.syncPreviewStale || workspace.isPending}>
+              <Button type="button" disabled={applyDisabled}>
                 Apply repo sync
               </Button>
             </AlertDialogTrigger>
@@ -126,7 +133,7 @@ export function OpsTab({ workspace }: { workspace: AskKilianAdminWorkspaceContro
 function RepoSyncSummary({ summary }: { summary: RepoSyncConfirmationSummary }) {
   return (
     <div className="grid gap-4">
-      <dl className="grid grid-cols-3 gap-2 text-sm">
+      <dl className="grid grid-cols-2 gap-2 text-sm md:grid-cols-5">
         {summary.countRows.map(row => (
           <div key={row.label} className="rounded-md border border-border bg-background p-3">
             <dt className="text-xs text-muted-foreground uppercase">{row.label}</dt>
@@ -134,7 +141,7 @@ function RepoSyncSummary({ summary }: { summary: RepoSyncConfirmationSummary }) 
           </div>
         ))}
       </dl>
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {summary.sections.map(section => (
           <div key={section.label} className="min-w-0 rounded-md border border-border bg-background">
             <div className="border-b border-border px-3 py-2 text-sm font-medium">{section.label}</div>

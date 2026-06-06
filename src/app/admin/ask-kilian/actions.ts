@@ -17,9 +17,33 @@ import {
 import { createAskKilianConvexServerClient } from '@/lib/ask-kilian/convex-server-client'
 import { buildAskKilianKnowledgeEntries } from '@/lib/ask-kilian/knowledge-sources'
 import type { AskKilianKnowledgeCategory, AskKilianTier } from '@/lib/ask-kilian/types'
+import { stableStringify } from '@/utils/stable-stringify'
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
+import { createHash } from 'node:crypto'
 import { api } from '../../../../convex/_generated/api'
+
+type AskKilianRepoSyncSummary = {
+  dryRun: boolean
+  counts: {
+    created: number
+    changed: number
+    unchanged: number
+    retired: number
+    ignoredAdmin: number
+  }
+  keys: {
+    created: string[]
+    changed: string[]
+    unchanged: string[]
+    retired: string[]
+    ignoredAdmin: string[]
+  }
+}
+
+export type AskKilianRepoSyncPreview = AskKilianRepoSyncSummary & {
+  confirmationToken: string
+}
 
 function toStatus(label: 'Runtime' | 'RAG', error: unknown): AskKilianAdminStatus {
   return {
@@ -125,21 +149,64 @@ export async function reenableAskKilianAdminEntryAction(stableKey: string) {
 
 export async function previewAskKilianRepoSyncAction() {
   const client = await createAskKilianConvexServerClient()
-  return client.action(api.askKilianKnowledge.diffRepoKnowledgeForAdmin, {
-    entries: buildAskKilianKnowledgeEntries(),
+  const entries = buildAskKilianKnowledgeEntries()
+  const summary = await client.action(api.askKilianKnowledge.diffRepoKnowledgeForAdmin, {
+    entries,
     isFullManifest: true,
   })
+  return attachRepoSyncConfirmationToken(summary, entries)
 }
 
-export async function applyAskKilianRepoSyncAction() {
+function buildRepoSyncConfirmationToken(
+  summary: AskKilianRepoSyncSummary,
+  entries: ReturnType<typeof buildAskKilianKnowledgeEntries>,
+) {
+  return createHash('sha256')
+    .update(
+      stableStringify({
+        counts: summary.counts,
+        keys: summary.keys,
+        manifest: entries.map(entry => ({
+          stableKey: entry.stableKey,
+          contentHash: entry.contentHash,
+          status: entry.status,
+        })),
+      }),
+    )
+    .digest('hex')
+}
+
+function attachRepoSyncConfirmationToken(
+  summary: AskKilianRepoSyncSummary,
+  entries: ReturnType<typeof buildAskKilianKnowledgeEntries>,
+): AskKilianRepoSyncPreview {
+  return {
+    ...summary,
+    confirmationToken: buildRepoSyncConfirmationToken(summary, entries),
+  }
+}
+
+export async function applyAskKilianRepoSyncAction(confirmationToken: string) {
+  if (!confirmationToken) throw new Error('Preview repo sync before applying changes.')
+
   const client = await createAskKilianConvexServerClient()
+  const entries = buildAskKilianKnowledgeEntries()
+  const currentSummary = await client.action(api.askKilianKnowledge.diffRepoKnowledgeForAdmin, {
+    entries,
+    isFullManifest: true,
+  })
+  const currentPreview = attachRepoSyncConfirmationToken(currentSummary, entries)
+  if (currentPreview.confirmationToken !== confirmationToken) {
+    throw new Error('Repo sync preview is stale. Preview again before applying changes.')
+  }
+
   const sync = await client.action(api.askKilianKnowledge.syncRepoKnowledgeForAdmin, {
-    entries: buildAskKilianKnowledgeEntries(),
+    entries,
     dryRun: false,
     isFullManifest: true,
   })
   revalidatePath('/admin/ask-kilian')
-  return { sync, state: await getAskKilianAdminWorkspaceStateAction() }
+  return { sync: attachRepoSyncConfirmationToken(sync, entries), state: await getAskKilianAdminWorkspaceStateAction() }
 }
 
 export async function previewAskKilianRetrievalAction(input: {

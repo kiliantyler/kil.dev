@@ -1204,7 +1204,9 @@ export const clearPendingRagEntryCleanupId = internalMutation({
       await ctx.db.patch(existing._id, {
         pendingRagEntryCleanupIds,
         ragStatus:
-          existing.status === 'retired' && pendingRagEntryCleanupIds.length === 0 ? 'deleted' : existing.ragStatus,
+          (existing.status === 'retired' || existing.status === 'disabled') && pendingRagEntryCleanupIds.length === 0
+            ? 'deleted'
+            : existing.ragStatus,
       })
     }
 

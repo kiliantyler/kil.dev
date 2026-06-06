@@ -91,13 +91,16 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
 
   function saveEntry(input: AdminKnowledgeEntrySaveInput) {
     setKnowledgeError(null)
-    startTransition(() => {
-      void saveAskKilianAdminEntryAction(input)
-        .then(applyState)
-        .catch(error => {
-          setKnowledgeError(error instanceof Error ? error.message : 'Unable to save Ask Kilian entry')
-        })
-    })
+    return saveAskKilianAdminEntryAction(input)
+      .then(nextState => {
+        startTransition(() => applyState(nextState))
+        setSyncPreviewStale(syncPreview !== null)
+      })
+      .catch(error => {
+        const message = error instanceof Error ? error.message : 'Unable to save Ask Kilian entry'
+        setKnowledgeError(message)
+        throw new Error(message)
+      })
   }
 
   function disableEntry(stableKey: string) {
@@ -105,6 +108,7 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
     startTransition(() => {
       void disableAskKilianAdminEntryAction(stableKey)
         .then(applyState)
+        .then(() => setSyncPreviewStale(syncPreview !== null))
         .catch(error => {
           setKnowledgeError(error instanceof Error ? error.message : 'Unable to disable Ask Kilian entry')
         })
@@ -116,6 +120,7 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
     startTransition(() => {
       void reenableAskKilianAdminEntryAction(stableKey)
         .then(applyState)
+        .then(() => setSyncPreviewStale(syncPreview !== null))
         .catch(error => {
           setKnowledgeError(error instanceof Error ? error.message : 'Unable to re-enable Ask Kilian entry')
         })
@@ -140,10 +145,10 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
     if (!syncPreview || syncPreviewStale) return
     setOpsError(null)
     startTransition(() => {
-      void applyAskKilianRepoSyncAction()
+      void applyAskKilianRepoSyncAction(syncPreview.confirmationToken)
         .then(result => {
           setSyncPreview(result.sync)
-          setSyncPreviewStale(false)
+          setSyncPreviewStale(true)
           applyState(result.state)
         })
         .catch(error => {

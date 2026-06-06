@@ -131,7 +131,7 @@ export function TestLabTab({ workspace }: { workspace: AskKilianAdminWorkspaceCo
           <label className="grid gap-2">
             <span className="text-sm font-medium">Tier</span>
             <Select value={String(tier)} onValueChange={value => setTier(Number(value) as AskKilianTier)}>
-              <SelectTrigger className="h-9 border-primary/50 bg-background">
+              <SelectTrigger aria-label="Tier" className="h-9 border-primary/50 bg-background">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

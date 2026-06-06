@@ -296,11 +296,27 @@ describe('Ask Kilian admin server actions', () => {
   })
 
   it('previews repo sync with built repo entries and a full manifest', async () => {
-    const convex = { action: vi.fn(async () => ({ creates: [], updates: [], disables: [] })) }
+    const convex = {
+      action: vi.fn(async () => ({
+        dryRun: true,
+        counts: { created: 1, changed: 0, unchanged: 0, retired: 0, ignoredAdmin: 0 },
+        keys: {
+          created: ['project:ask-kilian'],
+          changed: [],
+          unchanged: [],
+          retired: [],
+          ignoredAdmin: [],
+        },
+      })),
+    }
     createAskKilianConvexServerClient.mockResolvedValue(convex)
     const { previewAskKilianRepoSyncAction } = await import('./actions')
 
-    await previewAskKilianRepoSyncAction()
+    await expect(previewAskKilianRepoSyncAction()).resolves.toMatchObject({
+      counts: { created: 1 },
+      keys: { created: ['project:ask-kilian'] },
+      confirmationToken: expect.any(String),
+    })
 
     expect(buildAskKilianKnowledgeEntries).toHaveBeenCalledWith()
     expect(convex.action).toHaveBeenCalledWith(api.askKilianKnowledge.diffRepoKnowledgeForAdmin, {
@@ -308,6 +324,12 @@ describe('Ask Kilian admin server actions', () => {
       isFullManifest: true,
     })
     expect(revalidatePath).not.toHaveBeenCalled()
+  })
+
+  it('rejects repo sync apply without a preview confirmation token', async () => {
+    const { applyAskKilianRepoSyncAction } = await import('./actions')
+
+    await expect(applyAskKilianRepoSyncAction('')).rejects.toThrow('Preview repo sync before applying changes.')
   })
 
   it('applies repo sync with built repo entries, revalidates, and returns sync plus refreshed state', async () => {
@@ -325,17 +347,33 @@ describe('Ask Kilian admin server actions', () => {
       updatedAt: 4,
       ragStatus: 'ready',
     }
-    const sync = { created: 1, updated: 0, disabled: 0 }
+    const preview = {
+      dryRun: true,
+      counts: { created: 1, changed: 0, unchanged: 0, retired: 0, ignoredAdmin: 0 },
+      keys: {
+        created: ['project:ask-kilian'],
+        changed: [],
+        unchanged: [],
+        retired: [],
+        ignoredAdmin: [],
+      },
+    }
+    const sync = { ...preview, dryRun: false }
+    const previewConvex = { action: vi.fn().mockResolvedValueOnce(preview) }
+    createAskKilianConvexServerClient.mockResolvedValue(previewConvex)
+    const { applyAskKilianRepoSyncAction, previewAskKilianRepoSyncAction } = await import('./actions')
+    const initialPreview = await previewAskKilianRepoSyncAction()
+
     const convex = { action: vi.fn() }
     convex.action
+      .mockResolvedValueOnce(preview)
       .mockResolvedValueOnce(sync)
       .mockResolvedValueOnce({ ok: true, aiGatewayConfigured: true, accessTokenConfigured: true })
       .mockResolvedValueOnce([refreshedEntry])
     createAskKilianConvexServerClient.mockResolvedValue(convex)
-    const { applyAskKilianRepoSyncAction } = await import('./actions')
 
-    await expect(applyAskKilianRepoSyncAction()).resolves.toMatchObject({
-      sync,
+    await expect(applyAskKilianRepoSyncAction(initialPreview.confirmationToken)).resolves.toMatchObject({
+      sync: { counts: { created: 1 }, confirmationToken: expect.any(String) },
       state: {
         entries: [expect.objectContaining({ stableKey: 'project:ask-kilian' })],
         runtimeStatus: { level: 'ready', label: 'Runtime' },
@@ -344,11 +382,53 @@ describe('Ask Kilian admin server actions', () => {
     })
 
     expect(buildAskKilianKnowledgeEntries).toHaveBeenCalledWith()
+    expect(convex.action).toHaveBeenCalledWith(api.askKilianKnowledge.diffRepoKnowledgeForAdmin, {
+      entries: repoEntries,
+      isFullManifest: true,
+    })
     expect(convex.action).toHaveBeenCalledWith(api.askKilianKnowledge.syncRepoKnowledgeForAdmin, {
       entries: repoEntries,
       dryRun: false,
       isFullManifest: true,
     })
     expect(revalidatePath).toHaveBeenCalledWith('/admin/ask-kilian')
+  })
+
+  it('rejects repo sync apply when the current preview no longer matches the confirmation token', async () => {
+    const stalePreview = {
+      dryRun: true,
+      counts: { created: 1, changed: 0, unchanged: 0, retired: 0, ignoredAdmin: 0 },
+      keys: {
+        created: ['project:ask-kilian'],
+        changed: [],
+        unchanged: [],
+        retired: [],
+        ignoredAdmin: [],
+      },
+    }
+    const currentPreview = {
+      ...stalePreview,
+      counts: { created: 0, changed: 0, unchanged: 1, retired: 0, ignoredAdmin: 0 },
+      keys: {
+        created: [],
+        changed: [],
+        unchanged: ['project:ask-kilian'],
+        retired: [],
+        ignoredAdmin: [],
+      },
+    }
+    const convex = { action: vi.fn() }
+    convex.action.mockResolvedValueOnce(stalePreview)
+    createAskKilianConvexServerClient.mockResolvedValue(convex)
+    const { applyAskKilianRepoSyncAction, previewAskKilianRepoSyncAction } = await import('./actions')
+    const preview = await previewAskKilianRepoSyncAction()
+
+    convex.action.mockClear()
+    convex.action.mockResolvedValueOnce(currentPreview)
+
+    await expect(applyAskKilianRepoSyncAction(preview.confirmationToken)).rejects.toThrow(
+      'Repo sync preview is stale. Preview again before applying changes.',
+    )
+    expect(convex.action).not.toHaveBeenCalledWith(api.askKilianKnowledge.syncRepoKnowledgeForAdmin, expect.anything())
   })
 })

@@ -128,6 +128,11 @@ function formatTimestamp(value: number | undefined) {
   }).format(new Date(value))
 }
 
+function tableHeaderAriaSort(sorted: false | 'asc' | 'desc') {
+  if (sorted === 'asc') return 'ascending'
+  if (sorted === 'desc') return 'descending'
+}
+
 function HeaderButton({
   column,
   label,
@@ -158,6 +163,7 @@ type KnowledgeTableProps = {
   onEditEntry: (stableKey: string) => void
   onDisableEntry: (stableKey: string) => void
   onReenableEntry: (stableKey: string) => void
+  onStableKeyButtonRef?: (stableKey: string, element: HTMLButtonElement | null) => void
   isPending?: boolean
 }
 
@@ -168,6 +174,7 @@ export function KnowledgeTable({
   onEditEntry,
   onDisableEntry,
   onReenableEntry,
+  onStableKeyButtonRef,
   isPending = false,
 }: KnowledgeTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'stableKey', desc: false }])
@@ -192,6 +199,7 @@ export function KnowledgeTable({
               size="sm"
               className="h-auto min-w-0 justify-start px-0 py-0 text-left font-mono text-xs whitespace-normal"
               aria-current={selected ? 'true' : undefined}
+              ref={element => onStableKeyButtonRef?.(entry.stableKey, element)}
               onClick={() => onSelectEntry(entry.stableKey)}>
               {entry.stableKey}
             </Button>
@@ -291,7 +299,7 @@ export function KnowledgeTable({
         },
       },
     ],
-    [onDisableEntry, onEditEntry, onReenableEntry, onSelectEntry, selectedStableKey],
+    [onDisableEntry, onEditEntry, onReenableEntry, onSelectEntry, onStableKeyButtonRef, selectedStableKey],
   )
 
   const table = useReactTable({
@@ -382,7 +390,7 @@ export function KnowledgeTable({
           {table.getHeaderGroups().map(headerGroup => (
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map(header => (
-                <TableHead key={header.id}>
+                <TableHead key={header.id} aria-sort={tableHeaderAriaSort(header.column.getIsSorted())}>
                   {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                 </TableHead>
               ))}
