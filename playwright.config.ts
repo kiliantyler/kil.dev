@@ -9,7 +9,7 @@ const webServer = process.env.PLAYWRIGHT_BASE_URL
       command: `bun run prebuild && next build && next start -p ${e2ePort}`,
       url: e2eBaseURL,
       reuseExistingServer: !process.env.CI,
-      timeout: 120000,
+      timeout: process.env.CI ? 240000 : 120000,
       env: {
         PATH: process.env.PATH ?? '',
         HOME: process.env.HOME ?? '',

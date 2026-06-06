@@ -4,6 +4,7 @@ import {
   expectAchievementPopup,
   expectConfettiLikely,
   flipAllPetCards,
+  waitForAchievementCookie,
 } from '../../fixtures/achievement-helpers'
 import { abortNoise, clearState, gotoAndWaitForMain } from '../../fixtures/test-helpers'
 
@@ -39,9 +40,13 @@ test.describe('PET_PARADE Achievement', () => {
   })
 
   test('should make pet gallery nav link visible after PET_PARADE', async ({ page }) => {
+    if ((page.viewportSize()?.width ?? 0) < 920) {
+      test.skip(true, 'Desktop topbar is hidden below the nav breakpoint')
+    }
+
     await flipAllPetCards(page)
 
-    await page.waitForTimeout(1500)
+    await waitForAchievementCookie(page, 'PET_PARADE')
 
     // Navigate to home to check for pet gallery link
     await gotoAndWaitForMain(page, '/')
@@ -54,7 +59,7 @@ test.describe('PET_PARADE Achievement', () => {
   test('should set data-has-pet-gallery attribute after unlock', async ({ page }) => {
     await flipAllPetCards(page)
 
-    await page.waitForTimeout(1500)
+    await waitForAchievementCookie(page, 'PET_PARADE')
 
     const hasAttribute = await page.evaluate(() => {
       return Object.hasOwn(document.documentElement.dataset, 'hasPetGallery')

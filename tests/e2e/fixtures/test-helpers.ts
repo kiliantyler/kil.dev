@@ -191,8 +191,7 @@ export async function openThemeMenu(page: Page) {
   // Wait for button to be visible and enabled before clicking
   await expect(themeButton).toBeVisible({ timeout: 5000 })
   await themeButton.click()
-  // Wait for menu to be visible instead of using arbitrary timeout
-  await page.waitForSelector('[role="menu"][aria-label="Select theme"]', { state: 'visible', timeout: 2000 })
+  await page.waitForSelector('#theme-options[aria-hidden="false"]', { state: 'attached', timeout: 2000 })
 }
 
 /**

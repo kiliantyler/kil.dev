@@ -218,22 +218,19 @@ export async function flipAllPetCards(page: Page) {
   for (let i = 0; i < count; i++) {
     const card = petCards.nth(i)
     await card.scrollIntoViewIfNeeded()
-    await card.click()
-    // Small delay for flip animation (animations are disabled but card state needs to update)
-    await page.waitForTimeout(100)
+    await expect(card).toBeVisible({ timeout: 3000 })
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      if ((await card.getAttribute('aria-pressed')) === 'true') break
+      await card.click({ force: true })
+      await expect(card)
+        .toHaveAttribute('aria-pressed', 'true', { timeout: 1000 })
+        .catch(() => {})
+    }
+
+    await expect(card).toHaveAttribute('aria-pressed', 'true', { timeout: 1000 })
   }
 
   // Wait for achievement to be processed
-  await page
-    .waitForFunction(
-      () => {
-        const cookies = document.cookie.split(';')
-        return cookies.some(c => c.includes('kil.dev_achievements_v1') && c.includes('PET_PARADE'))
-      },
-      { timeout: 2000 },
-    )
-    .catch(() => {
-      // Fallback: if cookie check fails, wait a bit
-      return page.waitForTimeout(300)
-    })
+  await waitForAchievementCookie(page, 'PET_PARADE', 5000)
 }
