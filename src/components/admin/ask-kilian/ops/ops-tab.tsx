@@ -88,10 +88,7 @@ export function OpsTab({ workspace }: { workspace: AskKilianAdminWorkspaceContro
                 <RepoSyncSummary summary={confirmationSummary} />
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    type="button"
-                    disabled={workspace.isPending}
-                    onClick={workspace.actions.applyRepoSync}>
+                  <AlertDialogAction type="button" disabled={applyDisabled} onClick={workspace.actions.applyRepoSync}>
                     Apply repo sync
                   </AlertDialogAction>
                 </AlertDialogFooter>

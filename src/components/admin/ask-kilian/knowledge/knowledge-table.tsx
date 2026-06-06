@@ -73,9 +73,7 @@ export function knowledgeEntryMatchesGlobalSearch(entry: AdminWorkspaceKnowledge
   const query = value.trim().toLowerCase()
   if (!query) return true
 
-  return [entry.stableKey, entry.title, entry.sourcePath, entry.text ?? ''].some(field =>
-    field.toLowerCase().includes(query),
-  )
+  return [entry.stableKey, entry.title, entry.sourcePath].some(field => field.toLowerCase().includes(query))
 }
 
 export function sortKnowledgeEntries(
@@ -330,7 +328,7 @@ export function KnowledgeTable({
           className={cn(adminInputClassName, 'w-full')}
           value={globalFilter}
           onChange={event => setGlobalFilter(event.currentTarget.value)}
-          placeholder="Search stable keys, titles, paths, and text"
+          placeholder="Search stable keys, titles, and paths"
         />
         <div className="flex flex-wrap items-center gap-2">
           <KnowledgeFilterSelect

@@ -64,11 +64,11 @@ const entries = [
 const bravoEntry = entries[0]!
 
 describe('knowledgeEntryMatchesGlobalSearch', () => {
-  test('matches stable key, title, source path, and source text summary', () => {
+  test('matches stable key, title, and source path', () => {
     expect(knowledgeEntryMatchesGlobalSearch(bravoEntry, 'repo:bravo')).toBe(true)
     expect(knowledgeEntryMatchesGlobalSearch(bravoEntry, 'Bravo knowledge')).toBe(true)
     expect(knowledgeEntryMatchesGlobalSearch(bravoEntry, 'content/bravo')).toBe(true)
-    expect(knowledgeEntryMatchesGlobalSearch(bravoEntry, 'theme text')).toBe(true)
+    expect(knowledgeEntryMatchesGlobalSearch(bravoEntry, 'theme text')).toBe(false)
     expect(knowledgeEntryMatchesGlobalSearch(bravoEntry, 'missing')).toBe(false)
   })
 })

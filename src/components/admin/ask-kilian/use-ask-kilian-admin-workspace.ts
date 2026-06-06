@@ -53,12 +53,7 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
     latestDetailRequestStableKey.current = nextSelectedStableKey
     setState(nextState)
     setSelectedStableKey(nextSelectedStableKey)
-    setSelectedDetail(current =>
-      current?.stableKey === nextSelectedStableKey &&
-      nextState.entries.some(entry => entry.stableKey === nextSelectedStableKey)
-        ? current
-        : null,
-    )
+    setSelectedDetail(null)
   }
 
   function runWorkspaceOperation(operation: () => Promise<void>, key?: string) {
@@ -83,24 +78,33 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
     }, 'refresh')
   }
 
-  function selectEntry(stableKey: string) {
+  async function loadEntryDetail(stableKey: string) {
     selectedStableKeyRef.current = stableKey
     latestDetailRequestStableKey.current = stableKey
     setSelectedStableKey(stableKey)
     setSelectedDetail(current => (current?.stableKey === stableKey ? current : null))
     setKnowledgeError(null)
+    setPendingOperations(count => count + 1)
+    try {
+      const detail = await getAskKilianKnowledgeEntryAction(stableKey)
+      if (latestDetailRequestStableKey.current === stableKey && detail?.stableKey === stableKey) {
+        setSelectedDetail(detail)
+        return detail
+      }
+      return null
+    } catch (error) {
+      if (latestDetailRequestStableKey.current === stableKey) {
+        setKnowledgeError(error instanceof Error ? error.message : 'Unable to load Ask Kilian entry detail')
+      }
+      return null
+    } finally {
+      setPendingOperations(count => Math.max(0, count - 1))
+    }
+  }
+
+  function selectEntry(stableKey: string) {
     startTransition(() => {
-      void getAskKilianKnowledgeEntryAction(stableKey)
-        .then(detail => {
-          if (latestDetailRequestStableKey.current === stableKey && detail?.stableKey === stableKey) {
-            setSelectedDetail(detail)
-          }
-        })
-        .catch(error => {
-          if (latestDetailRequestStableKey.current === stableKey) {
-            setKnowledgeError(error instanceof Error ? error.message : 'Unable to load Ask Kilian entry detail')
-          }
-        })
+      void loadEntryDetail(stableKey)
     })
   }
 
@@ -182,9 +186,9 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
     limit: number
   }) {
     setRetrievalError(null)
-    const requestId = latestRetrievalRequestId.current + 1
-    latestRetrievalRequestId.current = requestId
     runWorkspaceOperation(async () => {
+      const requestId = latestRetrievalRequestId.current + 1
+      latestRetrievalRequestId.current = requestId
       try {
         const preview = await previewAskKilianRetrievalAction(input)
         if (latestRetrievalRequestId.current === requestId) setRetrievalPreview(preview)
@@ -212,6 +216,7 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
     actions: {
       refresh,
       selectEntry,
+      loadEntryDetail,
       saveEntry,
       disableEntry,
       reenableEntry,

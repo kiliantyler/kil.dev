@@ -9,6 +9,7 @@ import {
   BottomDrawerTitle,
 } from '@/components/ui/bottom-drawer'
 import { Button } from '@/components/ui/button'
+import type { AdminWorkspaceKnowledgeEntry } from '@/lib/ask-kilian/admin-workspace'
 import { X } from 'lucide-react'
 import { useRef, useState } from 'react'
 import type { AskKilianAdminWorkspaceController } from '../use-ask-kilian-admin-workspace'
@@ -16,31 +17,63 @@ import { EntryEditorDialog } from './entry-editor-dialog'
 import { KnowledgeDetail } from './knowledge-detail'
 import { KnowledgeTable } from './knowledge-table'
 
+export function getEditableEntryForEditor({
+  entries,
+  selectedDetail,
+  stableKey,
+}: {
+  entries: AdminWorkspaceKnowledgeEntry[]
+  selectedDetail: AdminWorkspaceKnowledgeEntry | null
+  stableKey: string | null
+}) {
+  if (!stableKey) return null
+  const listEntry = entries.find(entry => entry.stableKey === stableKey && entry.source === 'admin')
+  if (!listEntry || listEntry.status === 'retired') return null
+  if (
+    selectedDetail?.stableKey === stableKey &&
+    selectedDetail.source === 'admin' &&
+    selectedDetail.status !== 'retired'
+  ) {
+    return selectedDetail
+  }
+  return listEntry.text ? listEntry : null
+}
+
 export function KnowledgeTab({ workspace }: { workspace: AskKilianAdminWorkspaceController }) {
   const [editorOpen, setEditorOpen] = useState(false)
   const [editingStableKey, setEditingStableKey] = useState<string | null>(null)
+  const [editingEntryDetail, setEditingEntryDetail] = useState<AdminWorkspaceKnowledgeEntry | null>(null)
+  const [editLoadingStableKey, setEditLoadingStableKey] = useState<string | null>(null)
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false)
   const stableKeyButtonRefs = useRef(new Map<string, HTMLButtonElement>())
-  const editingEntry =
-    editingStableKey === null
-      ? null
-      : (workspace.state.entries.find(entry => entry.stableKey === editingStableKey && entry.source === 'admin') ??
-        null)
+  const editingEntry = getEditableEntryForEditor({
+    entries: workspace.state.entries,
+    selectedDetail: editingEntryDetail ?? workspace.selectedDetail,
+    stableKey: editingStableKey,
+  })
 
   function openCreateEditor() {
     setEditingStableKey(null)
+    setEditingEntryDetail(null)
     setEditorOpen(true)
   }
 
-  function openEditEditor(stableKey: string) {
+  async function openEditEditor(stableKey: string) {
     const entry = workspace.state.entries.find(
       candidate => candidate.stableKey === stableKey && candidate.source === 'admin' && candidate.status !== 'retired',
     )
     if (!entry) return
-    workspace.actions.selectEntry(stableKey)
-    setEditingStableKey(stableKey)
-    setMobileDetailOpen(false)
-    setEditorOpen(true)
+    setEditLoadingStableKey(stableKey)
+    try {
+      const detail = await workspace.actions.loadEntryDetail(stableKey)
+      if (!detail || detail.stableKey !== stableKey || detail.source !== 'admin' || detail.status === 'retired') return
+      setEditingStableKey(stableKey)
+      setEditingEntryDetail(detail)
+      setMobileDetailOpen(false)
+      setEditorOpen(true)
+    } finally {
+      setEditLoadingStableKey(current => (current === stableKey ? null : current))
+    }
   }
 
   function selectEntry(stableKey: string) {
@@ -83,7 +116,7 @@ export function KnowledgeTab({ workspace }: { workspace: AskKilianAdminWorkspace
           onDisableEntry={workspace.actions.disableEntry}
           onReenableEntry={workspace.actions.reenableEntry}
           onStableKeyButtonRef={setStableKeyButtonRef}
-          isPending={workspace.isPending}
+          isPending={workspace.isPending || editLoadingStableKey !== null}
         />
         <aside className="hidden min-h-0 lg:block">
           <KnowledgeDetail entry={workspace.selectedDetail} onEditEntry={openEditEditor} />
@@ -118,7 +151,13 @@ export function KnowledgeTab({ workspace }: { workspace: AskKilianAdminWorkspace
         open={editorOpen}
         entry={editingEntry}
         entries={workspace.state.entries}
-        onOpenChange={setEditorOpen}
+        onOpenChange={open => {
+          setEditorOpen(open)
+          if (!open) {
+            setEditingStableKey(null)
+            setEditingEntryDetail(null)
+          }
+        }}
         onSave={workspace.actions.saveEntry}
         isPending={workspace.isPending}
       />

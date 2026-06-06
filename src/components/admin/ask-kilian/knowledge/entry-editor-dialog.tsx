@@ -144,6 +144,22 @@ export function isEntryEditorDraftDirty(draft: EntryEditorDraft, entry: AdminWor
   return JSON.stringify(draft) !== JSON.stringify(baseline)
 }
 
+export function resolveEntryEditorCloseRequest({
+  saving,
+  nextOpen,
+  draft,
+  entry,
+}: {
+  saving: boolean
+  nextOpen: boolean
+  draft: EntryEditorDraft
+  entry: AdminWorkspaceKnowledgeEntry | null
+}) {
+  if (!nextOpen && saving) return 'keep-open'
+  if (nextOpen || !isEntryEditorDraftDirty(draft, entry)) return 'set-open'
+  return 'confirm-discard'
+}
+
 type EntryEditorDialogProps = {
   open: boolean
   entry: AdminWorkspaceKnowledgeEntry | null
@@ -181,7 +197,9 @@ export function EntryEditorDialog({
   }, [entry, open])
 
   function requestOpenChange(nextOpen: boolean) {
-    if (nextOpen || !isEntryEditorDraftDirty(draft, entry)) {
+    const closeRequest = resolveEntryEditorCloseRequest({ saving, nextOpen, draft, entry })
+    if (closeRequest === 'keep-open') return
+    if (closeRequest === 'set-open') {
       onOpenChange(nextOpen)
       return
     }
@@ -331,7 +349,7 @@ export function EntryEditorDialog({
                 />
               </Field>
               <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => requestOpenChange(false)}>
+                <Button type="button" variant="outline" disabled={saving} onClick={() => requestOpenChange(false)}>
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isPending || saving}>
@@ -342,7 +360,7 @@ export function EntryEditorDialog({
           )}
         </DialogContent>
       </Dialog>
-      <AlertDialog open={confirmDiscardOpen} onOpenChange={setConfirmDiscardOpen}>
+      <AlertDialog open={confirmDiscardOpen && !saving} onOpenChange={setConfirmDiscardOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Discard unsaved changes?</AlertDialogTitle>
@@ -351,6 +369,7 @@ export function EntryEditorDialog({
           <AlertDialogFooter>
             <AlertDialogCancel>Keep editing</AlertDialogCancel>
             <AlertDialogAction
+              disabled={saving}
               onClick={() => {
                 setConfirmDiscardOpen(false)
                 onOpenChange(false)

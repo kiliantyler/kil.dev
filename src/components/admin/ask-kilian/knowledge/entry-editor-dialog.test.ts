@@ -4,6 +4,7 @@ import {
   buildEntryEditorDraft,
   buildEntryEditorSaveInput,
   isEntryEditorDraftDirty,
+  resolveEntryEditorCloseRequest,
   validateEntryEditorDraftForSave,
 } from './entry-editor-dialog'
 
@@ -103,5 +104,41 @@ describe('isEntryEditorDraftDirty', () => {
     const existing = entry()
     expect(isEntryEditorDraftDirty(buildEntryEditorDraft(existing), existing)).toBe(false)
     expect(isEntryEditorDraftDirty({ ...buildEntryEditorDraft(existing), text: 'Changed text' }, existing)).toBe(true)
+  })
+})
+
+describe('resolveEntryEditorCloseRequest', () => {
+  test('blocks close requests while an async save is unresolved', () => {
+    const existing = entry()
+
+    expect(
+      resolveEntryEditorCloseRequest({
+        saving: true,
+        nextOpen: false,
+        draft: { ...buildEntryEditorDraft(existing), text: 'Changed text that is long enough.' },
+        entry: existing,
+      }),
+    ).toBe('keep-open')
+  })
+
+  test('confirms discard only for dirty non-saving drafts', () => {
+    const existing = entry()
+
+    expect(
+      resolveEntryEditorCloseRequest({
+        saving: false,
+        nextOpen: false,
+        draft: { ...buildEntryEditorDraft(existing), text: 'Changed text that is long enough.' },
+        entry: existing,
+      }),
+    ).toBe('confirm-discard')
+    expect(
+      resolveEntryEditorCloseRequest({
+        saving: false,
+        nextOpen: false,
+        draft: buildEntryEditorDraft(existing),
+        entry: existing,
+      }),
+    ).toBe('set-open')
   })
 })
