@@ -101,13 +101,17 @@ describe('Ask Kilian admin server actions', () => {
     })
   })
 
-  it('returns safe empty state without Convex when the admin test bypass cookie is present', async () => {
+  it('returns safe seeded state without Convex when the admin test bypass cookie is present', async () => {
     isAdminTestBypassEnvEnabled.mockReturnValue(true)
     cookieGet.mockReturnValue({ value: '1' })
 
     const { getAskKilianAdminWorkspaceStateAction } = await import('./actions')
     await expect(getAskKilianAdminWorkspaceStateAction()).resolves.toMatchObject({
-      entries: [],
+      entries: [
+        expect.objectContaining({ minTier: 0, ragStatus: 'ready', stableKey: 'test:public-project' }),
+        expect.objectContaining({ minTier: 1, ragStatus: 'ready', stableKey: 'test:access-one-note' }),
+        expect.objectContaining({ minTier: 2, ragStatus: 'ready', stableKey: 'test:private-note' }),
+      ],
       runtimeStatus: { level: 'degraded', label: 'Runtime', reason: 'Admin test bypass state' },
       ragStatus: { level: 'degraded', label: 'RAG', reason: 'Admin test bypass state' },
     })

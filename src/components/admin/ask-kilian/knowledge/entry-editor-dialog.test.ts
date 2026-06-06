@@ -1,6 +1,7 @@
 import type { AdminWorkspaceKnowledgeEntry } from '@/lib/ask-kilian/admin-workspace'
 import { describe, expect, test } from 'vitest'
 import {
+  applyEntryEditorTitleChange,
   buildEntryEditorDraft,
   buildEntryEditorSaveInput,
   isEntryEditorDraftDirty,
@@ -63,6 +64,34 @@ describe('buildEntryEditorDraft', () => {
     expect(input).toMatchObject({
       mode: 'edit',
       currentStatus: 'disabled',
+    })
+  })
+})
+
+describe('applyEntryEditorTitleChange', () => {
+  test('keeps create slug generated from title until the slug is manually edited', () => {
+    const emptyDraft = buildEntryEditorDraft(null)
+    const titledDraft = applyEntryEditorTitleChange(emptyDraft, 'Secret Console Lore', null)
+
+    expect(titledDraft).toMatchObject({
+      title: 'Secret Console Lore',
+      slug: 'secret-console-lore',
+    })
+
+    const manuallySluggedDraft = { ...titledDraft, slug: 'custom-console-key' }
+
+    expect(applyEntryEditorTitleChange(manuallySluggedDraft, 'Different Title', null)).toMatchObject({
+      title: 'Different Title',
+      slug: 'custom-console-key',
+    })
+  })
+
+  test('preserves existing edit slugs when the title changes', () => {
+    const existing = entry({ stableKey: 'admin:existing-note', title: 'Existing note' })
+
+    expect(applyEntryEditorTitleChange(buildEntryEditorDraft(existing), 'Retitled note', existing)).toMatchObject({
+      title: 'Retitled note',
+      slug: 'existing-note',
     })
   })
 })

@@ -85,6 +85,23 @@ export function buildEntryEditorDraft(entry: AdminWorkspaceKnowledgeEntry | null
   }
 }
 
+export function applyEntryEditorTitleChange(
+  draft: EntryEditorDraft,
+  nextTitle: string,
+  entry: AdminWorkspaceKnowledgeEntry | null,
+): EntryEditorDraft {
+  if (entry) return { ...draft, title: nextTitle }
+
+  const currentTitleSlug = normalizeAdminKnowledgeSlug(draft.title)
+  const slugTracksTitle = !draft.slug || draft.slug === currentTitleSlug
+
+  return {
+    ...draft,
+    title: nextTitle,
+    slug: slugTracksTitle ? normalizeAdminKnowledgeSlug(nextTitle) : draft.slug,
+  }
+}
+
 export function buildEntryEditorSaveInput(
   draft: EntryEditorDraft,
   entry: AdminWorkspaceKnowledgeEntry | null,
@@ -212,6 +229,12 @@ export function EntryEditorDialog({
     setError(null)
   }
 
+  function updateTitle(title: string) {
+    setDraft(current => applyEntryEditorTitleChange(current, title, entry))
+    setFieldErrors(current => ({ ...current, title: undefined, slug: undefined }))
+    setError(null)
+  }
+
   async function handleSave() {
     if (repoEntryPassed) return
     const result = validateEntryEditorDraftForSave(draft, entry, existingStableKeys)
@@ -268,7 +291,7 @@ export function EntryEditorDialog({
                 <input
                   className={cn(adminInputClassName, 'w-full')}
                   value={draft.title}
-                  onChange={event => updateDraft('title', event.currentTarget.value)}
+                  onChange={event => updateTitle(event.currentTarget.value)}
                   required
                 />
               </Field>

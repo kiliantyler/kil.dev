@@ -78,8 +78,52 @@ async function isTestBypassRequest() {
 }
 
 function createTestBypassAskKilianAdminWorkspaceState(): AskKilianAdminWorkspaceState {
+  const updatedAt = Date.now()
   return {
-    entries: [],
+    entries: [
+      {
+        stableKey: 'test:public-project',
+        source: 'repo',
+        status: 'active',
+        category: 'projects',
+        title: 'Public project fixture',
+        contentHash: 'test-public-project-hash',
+        sourcePath: 'src/lib/ask-kilian/test-fixtures.ts',
+        minTier: 0,
+        spoilerLevel: 'none',
+        importance: 0.8,
+        updatedAt,
+        ragStatus: 'ready',
+      },
+      {
+        stableKey: 'test:access-one-note',
+        source: 'repo',
+        status: 'active',
+        category: 'persona',
+        title: 'Access one fixture',
+        contentHash: 'test-access-one-note-hash',
+        sourcePath: 'src/lib/ask-kilian/test-fixtures.ts',
+        minTier: 1,
+        spoilerLevel: 'hint',
+        importance: 0.7,
+        updatedAt,
+        ragStatus: 'ready',
+      },
+      {
+        stableKey: 'test:private-note',
+        source: 'repo',
+        status: 'active',
+        category: 'fun',
+        title: 'Private fixture',
+        contentHash: 'test-private-note-hash',
+        sourcePath: 'src/lib/ask-kilian/test-fixtures.ts',
+        minTier: 2,
+        spoilerLevel: 'spoiler',
+        importance: 0.5,
+        updatedAt,
+        ragStatus: 'ready',
+      },
+    ],
     runtimeStatus: {
       label: 'Runtime',
       level: 'degraded',
