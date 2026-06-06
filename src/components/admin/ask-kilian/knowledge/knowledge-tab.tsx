@@ -34,7 +34,7 @@ export function KnowledgeTab({ workspace }: { workspace: AskKilianAdminWorkspace
 
   function openEditEditor(stableKey: string) {
     const entry = workspace.state.entries.find(
-      candidate => candidate.stableKey === stableKey && candidate.source === 'admin',
+      candidate => candidate.stableKey === stableKey && candidate.source === 'admin' && candidate.status !== 'retired',
     )
     if (!entry) return
     workspace.actions.selectEntry(stableKey)

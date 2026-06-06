@@ -47,7 +47,7 @@ export function KnowledgeDetail({ entry, onEditEntry }: KnowledgeDetailProps) {
           <p className="font-mono text-xs text-muted-foreground">{entry.stableKey}</p>
           <h3 className="truncate text-lg font-semibold">{entry.title}</h3>
         </div>
-        {entry.source === 'admin' && onEditEntry ? (
+        {entry.source === 'admin' && entry.status !== 'retired' && onEditEntry ? (
           <Button type="button" variant="outline" size="sm" onClick={() => onEditEntry(entry.stableKey)}>
             Edit
           </Button>

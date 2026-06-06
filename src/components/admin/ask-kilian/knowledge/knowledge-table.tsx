@@ -279,7 +279,7 @@ export function KnowledgeTable({
         header: '',
         cell: ({ row }) => {
           const entry = row.original
-          return entry.source === 'admin' ? (
+          return entry.source === 'admin' && entry.status !== 'retired' ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button type="button" variant="ghost" size="sm" aria-label={`Actions for ${entry.stableKey}`}>

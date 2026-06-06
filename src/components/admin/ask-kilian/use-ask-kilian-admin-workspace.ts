@@ -32,8 +32,10 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
   const [retrievalError, setRetrievalError] = useState<string | null>(null)
   const [retrievalPreview, setRetrievalPreview] = useState<AskKilianRetrievalPreview | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [pendingOperations, setPendingOperations] = useState(0)
   const selectedStableKeyRef = useRef<string | null>(initialState.selectedStableKey ?? null)
   const latestDetailRequestStableKey = useRef<string | null>(null)
+  const latestRetrievalRequestId = useRef(0)
 
   const selectedEntry = useMemo(
     () => state.entries.find(entry => entry.stableKey === selectedStableKey) ?? null,
@@ -58,13 +60,19 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
     )
   }
 
+  function runWorkspaceOperation(operation: () => Promise<void>) {
+    setPendingOperations(count => count + 1)
+    void operation().finally(() => setPendingOperations(count => Math.max(0, count - 1)))
+  }
+
   function refresh() {
-    startTransition(() => {
-      void getAskKilianAdminWorkspaceStateAction()
-        .then(applyState)
-        .catch(error => {
-          setKnowledgeError(error instanceof Error ? error.message : 'Unable to refresh Ask Kilian admin state')
-        })
+    runWorkspaceOperation(async () => {
+      try {
+        const nextState = await getAskKilianAdminWorkspaceStateAction()
+        startTransition(() => applyState(nextState))
+      } catch (error) {
+        setKnowledgeError(error instanceof Error ? error.message : 'Unable to refresh Ask Kilian admin state')
+      }
     })
   }
 
@@ -91,6 +99,7 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
 
   function saveEntry(input: AdminKnowledgeEntrySaveInput) {
     setKnowledgeError(null)
+    setPendingOperations(count => count + 1)
     return saveAskKilianAdminEntryAction(input)
       .then(nextState => {
         startTransition(() => applyState(nextState))
@@ -101,59 +110,60 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
         setKnowledgeError(message)
         throw new Error(message)
       })
+      .finally(() => setPendingOperations(count => Math.max(0, count - 1)))
   }
 
   function disableEntry(stableKey: string) {
     setKnowledgeError(null)
-    startTransition(() => {
-      void disableAskKilianAdminEntryAction(stableKey)
-        .then(applyState)
-        .then(() => setSyncPreviewStale(syncPreview !== null))
-        .catch(error => {
-          setKnowledgeError(error instanceof Error ? error.message : 'Unable to disable Ask Kilian entry')
-        })
+    runWorkspaceOperation(async () => {
+      try {
+        const nextState = await disableAskKilianAdminEntryAction(stableKey)
+        startTransition(() => applyState(nextState))
+        setSyncPreviewStale(syncPreview !== null)
+      } catch (error) {
+        setKnowledgeError(error instanceof Error ? error.message : 'Unable to disable Ask Kilian entry')
+      }
     })
   }
 
   function reenableEntry(stableKey: string) {
     setKnowledgeError(null)
-    startTransition(() => {
-      void reenableAskKilianAdminEntryAction(stableKey)
-        .then(applyState)
-        .then(() => setSyncPreviewStale(syncPreview !== null))
-        .catch(error => {
-          setKnowledgeError(error instanceof Error ? error.message : 'Unable to re-enable Ask Kilian entry')
-        })
+    runWorkspaceOperation(async () => {
+      try {
+        const nextState = await reenableAskKilianAdminEntryAction(stableKey)
+        startTransition(() => applyState(nextState))
+        setSyncPreviewStale(syncPreview !== null)
+      } catch (error) {
+        setKnowledgeError(error instanceof Error ? error.message : 'Unable to re-enable Ask Kilian entry')
+      }
     })
   }
 
   function previewRepoSync() {
     setOpsError(null)
-    startTransition(() => {
-      void previewAskKilianRepoSyncAction()
-        .then(summary => {
-          setSyncPreview(summary)
-          setSyncPreviewStale(false)
-        })
-        .catch(error => {
-          setOpsError(error instanceof Error ? error.message : 'Unable to preview Ask Kilian repo sync')
-        })
+    runWorkspaceOperation(async () => {
+      try {
+        const summary = await previewAskKilianRepoSyncAction()
+        setSyncPreview(summary)
+        setSyncPreviewStale(false)
+      } catch (error) {
+        setOpsError(error instanceof Error ? error.message : 'Unable to preview Ask Kilian repo sync')
+      }
     })
   }
 
   function applyRepoSync() {
     if (!syncPreview || syncPreviewStale) return
     setOpsError(null)
-    startTransition(() => {
-      void applyAskKilianRepoSyncAction(syncPreview.confirmationToken)
-        .then(result => {
-          setSyncPreview(result.sync)
-          setSyncPreviewStale(true)
-          applyState(result.state)
-        })
-        .catch(error => {
-          setOpsError(error instanceof Error ? error.message : 'Unable to apply Ask Kilian repo sync')
-        })
+    runWorkspaceOperation(async () => {
+      try {
+        const result = await applyAskKilianRepoSyncAction(syncPreview.confirmationToken)
+        setSyncPreview(result.sync)
+        setSyncPreviewStale(true)
+        startTransition(() => applyState(result.state))
+      } catch (error) {
+        setOpsError(error instanceof Error ? error.message : 'Unable to apply Ask Kilian repo sync')
+      }
     })
   }
 
@@ -165,14 +175,21 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
     limit: number
   }) {
     setRetrievalError(null)
-    startTransition(() => {
-      void previewAskKilianRetrievalAction(input)
-        .then(setRetrievalPreview)
-        .catch(error => {
+    const requestId = latestRetrievalRequestId.current + 1
+    latestRetrievalRequestId.current = requestId
+    runWorkspaceOperation(async () => {
+      try {
+        const preview = await previewAskKilianRetrievalAction(input)
+        if (latestRetrievalRequestId.current === requestId) setRetrievalPreview(preview)
+      } catch (error) {
+        if (latestRetrievalRequestId.current === requestId) {
           setRetrievalError(error instanceof Error ? error.message : 'Unable to run Ask Kilian retrieval preview')
-        })
+        }
+      }
     })
   }
+
+  const isOperationPending = isPending || pendingOperations > 0
 
   return {
     state,
@@ -184,7 +201,7 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
     syncPreviewStale,
     retrievalError,
     retrievalPreview,
-    isPending,
+    isPending: isOperationPending,
     actions: {
       refresh,
       selectEntry,
