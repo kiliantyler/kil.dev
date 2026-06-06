@@ -57,11 +57,38 @@ export type AskKilianAdminStatus = {
   checkedAt?: number
 }
 
+export type AskKilianPromptConfigSummary = {
+  id: string
+  title: string
+  promptText: string
+  notes?: string
+  createdBy: string
+  createdAt: number
+}
+
+export type AskKilianRuntimeConfigSummary = {
+  id: string
+  modelId: string
+  maxOutputTokens: number
+  temperature: number
+  conversationWindow: number
+  ragLimit: number
+  quota: {
+    adminTestDailyRequests: number
+    publicDailyRequests: number
+    publicDailyEstimatedTokens: number
+  }
+  createdBy: string
+  createdAt: number
+}
+
 export type AskKilianAdminWorkspaceState = {
   entries: AdminWorkspaceKnowledgeEntry[]
   selectedStableKey?: string
   runtimeStatus: AskKilianAdminStatus
   ragStatus: AskKilianAdminStatus
+  activePromptConfig?: AskKilianPromptConfigSummary
+  activeRuntimeConfig?: AskKilianRuntimeConfigSummary
 }
 
 function isCategory(value: string): value is AskKilianKnowledgeCategory {

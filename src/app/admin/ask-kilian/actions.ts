@@ -5,6 +5,7 @@ import {
   ADMIN_TEST_BYPASS_COOKIE_VALUE,
   isAdminTestBypassEnvEnabled,
 } from '@/lib/admin-test-bypass'
+import { requireAdminAuthContext } from '@/lib/admin-auth'
 import { buildAskKilianAdminContextPreview } from '@/lib/ask-kilian/admin-context-preview'
 import { buildAdminKnowledgeEntry } from '@/lib/ask-kilian/admin-workspace'
 import {
@@ -19,6 +20,7 @@ import type { AskKilianKnowledgeCategory, AskKilianTier } from '@/lib/ask-kilian
 import { stableStringify } from '@/utils/stable-stringify'
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
+import type { FunctionReference } from 'convex/server'
 import { createHash } from 'node:crypto'
 import { api } from '../../../../convex/_generated/api'
 
@@ -43,6 +45,54 @@ type AskKilianRepoSyncSummary = {
 export type AskKilianRepoSyncPreview = AskKilianRepoSyncSummary & {
   confirmationToken: string
 }
+
+type AskKilianRuntimeQuotaInput = {
+  adminTestDailyRequests: number
+  publicDailyRequests: number
+  publicDailyEstimatedTokens: number
+}
+
+type AskKilianPromptConfigSaveInput = {
+  title: string
+  promptText: string
+  notes?: string
+}
+
+type AskKilianRuntimeConfigSaveInput = {
+  modelId: string
+  maxOutputTokens: number
+  temperature: number
+  conversationWindow: number
+  ragLimit: number
+  quota: AskKilianRuntimeQuotaInput
+}
+
+type SavePromptRevisionForAdminArgs = AskKilianPromptConfigSaveInput & {
+  actor: string
+}
+
+type SaveRuntimeConfigForAdminArgs = AskKilianRuntimeConfigSaveInput & {
+  actor: string
+}
+
+type AskKilianChatApi = {
+  askKilianChat: {
+    savePromptRevisionForAdmin: FunctionReference<
+      'action',
+      'public',
+      SavePromptRevisionForAdminArgs,
+      { promptRevisionId: string }
+    >
+    saveRuntimeConfigForAdmin: FunctionReference<
+      'action',
+      'public',
+      SaveRuntimeConfigForAdminArgs,
+      { runtimeConfigVersionId: string }
+    >
+  }
+}
+
+const askKilianChatApi = (api as unknown as AskKilianChatApi).askKilianChat
 
 function toStatus(label: 'Runtime' | 'RAG', error: unknown): AskKilianAdminStatus {
   return {
@@ -191,6 +241,35 @@ export async function saveAskKilianAdminEntryAction(input: AdminKnowledgeEntrySa
   })
   revalidatePath('/admin/ask-kilian')
   return getAskKilianAdminWorkspaceStateAction()
+}
+
+export async function saveAskKilianPromptConfigAction(input: AskKilianPromptConfigSaveInput) {
+  const admin = await requireAdminAuthContext()
+  const client = await createAskKilianConvexServerClient()
+  const result = await client.action(askKilianChatApi.savePromptRevisionForAdmin, {
+    title: input.title,
+    promptText: input.promptText,
+    notes: input.notes,
+    actor: admin.email,
+  })
+  revalidatePath('/admin/ask-kilian')
+  return result
+}
+
+export async function saveAskKilianRuntimeConfigAction(input: AskKilianRuntimeConfigSaveInput) {
+  const admin = await requireAdminAuthContext()
+  const client = await createAskKilianConvexServerClient()
+  const result = await client.action(askKilianChatApi.saveRuntimeConfigForAdmin, {
+    modelId: input.modelId,
+    maxOutputTokens: input.maxOutputTokens,
+    temperature: input.temperature,
+    conversationWindow: input.conversationWindow,
+    ragLimit: input.ragLimit,
+    quota: input.quota,
+    actor: admin.email,
+  })
+  revalidatePath('/admin/ask-kilian')
+  return result
 }
 
 export async function disableAskKilianAdminEntryAction(stableKey: string) {

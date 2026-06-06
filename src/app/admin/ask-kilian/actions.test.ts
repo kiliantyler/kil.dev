@@ -7,9 +7,14 @@ const {
   createAskKilianConvexServerClient,
   isAdminTestBypassEnvEnabled,
   repoEntries,
+  requireAdminAuthContext,
   revalidatePath,
 } = vi.hoisted(() => ({
   api: {
+    askKilianChat: {
+      savePromptRevisionForAdmin: 'savePromptRevisionForAdmin',
+      saveRuntimeConfigForAdmin: 'saveRuntimeConfigForAdmin',
+    },
     askKilianKnowledge: {
       diffRepoKnowledgeForAdmin: 'diffRepoKnowledgeForAdmin',
       disableAdminKnowledgeEntryForAdmin: 'disableAdminKnowledgeEntryForAdmin',
@@ -42,9 +47,11 @@ const {
       importance: 0.9,
     },
   ],
+  requireAdminAuthContext: vi.fn(),
   revalidatePath: vi.fn(),
 }))
 
+vi.mock('@/lib/admin-auth', () => ({ requireAdminAuthContext }))
 vi.mock('@/lib/ask-kilian/convex-server-client', () => ({ createAskKilianConvexServerClient }))
 vi.mock('@/lib/ask-kilian/knowledge-sources', () => ({ buildAskKilianKnowledgeEntries }))
 vi.mock('@/lib/admin-test-bypass', () => ({
@@ -64,6 +71,7 @@ describe('Ask Kilian admin server actions', () => {
   beforeEach(() => {
     buildAskKilianKnowledgeEntries.mockReturnValue(repoEntries)
     isAdminTestBypassEnvEnabled.mockReturnValue(false)
+    requireAdminAuthContext.mockResolvedValue({ email: 'admin@example.com', accessToken: 'workos-token' })
   })
 
   afterEach(() => {
@@ -134,9 +142,71 @@ describe('Ask Kilian admin server actions', () => {
     expect(createAskKilianConvexServerClient).not.toHaveBeenCalled()
   })
 
-  it('does not expose generation actions', async () => {
+  it('exports prompt/runtime config actions without exposing generation actions before Task 8', async () => {
     const actions = await import('./actions')
-    expect(Object.keys(actions).some(name => /chat|generate|stream/i.test(name))).toBe(false)
+    expect(actions.saveAskKilianPromptConfigAction).toEqual(expect.any(Function))
+    expect(actions.saveAskKilianRuntimeConfigAction).toEqual(expect.any(Function))
+    expect(Object.keys(actions).some(name => /generate|stream/i.test(name))).toBe(false)
+  })
+
+  it('saves prompt config through the protected Ask Kilian chat action and revalidates admin state', async () => {
+    const convex = { action: vi.fn(async () => ({ promptRevisionId: 'prompt-new' })) }
+    createAskKilianConvexServerClient.mockResolvedValue(convex)
+    const { saveAskKilianPromptConfigAction } = await import('./actions')
+
+    await expect(
+      saveAskKilianPromptConfigAction({
+        title: 'Admin prompt',
+        promptText: 'Answer as Kilian using only retrieved context.',
+        notes: 'Initial live chat prompt.',
+      }),
+    ).resolves.toEqual({ promptRevisionId: 'prompt-new' })
+
+    expect(requireAdminAuthContext).toHaveBeenCalledWith()
+    expect(convex.action).toHaveBeenCalledWith(api.askKilianChat.savePromptRevisionForAdmin, {
+      title: 'Admin prompt',
+      promptText: 'Answer as Kilian using only retrieved context.',
+      notes: 'Initial live chat prompt.',
+      actor: 'admin@example.com',
+    })
+    expect(revalidatePath).toHaveBeenCalledWith('/admin/ask-kilian')
+  })
+
+  it('saves runtime config through the protected Ask Kilian chat action and revalidates admin state', async () => {
+    const convex = { action: vi.fn(async () => ({ runtimeConfigVersionId: 'runtime-new' })) }
+    createAskKilianConvexServerClient.mockResolvedValue(convex)
+    const { saveAskKilianRuntimeConfigAction } = await import('./actions')
+
+    await expect(
+      saveAskKilianRuntimeConfigAction({
+        modelId: 'openai/gpt-5-mini',
+        maxOutputTokens: 900,
+        temperature: 0.7,
+        conversationWindow: 8,
+        ragLimit: 5,
+        quota: {
+          adminTestDailyRequests: 100,
+          publicDailyRequests: 40,
+          publicDailyEstimatedTokens: 60_000,
+        },
+      }),
+    ).resolves.toEqual({ runtimeConfigVersionId: 'runtime-new' })
+
+    expect(requireAdminAuthContext).toHaveBeenCalledWith()
+    expect(convex.action).toHaveBeenCalledWith(api.askKilianChat.saveRuntimeConfigForAdmin, {
+      modelId: 'openai/gpt-5-mini',
+      maxOutputTokens: 900,
+      temperature: 0.7,
+      conversationWindow: 8,
+      ragLimit: 5,
+      quota: {
+        adminTestDailyRequests: 100,
+        publicDailyRequests: 40,
+        publicDailyEstimatedTokens: 60_000,
+      },
+      actor: 'admin@example.com',
+    })
+    expect(revalidatePath).toHaveBeenCalledWith('/admin/ask-kilian')
   })
 
   it('retrieval preview calls the Convex preview action and never AI generation routes', async () => {
