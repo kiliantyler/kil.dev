@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 
 import {
   buildAskKilianRagCorpusVersionKey,
+  createRecordConversationHandler,
+  createReserveQuotaHandler,
   createSavePromptRevisionHandler,
   createSaveRuntimeConfigHandler,
   normalizeAskKilianQuotaDay,
@@ -128,6 +130,257 @@ describe('Ask Kilian chat helpers', () => {
       active: true,
       createdBy: 'admin@example.com',
       createdAt: now,
+    })
+  })
+
+  it('reserves admin_test quota without touching public quota', async () => {
+    const now = new Date('2026-06-06T14:30:00.000Z').getTime()
+    const usageRow = {
+      _id: 'usage-admin-2026-06-06',
+      bucket: 'admin_test',
+      day: '2026-06-06',
+      requestCount: 2,
+      estimatedTokens: 900,
+      updatedAt: now - 1_000,
+    }
+    const first = vi.fn(() => usageRow)
+    const indexQuery = {
+      eq: vi.fn(() => indexQuery),
+    }
+    const withIndex = vi.fn((_index, buildQuery) => {
+      buildQuery(indexQuery)
+      return { first }
+    })
+    const db = {
+      insert: vi.fn(),
+      patch: vi.fn(async () => null),
+      query: vi.fn(() => ({ withIndex })),
+    }
+    const handler = createReserveQuotaHandler({
+      now: () => now,
+      refs: { table: 'askKilianQuotaUsage' },
+    })
+
+    await expect(
+      handler(
+        { db } as never,
+        {
+          bucket: 'admin_test',
+          estimatedTokens: 250,
+          quota: {
+            adminTestDailyRequests: 4,
+            publicDailyRequests: 1,
+            publicDailyEstimatedTokens: 1,
+          },
+        },
+      ),
+    ).resolves.toEqual({
+      allowed: true,
+      bucket: 'admin_test',
+      reason: 'reserved',
+      remainingDailyRequests: 1,
+    })
+
+    expect(db.query).toHaveBeenCalledWith('askKilianQuotaUsage')
+    expect(withIndex).toHaveBeenCalledWith('by_bucket_day', expect.any(Function))
+    expect(indexQuery.eq).toHaveBeenCalledWith('bucket', 'admin_test')
+    expect(indexQuery.eq).toHaveBeenCalledWith('day', '2026-06-06')
+    expect(indexQuery.eq).not.toHaveBeenCalledWith('bucket', 'public')
+    expect(db.patch).toHaveBeenCalledWith('usage-admin-2026-06-06', {
+      requestCount: 3,
+      estimatedTokens: 1_150,
+      updatedAt: now,
+    })
+    expect(db.insert).not.toHaveBeenCalled()
+  })
+
+  it('blocks when daily request limit is exhausted without upserting usage', async () => {
+    const now = new Date('2026-06-06T18:00:00.000Z').getTime()
+    const usageRow = {
+      _id: 'usage-admin-exhausted',
+      bucket: 'admin_test',
+      day: '2026-06-06',
+      requestCount: 4,
+      estimatedTokens: 2_000,
+      updatedAt: now - 1_000,
+    }
+    const first = vi.fn(() => usageRow)
+    const indexQuery = {
+      eq: vi.fn(() => indexQuery),
+    }
+    const withIndex = vi.fn((_index, buildQuery) => {
+      buildQuery(indexQuery)
+      return { first }
+    })
+    const db = {
+      insert: vi.fn(),
+      patch: vi.fn(),
+      query: vi.fn(() => ({ withIndex })),
+    }
+    const handler = createReserveQuotaHandler({
+      now: () => now,
+      refs: { table: 'askKilianQuotaUsage' },
+    })
+
+    await expect(
+      handler(
+        { db } as never,
+        {
+          bucket: 'admin_test',
+          estimatedTokens: 250,
+          quota: {
+            adminTestDailyRequests: 4,
+            publicDailyRequests: 40,
+            publicDailyEstimatedTokens: 60_000,
+          },
+        },
+      ),
+    ).resolves.toEqual({
+      allowed: false,
+      bucket: 'admin_test',
+      reason: 'daily_request_limit_exhausted',
+      remainingDailyRequests: 0,
+    })
+
+    expect(db.insert).not.toHaveBeenCalled()
+    expect(db.patch).not.toHaveBeenCalled()
+  })
+
+  it('blocks public quota when next estimated tokens exceeds the public daily token limit', async () => {
+    const now = new Date('2026-06-06T19:00:00.000Z').getTime()
+    const usageRow = {
+      _id: 'usage-public-2026-06-06',
+      bucket: 'public',
+      day: '2026-06-06',
+      requestCount: 5,
+      estimatedTokens: 950,
+      updatedAt: now - 1_000,
+    }
+    const first = vi.fn(() => usageRow)
+    const indexQuery = {
+      eq: vi.fn(() => indexQuery),
+    }
+    const withIndex = vi.fn((_index, buildQuery) => {
+      buildQuery(indexQuery)
+      return { first }
+    })
+    const db = {
+      insert: vi.fn(),
+      patch: vi.fn(),
+      query: vi.fn(() => ({ withIndex })),
+    }
+    const handler = createReserveQuotaHandler({
+      now: () => now,
+      refs: { table: 'askKilianQuotaUsage' },
+    })
+
+    await expect(
+      handler(
+        { db } as never,
+        {
+          bucket: 'public',
+          estimatedTokens: 51,
+          quota: {
+            adminTestDailyRequests: 100,
+            publicDailyRequests: 40,
+            publicDailyEstimatedTokens: 1_000,
+          },
+        },
+      ),
+    ).resolves.toEqual({
+      allowed: false,
+      bucket: 'public',
+      reason: 'daily_estimated_token_limit_exhausted',
+      remainingDailyRequests: 35,
+    })
+
+    expect(db.insert).not.toHaveBeenCalled()
+    expect(db.patch).not.toHaveBeenCalled()
+  })
+
+  it('records a full conversation trace and returns its identifiers', async () => {
+    const now = new Date('2026-06-06T20:00:00.000Z').getTime()
+    const db = {
+      insert: vi.fn(async () => 'conversation-1'),
+    }
+    const handler = createRecordConversationHandler({
+      now: () => now,
+      refs: { table: 'askKilianConversations' },
+    })
+    const messages = [
+      { role: 'user' as const, content: 'What should I know about Kilian?', createdAt: now - 100 },
+      { role: 'assistant' as const, content: 'Kilian ships careful, weird little web things.', createdAt: now },
+    ]
+    const metadata = {
+      callerMode: 'admin_test' as const,
+      quotaBucket: 'admin_test' as const,
+      status: 'completed' as const,
+      tier: 1 as const,
+      includeSpoilers: false,
+      categories: ['persona' as const],
+      promptRevisionId: 'prompt-1',
+      runtimeConfigVersionId: 'runtime-1',
+      ragCorpusVersionKey: 'rag:v2:abc123',
+      condensedQuery: 'Kilian profile',
+      classification: {
+        scope: 'allowed' as const,
+        behavior: 'answer' as const,
+        topic: 'profile',
+        reason: 'Relevant site/persona question.',
+        source: 'deterministic' as const,
+      },
+      retrievedEntries: [
+        {
+          stableKey: 'repo:profile',
+          title: 'Profile',
+          category: 'persona' as const,
+          score: 0.91,
+          contentHash: 'hash-profile',
+        },
+      ],
+      quotaDecision: {
+        allowed: true,
+        bucket: 'admin_test' as const,
+        reason: 'reserved',
+        remainingDailyRequests: 11,
+      },
+      publicEquivalentQuotaDecision: {
+        allowed: true,
+        bucket: 'public' as const,
+        reason: 'reserved',
+        remainingDailyRequests: 39,
+      },
+      model: {
+        modelId: 'openai/gpt-5-mini',
+        latencyMs: 1_234,
+        inputTokens: 100,
+        outputTokens: 40,
+        finishReason: 'stop',
+      },
+      posthogDistinctId: 'admin@example.com',
+      posthogTraceId: 'ph-trace-1',
+    }
+
+    await expect(
+      handler(
+        { db } as never,
+        {
+          traceId: 'trace-ask-kilian-1',
+          messages,
+          metadata,
+        },
+      ),
+    ).resolves.toEqual({
+      conversationId: 'conversation-1',
+      traceId: 'trace-ask-kilian-1',
+    })
+
+    expect(db.insert).toHaveBeenCalledWith('askKilianConversations', {
+      traceId: 'trace-ask-kilian-1',
+      messages,
+      metadata,
+      createdAt: now,
+      updatedAt: now,
     })
   })
 })

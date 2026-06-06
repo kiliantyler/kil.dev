@@ -12,6 +12,11 @@ import {
   type MutationCtx,
   type QueryCtx,
 } from './_generated/server'
+import {
+  askKilianConversationMessageValidator,
+  askKilianQuotaBucketValidator,
+  askKilianTraceMetadataValidator,
+} from './askKilianChatValidators'
 import { requireAskKilianAdmin } from './askKilianKnowledge'
 
 type AskKilianPromptConfig = Doc<'askKilianPromptConfigs'>
@@ -46,11 +51,39 @@ type SaveRuntimeConfigRefs = {
   table: 'askKilianRuntimeConfigs'
 }
 
+type ReserveQuotaRefs = {
+  table: 'askKilianQuotaUsage'
+}
+
+type RecordConversationRefs = {
+  table: 'askKilianConversations'
+}
+
 type SavePromptRevisionInternalArgs = SavePromptRevisionInput & {
   now: number
 }
 
 type SaveRuntimeConfigInternalArgs = SaveRuntimeConfigInput & {
+  now: number
+}
+
+type ReserveQuotaInput = {
+  bucket: Infer<typeof askKilianQuotaBucketValidator>
+  estimatedTokens: number
+  quota: Infer<typeof runtimeQuotaValidator>
+}
+
+type ReserveQuotaInternalArgs = ReserveQuotaInput & {
+  now: number
+}
+
+type RecordConversationInput = {
+  traceId: string
+  messages: Array<Infer<typeof askKilianConversationMessageValidator>>
+  metadata: Infer<typeof askKilianTraceMetadataValidator>
+}
+
+type RecordConversationInternalArgs = RecordConversationInput & {
   now: number
 }
 
@@ -69,6 +102,20 @@ const runtimeQuotaValidator = v.object({
   publicDailyRequests: v.number(),
   publicDailyEstimatedTokens: v.number(),
 })
+
+const quotaDecisionResultValidator = v.object({
+  allowed: v.boolean(),
+  bucket: askKilianQuotaBucketValidator,
+  reason: v.string(),
+  remainingDailyRequests: v.number(),
+})
+type QuotaDecisionResult = Infer<typeof quotaDecisionResultValidator>
+
+const recordConversationResultValidator = v.object({
+  conversationId: v.id('askKilianConversations'),
+  traceId: v.string(),
+})
+type RecordConversationResult = Infer<typeof recordConversationResultValidator>
 
 const promptConfigSummaryValidator = v.object({
   id: v.string(),
@@ -105,6 +152,13 @@ const askKilianChatInternalApi = (anyApi.askKilianChat as unknown as {
     'internal',
     SaveRuntimeConfigInternalArgs,
     RuntimeConfigResult
+  >
+  reserveQuota: FunctionReference<'mutation', 'internal', ReserveQuotaInternalArgs, QuotaDecisionResult>
+  recordConversation: FunctionReference<
+    'mutation',
+    'internal',
+    RecordConversationInternalArgs,
+    RecordConversationResult
   >
 })
 
@@ -202,6 +256,106 @@ export function createSaveRuntimeConfigHandler({
   }
 }
 
+function getDailyRequestLimit(input: ReserveQuotaInput): number {
+  return input.bucket === 'admin_test' ? input.quota.adminTestDailyRequests : input.quota.publicDailyRequests
+}
+
+function remainingRequests(limit: number, requestCount: number): number {
+  return Math.max(0, limit - requestCount)
+}
+
+function buildBlockedQuotaDecision(
+  input: ReserveQuotaInput,
+  reason: string,
+  dailyRequestLimit: number,
+  requestCount: number,
+): QuotaDecisionResult {
+  return {
+    allowed: false,
+    bucket: input.bucket,
+    reason,
+    remainingDailyRequests: remainingRequests(dailyRequestLimit, requestCount),
+  }
+}
+
+export function createReserveQuotaHandler({
+  now = () => Date.now(),
+  refs = { table: 'askKilianQuotaUsage' },
+}: {
+  now?: () => number
+  refs?: ReserveQuotaRefs
+} = {}) {
+  return async (ctx: MutationCtx, args: ReserveQuotaInput): Promise<QuotaDecisionResult> => {
+    const updatedAt = now()
+    const day = normalizeAskKilianQuotaDay(updatedAt)
+    const existingUsage = await ctx.db
+      .query(refs.table)
+      .withIndex('by_bucket_day', query => query.eq('bucket', args.bucket).eq('day', day))
+      .first()
+    const requestCount = existingUsage?.requestCount ?? 0
+    const estimatedTokens = existingUsage?.estimatedTokens ?? 0
+    const dailyRequestLimit = getDailyRequestLimit(args)
+
+    if (requestCount >= dailyRequestLimit) {
+      return buildBlockedQuotaDecision(args, 'daily_request_limit_exhausted', dailyRequestLimit, requestCount)
+    }
+
+    const nextEstimatedTokens = estimatedTokens + args.estimatedTokens
+
+    if (args.bucket === 'public' && nextEstimatedTokens > args.quota.publicDailyEstimatedTokens) {
+      return buildBlockedQuotaDecision(args, 'daily_estimated_token_limit_exhausted', dailyRequestLimit, requestCount)
+    }
+
+    const nextRequestCount = requestCount + 1
+    const nextUsage = {
+      requestCount: nextRequestCount,
+      estimatedTokens: nextEstimatedTokens,
+      updatedAt,
+    }
+
+    if (existingUsage) {
+      await ctx.db.patch(existingUsage._id, nextUsage)
+    } else {
+      await ctx.db.insert(refs.table, {
+        bucket: args.bucket,
+        day,
+        ...nextUsage,
+      })
+    }
+
+    return {
+      allowed: true,
+      bucket: args.bucket,
+      reason: 'reserved',
+      remainingDailyRequests: remainingRequests(dailyRequestLimit, nextRequestCount),
+    }
+  }
+}
+
+export function createRecordConversationHandler({
+  now = () => Date.now(),
+  refs = { table: 'askKilianConversations' },
+}: {
+  now?: () => number
+  refs?: RecordConversationRefs
+} = {}) {
+  return async (ctx: MutationCtx, args: RecordConversationInput): Promise<RecordConversationResult> => {
+    const createdAt = now()
+    const conversationId = await ctx.db.insert(refs.table, {
+      traceId: args.traceId,
+      messages: args.messages,
+      metadata: args.metadata,
+      createdAt,
+      updatedAt: createdAt,
+    })
+
+    return {
+      conversationId,
+      traceId: args.traceId,
+    }
+  }
+}
+
 export const getActivePromptConfig = internalQuery({
   args: {},
   returns: v.union(promptConfigSummaryValidator, v.null()),
@@ -270,6 +424,38 @@ export const saveRuntimeConfig = internalMutation({
     }),
 })
 
+export const reserveQuota = internalMutation({
+  args: {
+    bucket: askKilianQuotaBucketValidator,
+    estimatedTokens: v.number(),
+    quota: runtimeQuotaValidator,
+    now: v.number(),
+  },
+  returns: quotaDecisionResultValidator,
+  handler: (ctx, args) =>
+    createReserveQuotaHandler({ now: () => args.now })(ctx, {
+      bucket: args.bucket,
+      estimatedTokens: args.estimatedTokens,
+      quota: args.quota,
+    }),
+})
+
+export const recordConversation = internalMutation({
+  args: {
+    traceId: v.string(),
+    messages: v.array(askKilianConversationMessageValidator),
+    metadata: askKilianTraceMetadataValidator,
+    now: v.number(),
+  },
+  returns: recordConversationResultValidator,
+  handler: (ctx, args) =>
+    createRecordConversationHandler({ now: () => args.now })(ctx, {
+      traceId: args.traceId,
+      messages: args.messages,
+      metadata: args.metadata,
+    }),
+})
+
 export const savePromptRevisionForAdmin = action({
   args: {
     title: v.string(),
@@ -315,6 +501,42 @@ export const saveRuntimeConfigForAdmin = action({
       actor: admin.email,
       now: Date.now(),
     }) as Promise<RuntimeConfigResult>
+  },
+})
+
+export const reserveQuotaForAdmin = action({
+  args: {
+    bucket: askKilianQuotaBucketValidator,
+    estimatedTokens: v.number(),
+    quota: runtimeQuotaValidator,
+  },
+  returns: quotaDecisionResultValidator,
+  handler: async (ctx: ActionCtx, args): Promise<QuotaDecisionResult> => {
+    await requireAskKilianAdmin(ctx)
+    return ctx.runMutation(askKilianChatInternalApi.reserveQuota, {
+      bucket: args.bucket,
+      estimatedTokens: args.estimatedTokens,
+      quota: args.quota,
+      now: Date.now(),
+    }) as Promise<QuotaDecisionResult>
+  },
+})
+
+export const recordConversationForAdmin = action({
+  args: {
+    traceId: v.string(),
+    messages: v.array(askKilianConversationMessageValidator),
+    metadata: askKilianTraceMetadataValidator,
+  },
+  returns: recordConversationResultValidator,
+  handler: async (ctx: ActionCtx, args): Promise<RecordConversationResult> => {
+    await requireAskKilianAdmin(ctx)
+    return ctx.runMutation(askKilianChatInternalApi.recordConversation, {
+      traceId: args.traceId,
+      messages: args.messages,
+      metadata: args.metadata,
+      now: Date.now(),
+    }) as Promise<RecordConversationResult>
   },
 })
 
