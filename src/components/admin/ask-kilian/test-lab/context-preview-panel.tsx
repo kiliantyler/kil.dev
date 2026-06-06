@@ -82,11 +82,11 @@ export function ContextPreviewPanel({ preview }: { preview: ContextPreviewPanelP
 
   return (
     <div className="grid gap-4">
-      {!preview ? (
+      {preview ? null : (
         <div className="rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">
           Preview retrieval to inspect context before KTY-66 wiring.
         </div>
-      ) : null}
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <ContextPreviewPane section={retrievedContext} />
