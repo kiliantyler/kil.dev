@@ -16,7 +16,7 @@ import type {
   AskKilianAdminWorkspaceState,
 } from '@/lib/ask-kilian/admin-workspace'
 import type { AskKilianKnowledgeCategory, AskKilianTier } from '@/lib/ask-kilian/types'
-import { useMemo, useState, useTransition } from 'react'
+import { useMemo, useRef, useState, useTransition } from 'react'
 
 export type AskKilianRetrievalPreview = Awaited<ReturnType<typeof previewAskKilianRetrievalAction>>
 export type AskKilianSyncPreview = Awaited<ReturnType<typeof previewAskKilianRepoSyncAction>>
@@ -32,6 +32,8 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
   const [retrievalError, setRetrievalError] = useState<string | null>(null)
   const [retrievalPreview, setRetrievalPreview] = useState<AskKilianRetrievalPreview | null>(null)
   const [isPending, startTransition] = useTransition()
+  const selectedStableKeyRef = useRef<string | null>(initialState.selectedStableKey ?? null)
+  const latestDetailRequestStableKey = useRef<string | null>(null)
 
   const selectedEntry = useMemo(
     () => state.entries.find(entry => entry.stableKey === selectedStableKey) ?? null,
@@ -39,11 +41,20 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
   )
 
   function applyState(nextState: AskKilianAdminWorkspaceState) {
+    const nextSelectedStableKey =
+      selectedStableKeyRef.current && nextState.entries.some(entry => entry.stableKey === selectedStableKeyRef.current)
+        ? selectedStableKeyRef.current
+        : (nextState.selectedStableKey ?? nextState.entries[0]?.stableKey ?? null)
+
+    selectedStableKeyRef.current = nextSelectedStableKey
+    latestDetailRequestStableKey.current = nextSelectedStableKey
     setState(nextState)
-    setSelectedStableKey(current =>
-      current && nextState.entries.some(entry => entry.stableKey === current)
+    setSelectedStableKey(nextSelectedStableKey)
+    setSelectedDetail(current =>
+      current?.stableKey === nextSelectedStableKey &&
+      nextState.entries.some(entry => entry.stableKey === nextSelectedStableKey)
         ? current
-        : (nextState.selectedStableKey ?? nextState.entries[0]?.stableKey ?? null),
+        : null,
     )
   }
 
@@ -58,13 +69,22 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
   }
 
   function selectEntry(stableKey: string) {
+    selectedStableKeyRef.current = stableKey
+    latestDetailRequestStableKey.current = stableKey
     setSelectedStableKey(stableKey)
+    setSelectedDetail(current => (current?.stableKey === stableKey ? current : null))
     setKnowledgeError(null)
     startTransition(() => {
       void getAskKilianKnowledgeEntryAction(stableKey)
-        .then(setSelectedDetail)
+        .then(detail => {
+          if (latestDetailRequestStableKey.current === stableKey && detail?.stableKey === stableKey) {
+            setSelectedDetail(detail)
+          }
+        })
         .catch(error => {
-          setKnowledgeError(error instanceof Error ? error.message : 'Unable to load Ask Kilian entry detail')
+          if (latestDetailRequestStableKey.current === stableKey) {
+            setKnowledgeError(error instanceof Error ? error.message : 'Unable to load Ask Kilian entry detail')
+          }
         })
     })
   }
