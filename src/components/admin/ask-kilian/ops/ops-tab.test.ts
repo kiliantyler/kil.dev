@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'vitest'
-import { buildRepoSyncConfirmationSummary, canApplyRepoSync, type AskKilianOpsSyncPreview } from './ops-tab'
+import {
+  buildRepoSyncConfirmationSummary,
+  canApplyRepoSync,
+  getRepoSyncApplyKeySections,
+  type AskKilianOpsSyncPreview,
+} from './ops-tab'
 
 function syncPreview(overrides: Partial<AskKilianOpsSyncPreview> = {}): AskKilianOpsSyncPreview {
   return {
@@ -36,6 +41,24 @@ describe('canApplyRepoSync', () => {
     expect(canApplyRepoSync({ syncPreview: syncPreview(), syncPreviewStale: false, isPending: true })).toBe(false)
     expect(canApplyRepoSync({ syncPreview: syncPreview(), syncPreviewStale: false, isPending: false })).toBe(true)
   })
+
+  test('apply is disabled when the preview has no repo changes', () => {
+    expect(
+      canApplyRepoSync({
+        syncPreview: syncPreview({
+          counts: {
+            created: 0,
+            changed: 0,
+            unchanged: 4,
+            retired: 0,
+            ignoredAdmin: 1,
+          },
+        }),
+        syncPreviewStale: false,
+        isPending: false,
+      }),
+    ).toBe(false)
+  })
 })
 
 describe('buildRepoSyncConfirmationSummary', () => {
@@ -58,6 +81,32 @@ describe('buildRepoSyncConfirmationSummary', () => {
       { label: 'Unchanged keys', keys: ['repo:stable-delta'] },
       { label: 'Retired keys', keys: ['repo:retired-echo', 'repo:retired-foxtrot', 'repo:retired-golf'] },
       { label: 'Ignored admin keys', keys: ['admin:manual-hotel'] },
+    ])
+  })
+
+  test('apply confirmation includes only changed key buckets with keys', () => {
+    const summary = buildRepoSyncConfirmationSummary(
+      syncPreview({
+        counts: {
+          created: 0,
+          changed: 1,
+          unchanged: 4,
+          retired: 3,
+          ignoredAdmin: 5,
+        },
+        keys: {
+          created: [],
+          changed: ['repo:changed-charlie'],
+          unchanged: ['repo:stable-delta'],
+          retired: ['repo:retired-echo', 'repo:retired-foxtrot', 'repo:retired-golf'],
+          ignoredAdmin: ['admin:manual-hotel'],
+        },
+      }),
+    )
+
+    expect(getRepoSyncApplyKeySections(summary)).toEqual([
+      { label: 'Changed keys', keys: ['repo:changed-charlie'] },
+      { label: 'Retired keys', keys: ['repo:retired-echo', 'repo:retired-foxtrot', 'repo:retired-golf'] },
     ])
   })
 })

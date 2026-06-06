@@ -12,15 +12,22 @@ const repoRoot = path.resolve(__dirname, '../../../..')
 type WorkspaceHarnessGlobal = typeof globalThis & {
   askKilianActionMocks: {
     detailResolvers: Array<(value: unknown) => void>
+    repoSyncApplyCalls: string[]
+    repoSyncPreviewResolvers: Array<(value: unknown) => void>
     retrievalResolvers: Array<(value: unknown) => void>
+    saveResolvers: Array<(value: unknown) => void>
     nextState: { entries: Array<Record<string, unknown>> }
   }
   askKilianWorkspace: {
     selectedDetail?: { text?: string }
     selectedEntry?: { title?: string }
+    syncPreview?: { confirmationToken?: string }
+    syncPreviewStale?: boolean
     retrievalPreview?: { contextPreview?: string; results?: unknown[] }
     actions: {
+      applyRepoSync: () => void
       loadEntryDetail: (stableKey: string) => Promise<unknown>
+      previewRepoSync: () => void
       previewRetrieval: (input: {
         prompt: string
         tier: number
@@ -29,6 +36,7 @@ type WorkspaceHarnessGlobal = typeof globalThis & {
         limit: number
       }) => void
       refresh: () => void
+      saveEntry: (input: Record<string, unknown>) => Promise<unknown>
     }
   }
 }
@@ -42,7 +50,10 @@ async function buildWorkspaceHookTestPage() {
     actionsPath,
     `
       const detailResolvers = []
+      const repoSyncPreviewResolvers = []
+      const repoSyncApplyCalls = []
       const retrievalResolvers = []
+      const saveResolvers = []
 
       const entry = {
         stableKey: 'admin:manual',
@@ -61,7 +72,10 @@ async function buildWorkspaceHookTestPage() {
 
       globalThis.askKilianActionMocks = {
         detailResolvers,
+        repoSyncApplyCalls,
+        repoSyncPreviewResolvers,
         retrievalResolvers,
+        saveResolvers,
         nextState: {
           entries: [{ ...entry, title: 'Manual entry refreshed', updatedAt: 300 }],
           selectedStableKey: 'admin:manual',
@@ -82,8 +96,17 @@ async function buildWorkspaceHookTestPage() {
         return new Promise(resolve => retrievalResolvers.push(resolve))
       }
 
-      export async function applyAskKilianRepoSyncAction() {
-        throw new Error('not used')
+      export async function applyAskKilianRepoSyncAction(confirmationToken) {
+        repoSyncApplyCalls.push(confirmationToken)
+        return {
+          sync: {
+            dryRun: false,
+            confirmationToken: 'applied-token',
+            counts: { created: 0, changed: 0, unchanged: 1, retired: 0, ignoredAdmin: 0 },
+            keys: { created: [], changed: [], unchanged: ['admin:manual'], retired: [], ignoredAdmin: [] },
+          },
+          state: globalThis.askKilianActionMocks.nextState,
+        }
       }
 
       export async function disableAskKilianAdminEntryAction() {
@@ -91,7 +114,7 @@ async function buildWorkspaceHookTestPage() {
       }
 
       export async function previewAskKilianRepoSyncAction() {
-        throw new Error('not used')
+        return new Promise(resolve => repoSyncPreviewResolvers.push(resolve))
       }
 
       export async function reenableAskKilianAdminEntryAction() {
@@ -99,7 +122,7 @@ async function buildWorkspaceHookTestPage() {
       }
 
       export async function saveAskKilianAdminEntryAction() {
-        throw new Error('not used')
+        return new Promise(resolve => saveResolvers.push(resolve))
       }
     `,
   )
@@ -292,6 +315,204 @@ describe('useAskKilianAdminWorkspace', () => {
           () => (globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.retrievalPreview?.results?.length,
         ),
       ).resolves.toBe(1)
+    } finally {
+      await page.close()
+      await browser.close()
+    }
+  })
+
+  it('marks a repo sync preview stale after an admin save and blocks apply', async () => {
+    const html = await buildWorkspaceHookTestPage()
+    const browser = await chromium.launch()
+    const page = await browser.newPage()
+
+    try {
+      await openWorkspaceHookPage(page, html)
+      await page.evaluate(() => {
+        ;(globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.actions.previewRepoSync()
+      })
+      await page.waitForFunction(
+        () => (globalThis as WorkspaceHarnessGlobal).askKilianActionMocks.repoSyncPreviewResolvers.length === 1,
+      )
+
+      await page.evaluate(() => {
+        ;(globalThis as WorkspaceHarnessGlobal).askKilianActionMocks.repoSyncPreviewResolvers.shift()?.({
+          dryRun: true,
+          confirmationToken: 'preview-token',
+          counts: { created: 0, changed: 0, unchanged: 1, retired: 0, ignoredAdmin: 0 },
+          keys: { created: [], changed: [], unchanged: ['admin:manual'], retired: [], ignoredAdmin: [] },
+        })
+      })
+
+      await page.waitForFunction(
+        () =>
+          (globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.syncPreview?.confirmationToken ===
+            'preview-token' && (globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.syncPreviewStale === false,
+      )
+
+      await page.evaluate(() => {
+        void (globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.actions.saveEntry({
+          source: 'admin',
+          status: 'active',
+          category: 'fun',
+          title: 'Second manual entry',
+          text: 'Second full detail text',
+          minTier: 0,
+          spoilerLevel: 'none',
+          importance: 0.4,
+        })
+      })
+      await page.waitForFunction(
+        () => (globalThis as WorkspaceHarnessGlobal).askKilianActionMocks.saveResolvers.length === 1,
+      )
+
+      await page.evaluate(() => {
+        const globalScope = globalThis as WorkspaceHarnessGlobal
+        globalScope.askKilianActionMocks.saveResolvers.shift()?.({
+          ...globalScope.askKilianActionMocks.nextState,
+          entries: [
+            ...globalScope.askKilianActionMocks.nextState.entries,
+            {
+              stableKey: 'admin:second-manual-entry',
+              source: 'admin',
+              status: 'active',
+              category: 'fun',
+              title: 'Second manual entry',
+              sourcePath: 'admin:/admin/ask-kilian',
+              contentHash: 'hash-second',
+              minTier: 0,
+              spoilerLevel: 'none',
+              importance: 0.4,
+              updatedAt: 400,
+              textSummary: 'Second manual entry summary',
+            },
+          ],
+        })
+      })
+
+      await page.waitForFunction(
+        () => (globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.syncPreviewStale === true,
+      )
+      await page.evaluate(() => {
+        ;(globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.actions.applyRepoSync()
+      })
+      await page.waitForTimeout(0)
+
+      await expect(
+        page.evaluate(() => (globalThis as WorkspaceHarnessGlobal).askKilianActionMocks.repoSyncApplyCalls),
+      ).resolves.toEqual([])
+    } finally {
+      await page.close()
+      await browser.close()
+    }
+  })
+
+  it('applies a fresh repo sync preview when it has repo changes', async () => {
+    const html = await buildWorkspaceHookTestPage()
+    const browser = await chromium.launch()
+    const page = await browser.newPage()
+
+    try {
+      await openWorkspaceHookPage(page, html)
+      await page.evaluate(() => {
+        ;(globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.actions.previewRepoSync()
+      })
+      await page.waitForFunction(
+        () => (globalThis as WorkspaceHarnessGlobal).askKilianActionMocks.repoSyncPreviewResolvers.length === 1,
+      )
+
+      await page.evaluate(() => {
+        ;(globalThis as WorkspaceHarnessGlobal).askKilianActionMocks.repoSyncPreviewResolvers.shift()?.({
+          dryRun: true,
+          confirmationToken: 'preview-token',
+          counts: { created: 1, changed: 1, unchanged: 0, retired: 1, ignoredAdmin: 0 },
+          keys: {
+            created: ['repo:new-entry'],
+            changed: ['repo:changed-entry'],
+            unchanged: [],
+            retired: ['repo:retired-entry'],
+            ignoredAdmin: [],
+          },
+        })
+      })
+
+      await page.waitForFunction(
+        () =>
+          (globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.syncPreview?.confirmationToken ===
+            'preview-token' && (globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.syncPreviewStale === false,
+      )
+      await page.evaluate(() => {
+        ;(globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.actions.applyRepoSync()
+      })
+      await page.waitForFunction(() => {
+        const globalScope = globalThis as WorkspaceHarnessGlobal
+
+        return (
+          globalScope.askKilianActionMocks.repoSyncApplyCalls.length === 1 &&
+          globalScope.askKilianWorkspace.syncPreview?.confirmationToken === 'applied-token' &&
+          globalScope.askKilianWorkspace.syncPreviewStale === true
+        )
+      })
+
+      await expect(
+        page.evaluate(() => (globalThis as WorkspaceHarnessGlobal).askKilianActionMocks.repoSyncApplyCalls),
+      ).resolves.toEqual(['preview-token'])
+      await expect(
+        page.evaluate(() => (globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.syncPreview?.confirmationToken),
+      ).resolves.toBe('applied-token')
+      await expect(
+        page.evaluate(() => (globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.syncPreviewStale),
+      ).resolves.toBe(true)
+    } finally {
+      await page.close()
+      await browser.close()
+    }
+  })
+
+  it('blocks repo sync apply when the preview has no repo changes', async () => {
+    const html = await buildWorkspaceHookTestPage()
+    const browser = await chromium.launch()
+    const page = await browser.newPage()
+
+    try {
+      await openWorkspaceHookPage(page, html)
+      await page.evaluate(() => {
+        ;(globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.actions.previewRepoSync()
+      })
+      await page.waitForFunction(
+        () => (globalThis as WorkspaceHarnessGlobal).askKilianActionMocks.repoSyncPreviewResolvers.length === 1,
+      )
+
+      await page.evaluate(() => {
+        ;(globalThis as WorkspaceHarnessGlobal).askKilianActionMocks.repoSyncPreviewResolvers.shift()?.({
+          dryRun: true,
+          confirmationToken: 'preview-token',
+          counts: { created: 0, changed: 0, unchanged: 1, retired: 0, ignoredAdmin: 1 },
+          keys: {
+            created: [],
+            changed: [],
+            unchanged: ['admin:manual'],
+            retired: [],
+            ignoredAdmin: ['admin:manual-ignored'],
+          },
+        })
+      })
+
+      await page.waitForFunction(
+        () =>
+          (globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.syncPreview?.confirmationToken ===
+            'preview-token' && (globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.syncPreviewStale === false,
+      )
+      await page.evaluate(() => {
+        ;(globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.actions.applyRepoSync()
+      })
+      await page.waitForFunction(
+        () => (globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.syncPreviewStale === true,
+      )
+
+      await expect(
+        page.evaluate(() => (globalThis as WorkspaceHarnessGlobal).askKilianActionMocks.repoSyncApplyCalls),
+      ).resolves.toEqual([])
     } finally {
       await page.close()
       await browser.close()

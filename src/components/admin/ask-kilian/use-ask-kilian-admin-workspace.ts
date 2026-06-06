@@ -17,6 +17,7 @@ import type {
 } from '@/lib/ask-kilian/admin-workspace'
 import type { AskKilianKnowledgeCategory, AskKilianTier } from '@/lib/ask-kilian/types'
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import { hasAskKilianRepoSyncChanges } from './repo-sync-preview'
 
 export type AskKilianRetrievalPreview = Awaited<ReturnType<typeof previewAskKilianRetrievalAction>>
 export type AskKilianSyncPreview = Awaited<ReturnType<typeof previewAskKilianRepoSyncAction>>
@@ -33,6 +34,10 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
   const [retrievalPreview, setRetrievalPreview] = useState<AskKilianRetrievalPreview | null>(null)
   const [isPending, startTransition] = useTransition()
   const [pendingOperations, setPendingOperations] = useState(0)
+  const syncPreviewRef = useRef<AskKilianSyncPreview | null>(null)
+  const syncPreviewStaleRef = useRef(false)
+  const workspaceRevisionRef = useRef(0)
+  const syncPreviewWorkspaceRevisionRef = useRef<number | null>(null)
   const selectedStableKeyRef = useRef<string | null>(initialState.selectedStableKey ?? null)
   const latestDetailRequestStableKey = useRef<string | null>(null)
   const latestDetailRequestId = useRef(0)
@@ -59,6 +64,25 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
     setSelectedDetail(null)
   }
 
+  function setCurrentSyncPreview(summary: AskKilianSyncPreview | null) {
+    syncPreviewRef.current = summary
+    setSyncPreview(summary)
+  }
+
+  function setCurrentSyncPreviewStale(isStale: boolean) {
+    syncPreviewStaleRef.current = isStale
+    setSyncPreviewStale(isStale)
+  }
+
+  function markSyncPreviewStaleIfPresent() {
+    if (syncPreviewRef.current) setCurrentSyncPreviewStale(true)
+  }
+
+  function markWorkspaceChanged() {
+    workspaceRevisionRef.current += 1
+    markSyncPreviewStaleIfPresent()
+  }
+
   function runWorkspaceOperation(operation: () => Promise<void>, key?: string) {
     if (key && pendingOperationKeys.current.has(key)) return false
     if (key) pendingOperationKeys.current.add(key)
@@ -75,6 +99,7 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
       try {
         const nextState = await getAskKilianAdminWorkspaceStateAction()
         startTransition(() => applyState(nextState))
+        markWorkspaceChanged()
       } catch (error) {
         setKnowledgeError(error instanceof Error ? error.message : 'Unable to refresh Ask Kilian admin state')
       }
@@ -130,7 +155,7 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
     return saveAskKilianAdminEntryAction(input)
       .then(nextState => {
         startTransition(() => applyState(nextState))
-        setSyncPreviewStale(syncPreview !== null)
+        markWorkspaceChanged()
       })
       .catch(error => {
         const message = error instanceof Error ? error.message : 'Unable to save Ask Kilian entry'
@@ -146,7 +171,7 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
       try {
         const nextState = await disableAskKilianAdminEntryAction(stableKey)
         startTransition(() => applyState(nextState))
-        setSyncPreviewStale(syncPreview !== null)
+        markWorkspaceChanged()
       } catch (error) {
         setKnowledgeError(error instanceof Error ? error.message : 'Unable to disable Ask Kilian entry')
       }
@@ -159,7 +184,7 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
       try {
         const nextState = await reenableAskKilianAdminEntryAction(stableKey)
         startTransition(() => applyState(nextState))
-        setSyncPreviewStale(syncPreview !== null)
+        markWorkspaceChanged()
       } catch (error) {
         setKnowledgeError(error instanceof Error ? error.message : 'Unable to re-enable Ask Kilian entry')
       }
@@ -168,11 +193,13 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
 
   function previewRepoSync() {
     setOpsError(null)
+    const previewWorkspaceRevision = workspaceRevisionRef.current
     runWorkspaceOperation(async () => {
       try {
         const summary = await previewAskKilianRepoSyncAction()
-        setSyncPreview(summary)
-        setSyncPreviewStale(false)
+        syncPreviewWorkspaceRevisionRef.current = previewWorkspaceRevision
+        setCurrentSyncPreview(summary)
+        setCurrentSyncPreviewStale(workspaceRevisionRef.current !== previewWorkspaceRevision)
       } catch (error) {
         setOpsError(error instanceof Error ? error.message : 'Unable to preview Ask Kilian repo sync')
       }
@@ -180,14 +207,24 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
   }
 
   function applyRepoSync() {
-    if (!syncPreview || syncPreviewStale) return
+    const currentPreview = syncPreviewRef.current
+    if (
+      !currentPreview ||
+      syncPreviewStaleRef.current ||
+      syncPreviewWorkspaceRevisionRef.current !== workspaceRevisionRef.current ||
+      !hasAskKilianRepoSyncChanges(currentPreview)
+    ) {
+      markSyncPreviewStaleIfPresent()
+      return
+    }
     setOpsError(null)
     runWorkspaceOperation(async () => {
       try {
-        const result = await applyAskKilianRepoSyncAction(syncPreview.confirmationToken)
-        setSyncPreview(result.sync)
-        setSyncPreviewStale(true)
+        const result = await applyAskKilianRepoSyncAction(currentPreview.confirmationToken)
+        setCurrentSyncPreview(result.sync)
+        setCurrentSyncPreviewStale(true)
         startTransition(() => applyState(result.state))
+        workspaceRevisionRef.current += 1
       } catch (error) {
         setOpsError(error instanceof Error ? error.message : 'Unable to apply Ask Kilian repo sync')
       }
@@ -238,7 +275,7 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
       reenableEntry,
       previewRepoSync,
       applyRepoSync,
-      markSyncPreviewStale: () => setSyncPreviewStale(true),
+      markSyncPreviewStale: () => setCurrentSyncPreviewStale(true),
       previewRetrieval,
     },
   }
