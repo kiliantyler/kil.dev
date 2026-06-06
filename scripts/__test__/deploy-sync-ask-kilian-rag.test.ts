@@ -67,6 +67,60 @@ describe('deploySyncAskKilianRag', () => {
       accessToken: 'preview-access-token',
       mode: 'ifChanged',
     })
+    expect(deps.log).toHaveBeenCalledWith(
+      '[ask-kilian:deploy-sync] starting preview deploy sync against https://preview-123.convex.cloud',
+    )
+    expect(deps.log).toHaveBeenCalledWith('[ask-kilian:deploy-sync] preview RAG hydration completed for preview-123')
+    expect(deps.log).toHaveBeenCalledWith('[ask-kilian:deploy-sync] checking repo knowledge changes')
+    expect(deps.log).toHaveBeenCalledWith(
+      '[ask-kilian:deploy-sync] preview sync skipped; no repo knowledge changes detected (created=0, changed=0, retired=0, unchanged=10, ignoredAdmin=0)',
+    )
+    expect(deps.log).toHaveBeenCalledWith('[ask-kilian:deploy-sync] preview deploy sync completed')
+  })
+
+  it('logs when if-changed sync applies repo knowledge changes', async () => {
+    const diff: SyncSummary = {
+      dryRun: true,
+      counts: {
+        created: 1,
+        changed: 2,
+        unchanged: 7,
+        retired: 3,
+        ignoredAdmin: 4,
+      },
+      keys: {
+        created: ['project:new'],
+        changed: ['pet:lux', 'pet:tali'],
+        unchanged: ['career:qgenda'],
+        retired: ['pet:old'],
+        ignoredAdmin: ['admin:note'],
+      },
+    }
+    const sync: SyncSummary = {
+      ...diff,
+      dryRun: false,
+      counts: {
+        created: 1,
+        changed: 2,
+        unchanged: 7,
+        retired: 3,
+        ignoredAdmin: 4,
+      },
+    }
+    const result = { skipped: false as const, diff, sync }
+    const { deps } = createDeps({
+      syncIfChanged: vi.fn(async () => result),
+    })
+
+    await expect(deploySyncAskKilianRag({ env: baseEnv() }, deps)).resolves.toEqual({
+      skipped: false,
+      environment: 'preview',
+      result,
+    })
+
+    expect(deps.log).toHaveBeenCalledWith(
+      '[ask-kilian:deploy-sync] preview sync applied repo knowledge changes (created=1, changed=2, retired=3, unchanged=7, ignoredAdmin=4)',
+    )
   })
 
   it('runs production sync without hydration or source key leakage', async () => {

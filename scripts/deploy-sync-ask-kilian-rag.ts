@@ -62,6 +62,32 @@ function requireGatewayEnv(env: DeploySyncEnv, expected: DeploySyncEnvironment) 
   }
 }
 
+function formatCounts(counts: SyncSummary['counts']) {
+  return `created=${counts.created}, changed=${counts.changed}, retired=${counts.retired}, unchanged=${counts.unchanged}, ignoredAdmin=${counts.ignoredAdmin}`
+}
+
+function logSyncResult(
+  deps: Pick<DeploySyncAskKilianRagDeps, 'log'>,
+  environment: DeploySyncEnvironment,
+  result: SyncSummary | SyncIfChangedSummary,
+) {
+  if ('skipped' in result) {
+    if (result.skipped) {
+      deps.log(
+        `[ask-kilian:deploy-sync] ${environment} sync skipped; no repo knowledge changes detected (${formatCounts(result.diff.counts)})`,
+      )
+      return
+    }
+
+    deps.log(
+      `[ask-kilian:deploy-sync] ${environment} sync applied repo knowledge changes (${formatCounts(result.sync.counts)})`,
+    )
+    return
+  }
+
+  deps.log(`[ask-kilian:deploy-sync] ${environment} sync completed (${formatCounts(result.counts)})`)
+}
+
 export async function deploySyncAskKilianRag(
   { env = process.env }: { env?: DeploySyncEnv } = {},
   deps: DeploySyncAskKilianRagDeps = createDefaultDeps(),
@@ -77,19 +103,24 @@ export async function deploySyncAskKilianRag(
   const environment = env.VERCEL_ENV
   requireGatewayEnv(env, environment)
   const { convexUrl, accessToken } = resolveDeploySyncEnv(env)
+  deps.log(`[ask-kilian:deploy-sync] starting ${environment} deploy sync against ${convexUrl}`)
 
   if (environment === 'preview') {
     deps.log('[ask-kilian:deploy-sync] hydrating preview RAG before if-changed sync')
-    await deps.hydratePreview({ env })
+    const hydration = await deps.hydratePreview({ env })
+    deps.log(`[ask-kilian:deploy-sync] preview RAG hydration completed for ${hydration.targetDeployment}`)
   } else {
     deps.log('[ask-kilian:deploy-sync] running production if-changed sync')
   }
 
+  deps.log('[ask-kilian:deploy-sync] checking repo knowledge changes')
   const result = await deps.syncIfChanged({
     convexUrl,
     accessToken,
     mode: 'ifChanged',
   })
+  logSyncResult(deps, environment, result)
+  deps.log(`[ask-kilian:deploy-sync] ${environment} deploy sync completed`)
 
   return { skipped: false, environment, result }
 }
