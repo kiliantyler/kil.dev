@@ -1,8 +1,9 @@
 import type { Route } from 'next'
 
 export interface QuickFact {
+  id: string
   label: string
-  value: string | React.ReactNode
+  value: string
   href?: Route
   note?: string
 }

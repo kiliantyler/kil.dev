@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from 'convex/server'
 import { v } from 'convex/values'
+import { askKilianKnowledgeEntryCoreFields, askKilianRagFilterVersionValidator } from './askKilianValidators'
 import { PET_GALLERY_INDEXES } from './petGalleryIndexes'
 import {
   petGalleryActorValidator,
@@ -22,6 +23,20 @@ export default defineSchema({
     isActive: v.boolean(),
     validatedScore: v.optional(v.number()),
   }).index('by_expiresAt', ['expiresAt']),
+  askKilianKnowledgeEntries: defineTable({
+    ...askKilianKnowledgeEntryCoreFields,
+    ragEntryId: v.optional(v.string()),
+    ragStatus: v.optional(v.string()),
+    ragFilterVersion: v.optional(askKilianRagFilterVersionValidator),
+    pendingRagEntryCleanupIds: v.optional(v.array(v.string())),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    retiredAt: v.optional(v.number()),
+  })
+    .index('by_stableKey', ['stableKey'])
+    .index('by_status', ['status'])
+    .index('by_category', ['category'])
+    .index('by_source', ['source']),
   petGalleryAnimals: defineTable({
     stableId: v.string(),
     name: v.string(),

@@ -9,6 +9,9 @@
  */
 
 import type * as _utils from "../_utils.js";
+import type * as askKilianKnowledge from "../askKilianKnowledge.js";
+import type * as askKilianRag from "../askKilianRag.js";
+import type * as askKilianValidators from "../askKilianValidators.js";
 import type * as auth from "../auth.js";
 import type * as authConfigProviders from "../authConfigProviders.js";
 import type * as dev_seedScores from "../dev/seedScores.js";
@@ -30,6 +33,9 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   _utils: typeof _utils;
+  askKilianKnowledge: typeof askKilianKnowledge;
+  askKilianRag: typeof askKilianRag;
+  askKilianValidators: typeof askKilianValidators;
   auth: typeof auth;
   authConfigProviders: typeof authConfigProviders;
   "dev/seedScores": typeof dev_seedScores;
@@ -72,4 +78,5 @@ export declare const internal: FilterApi<
 
 export declare const components: {
   workOSAuthKit: import("@convex-dev/workos-authkit/_generated/component.js").ComponentApi<"workOSAuthKit">;
+  rag: import("@convex-dev/rag/_generated/component.js").ComponentApi<"rag">;
 };
