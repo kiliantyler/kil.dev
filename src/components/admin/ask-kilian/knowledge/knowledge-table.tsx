@@ -194,7 +194,6 @@ function knowledgeColumnResponsiveClassName(columnId: string) {
 
 type KnowledgeTableProps = {
   entries: AdminWorkspaceKnowledgeEntry[]
-  selectedStableKey: string | null
   onSelectEntry: (stableKey: string) => void
   onEditEntry: (stableKey: string) => void
   onDisableEntry: (stableKey: string) => void
@@ -205,7 +204,6 @@ type KnowledgeTableProps = {
 
 export function KnowledgeTable({
   entries,
-  selectedStableKey,
   onSelectEntry,
   onEditEntry,
   onDisableEntry,
@@ -242,14 +240,12 @@ export function KnowledgeTable({
         header: ({ column }) => <HeaderButton column={column} label="Entry" sorted={column.getIsSorted()} />,
         cell: ({ row }) => {
           const entry = row.original
-          const selected = entry.stableKey === selectedStableKey
           return (
             <Button
               type="button"
               variant="ghostLink"
               size="sm"
               className="h-auto min-w-0 flex-col items-start justify-start gap-0 px-0 py-0 text-left"
-              aria-current={selected ? 'true' : undefined}
               ref={element => onStableKeyButtonRef?.(entry.stableKey, element)}
               onClick={event => {
                 event.stopPropagation()
@@ -419,15 +415,7 @@ export function KnowledgeTable({
         ),
       },
     ]
-  }, [
-    onDisableEntry,
-    onEditEntry,
-    onReenableEntry,
-    onSelectEntry,
-    onStableKeyButtonRef,
-    selectedStableKey,
-    showActionsColumn,
-  ])
+  }, [onDisableEntry, onEditEntry, onReenableEntry, onSelectEntry, onStableKeyButtonRef, showActionsColumn])
 
   const table = useReactTable({
     data: entries,
@@ -734,7 +722,6 @@ export function KnowledgeTable({
               const row = visibleRows[virtualRow.index]
               if (!row) return null
               const entry = row.original
-              const selected = entry.stableKey === selectedStableKey
               return (
                 <div
                   key={row.id}
@@ -742,12 +729,10 @@ export function KnowledgeTable({
                     if (node) mobileRowVirtualizer.measureElement(node)
                   }}
                   data-index={virtualRow.index}
-                  data-state={selected ? 'selected' : undefined}
-                  className="flex min-w-0 items-start gap-3 px-4 py-3 transition-colors data-[state=selected]:bg-muted/60">
+                  className="flex min-w-0 items-start gap-3 px-4 py-3 transition-colors">
                   <button
                     type="button"
                     className="min-w-0 flex-1 rounded-sm text-left outline-none hover:bg-muted/40 focus-visible:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring"
-                    aria-current={selected ? 'true' : undefined}
                     onClick={() => onSelectEntry(entry.stableKey)}>
                     <div className="truncate text-sm font-medium text-foreground" title={entry.title}>
                       {entry.title}
@@ -858,7 +843,6 @@ export function KnowledgeTable({
                       }}
                       className="cursor-pointer"
                       data-index={virtualRow.index}
-                      data-state={row.original.stableKey === selectedStableKey ? 'selected' : undefined}
                       onClick={() => onSelectEntry(row.original.stableKey)}>
                       {row.getVisibleCells().map(cell => (
                         <TableCell

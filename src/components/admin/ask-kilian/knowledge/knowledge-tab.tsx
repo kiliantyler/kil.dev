@@ -90,7 +90,6 @@ export function KnowledgeTab({ workspace }: { workspace: AskKilianAdminWorkspace
       {workspace.knowledgeError ? <AdminAlert>{workspace.knowledgeError}</AdminAlert> : null}
       <KnowledgeTable
         entries={workspace.state.entries}
-        selectedStableKey={workspace.selectedEntry?.stableKey ?? null}
         onSelectEntry={selectEntry}
         onEditEntry={openEditEditor}
         onDisableEntry={workspace.actions.disableEntry}
