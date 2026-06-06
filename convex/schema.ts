@@ -1,5 +1,12 @@
 import { defineSchema, defineTable } from 'convex/server'
 import { v } from 'convex/values'
+import {
+  askKilianConversationMessageValidator,
+  askKilianPromptRevisionFields,
+  askKilianQuotaBucketValidator,
+  askKilianRuntimeConfigFields,
+  askKilianTraceMetadataValidator,
+} from './askKilianChatValidators'
 import { askKilianKnowledgeEntryCoreFields, askKilianRagFilterVersionValidator } from './askKilianValidators'
 import { PET_GALLERY_INDEXES } from './petGalleryIndexes'
 import {
@@ -37,6 +44,43 @@ export default defineSchema({
     .index('by_status', ['status'])
     .index('by_category', ['category'])
     .index('by_source', ['source']),
+  askKilianPromptConfigs: defineTable({
+    ...askKilianPromptRevisionFields,
+  })
+    .index('by_active', ['active'])
+    .index('by_createdAt', ['createdAt']),
+  askKilianRuntimeConfigs: defineTable({
+    ...askKilianRuntimeConfigFields,
+  })
+    .index('by_active', ['active'])
+    .index('by_createdAt', ['createdAt']),
+  askKilianRagCorpusVersions: defineTable({
+    versionKey: v.string(),
+    entryCount: v.number(),
+    entryFingerprints: v.array(v.object({ stableKey: v.string(), contentHash: v.string() })),
+    ragFilterVersion: v.number(),
+    embeddingModel: v.string(),
+    embeddingDimensions: v.number(),
+    createdAt: v.number(),
+  }).index('by_versionKey', ['versionKey']),
+  askKilianQuotaUsage: defineTable({
+    bucket: askKilianQuotaBucketValidator,
+    day: v.string(),
+    requestCount: v.number(),
+    estimatedTokens: v.number(),
+    updatedAt: v.number(),
+  }).index('by_bucket_day', ['bucket', 'day']),
+  askKilianConversations: defineTable({
+    traceId: v.string(),
+    messages: v.array(askKilianConversationMessageValidator),
+    metadata: askKilianTraceMetadataValidator,
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_traceId', ['traceId'])
+    .index('by_createdAt', ['createdAt'])
+    .index('by_status', ['metadata.status'])
+    .index('by_quotaBucket', ['metadata.quotaBucket']),
   petGalleryAnimals: defineTable({
     stableId: v.string(),
     name: v.string(),
