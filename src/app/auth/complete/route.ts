@@ -37,11 +37,11 @@ export async function GET(request: NextRequest) {
   await connection()
 
   const returnTo = readSafeReturnTo(request)
-  const { PET_GALLERY_WORKOS_ORG_ID } = requireAdminAuthEnv()
+  const { WORKOS_ORG_ID } = requireAdminAuthEnv()
 
   try {
-    const session = await refreshSession({ organizationId: PET_GALLERY_WORKOS_ORG_ID })
-    if (session.organizationId !== PET_GALLERY_WORKOS_ORG_ID) {
+    const session = await refreshSession({ organizationId: WORKOS_ORG_ID })
+    if (session.organizationId !== WORKOS_ORG_ID) {
       throw new Error('WorkOS session did not refresh into the configured admin organization')
     }
   } catch (error) {

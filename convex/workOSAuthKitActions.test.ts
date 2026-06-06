@@ -12,8 +12,8 @@ describe('WorkOS AuthKit action handler', () => {
     vi.stubEnv('WORKOS_API_KEY', 'sk_test_valid')
     vi.stubEnv('WORKOS_WEBHOOK_SECRET', 'whsec_test_valid')
     vi.stubEnv('WORKOS_ACTION_SECRET', 'action_secret_test_valid')
-    vi.stubEnv('PET_GALLERY_ADMIN_EMAIL', 'admin@example.com')
-    vi.stubEnv('PET_GALLERY_WORKOS_ORG_ID', 'org_admin')
+    vi.stubEnv('ADMIN_EMAIL', 'admin@example.com')
+    vi.stubEnv('WORKOS_ORG_ID', 'org_admin')
     return import('./workOSAuthKitActions')
   }
 

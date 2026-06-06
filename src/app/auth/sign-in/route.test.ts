@@ -1,5 +1,5 @@
 import type * as NextServer from 'next/server'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const getSignInUrl = vi.fn()
 const connection = vi.fn()
@@ -22,13 +22,13 @@ const BASE_ENV = {
   WORKOS_CLIENT_ID: 'client_test_valid_value',
   WORKOS_COOKIE_PASSWORD: 'a'.repeat(32),
   NEXT_PUBLIC_WORKOS_REDIRECT_URI: 'http://localhost:3000/auth/callback',
-  PET_GALLERY_WORKOS_ORG_ID: 'org_allowed',
-  PET_GALLERY_ADMIN_EMAIL: 'admin@example.test',
+  WORKOS_ORG_ID: 'org_allowed',
+  ADMIN_EMAIL: 'admin@example.test',
 }
 
-async function importRoute() {
+async function importRoute(env: Record<string, string> = {}) {
   vi.resetModules()
-  for (const [key, value] of Object.entries(BASE_ENV)) {
+  for (const [key, value] of Object.entries({ ...BASE_ENV, ...env })) {
     vi.stubEnv(key, value)
   }
 
@@ -40,6 +40,11 @@ function request(url: string) {
 }
 
 describe('AuthKit sign-in route', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.unstubAllEnvs()
+  })
+
   it('creates an org-scoped WorkOS sign-in URL from a safe admin return path', async () => {
     getSignInUrl.mockResolvedValue('https://workos.example.test/sign-in')
     const route = await importRoute()
@@ -59,6 +64,45 @@ describe('AuthKit sign-in route', () => {
     expect(response.headers.get('Pragma')).toBe('no-cache')
     expect(response.headers.get('Expires')).toBe('0')
     expect(response.headers.get('Vary')).toBe('Cookie')
+  })
+
+  it('canonicalizes local sign-in requests to the configured callback origin before starting WorkOS auth', async () => {
+    const route = await importRoute({
+      NEXT_PUBLIC_WORKOS_REDIRECT_URI: 'http://127.0.0.1:3000/auth/callback',
+    })
+
+    const response = await route.GET(
+      request('http://localhost:3000/auth/sign-in?returnTo=%2Fadmin%2Fask-kilian%3Ftab%3Dops'),
+    )
+
+    expect(connection).toHaveBeenCalledWith()
+    expect(getSignInUrl).not.toHaveBeenCalled()
+    expect(response.status).toBe(307)
+    expect(response.headers.get('location')).toBe(
+      'http://127.0.0.1:3000/auth/sign-in?returnTo=%2Fadmin%2Fask-kilian%3Ftab%3Dops',
+    )
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store, no-cache, must-revalidate, max-age=0')
+    expect(response.headers.get('Vary')).toBe('Cookie')
+  })
+
+  it('does not canonicalize when the request Host header already matches the configured local callback origin', async () => {
+    getSignInUrl.mockResolvedValue('https://workos.example.test/sign-in')
+    const route = await importRoute({
+      NEXT_PUBLIC_WORKOS_REDIRECT_URI: 'http://127.0.0.1:3000/auth/callback',
+    })
+
+    const response = await route.GET(
+      new Request('http://localhost:3000/auth/sign-in?returnTo=%2Fadmin', {
+        headers: { Host: '127.0.0.1:3000' },
+      }) as never,
+    )
+
+    expect(getSignInUrl).toHaveBeenCalledWith({
+      organizationId: 'org_allowed',
+      returnTo: '/admin',
+      redirectUri: 'http://127.0.0.1:3000/auth/callback',
+    })
+    expect(response.headers.get('location')).toBe('https://workos.example.test/sign-in')
   })
 
   it.each([

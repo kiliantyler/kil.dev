@@ -11,8 +11,8 @@ const BASE_ENV = {
   WORKOS_CLIENT_ID: 'client_test_valid_value',
   WORKOS_COOKIE_PASSWORD: 'a'.repeat(32),
   NEXT_PUBLIC_WORKOS_REDIRECT_URI: 'http://localhost:3000/auth/callback',
-  PET_GALLERY_WORKOS_ORG_ID: 'org_allowed',
-  PET_GALLERY_ADMIN_EMAIL: 'admin@example.test',
+  WORKOS_ORG_ID: 'org_allowed',
+  ADMIN_EMAIL: 'admin@example.test',
   UPLOADTHING_TOKEN: 'uploadthing-token-valid-value',
 }
 

@@ -22,8 +22,8 @@ const BASE_ENV = {
   WORKOS_COOKIE_PASSWORD: 'a'.repeat(32),
   NEXT_PUBLIC_WORKOS_REDIRECT_URI: 'http://localhost:3000/auth/callback',
   CONVEX_GAME_WRITE_SECRET: 'game-write-secret-test-value',
-  PET_GALLERY_WORKOS_ORG_ID: 'org_test_valid_value',
-  PET_GALLERY_ADMIN_EMAIL: 'admin@example.test',
+  WORKOS_ORG_ID: 'org_test_valid_value',
+  ADMIN_EMAIL: 'admin@example.test',
   UPLOADTHING_TOKEN: 'uploadthing-token-valid-value',
 }
 
@@ -49,8 +49,8 @@ describe('env', () => {
       WORKOS_API_KEY: 'sk_test_valid_test_value',
       WORKOS_CLIENT_ID: 'client_test_valid_value',
       WORKOS_COOKIE_PASSWORD: 'a'.repeat(32),
-      PET_GALLERY_WORKOS_ORG_ID: 'org_test_valid_value',
-      PET_GALLERY_ADMIN_EMAIL: 'admin@example.test',
+      WORKOS_ORG_ID: 'org_test_valid_value',
+      ADMIN_EMAIL: 'admin@example.test',
       UPLOADTHING_TOKEN: 'uploadthing-token-valid-value',
     })
   })
@@ -60,8 +60,8 @@ describe('env', () => {
       'WORKOS_API_KEY',
       'WORKOS_CLIENT_ID',
       'WORKOS_COOKIE_PASSWORD',
-      'PET_GALLERY_WORKOS_ORG_ID',
-      'PET_GALLERY_ADMIN_EMAIL',
+      'WORKOS_ORG_ID',
+      'ADMIN_EMAIL',
     ] as const) {
       const { requireAdminAuthEnv } = await importEnvWith({ [key]: '' })
 
@@ -84,8 +84,8 @@ describe('env', () => {
       WORKOS_API_KEY: 'sk_test_valid_test_value',
       WORKOS_CLIENT_ID: 'client_test_valid_value',
       WORKOS_COOKIE_PASSWORD: 'a'.repeat(32),
-      PET_GALLERY_WORKOS_ORG_ID: 'org_test_valid_value',
-      PET_GALLERY_ADMIN_EMAIL: 'admin@example.test',
+      WORKOS_ORG_ID: 'org_test_valid_value',
+      ADMIN_EMAIL: 'admin@example.test',
     })
   })
 
@@ -278,7 +278,7 @@ describe('env', () => {
 
   it.each([
     ['WORKOS_COOKIE_PASSWORD', 'short'],
-    ['PET_GALLERY_ADMIN_EMAIL', 'not-an-email'],
+    ['ADMIN_EMAIL', 'not-an-email'],
   ] as const)('rejects invalid %s values', async (key, value) => {
     await expect(importEnvWith({ [key]: value })).rejects.toThrow()
   })

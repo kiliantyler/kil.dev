@@ -43,8 +43,8 @@ export const env = createEnv({
     WORKOS_WEBHOOK_SECRET: z.string().optional(),
     WORKOS_ACTION_SECRET: z.string().optional(),
     WORKOS_COOKIE_PASSWORD: z.string().min(32).optional(),
-    PET_GALLERY_WORKOS_ORG_ID: z.string().optional(),
-    PET_GALLERY_ADMIN_EMAIL: z.string().email().optional(),
+    WORKOS_ORG_ID: z.string().optional(),
+    ADMIN_EMAIL: z.string().email().optional(),
     UPLOADTHING_TOKEN: z.string().optional(),
   },
   client: {
@@ -73,8 +73,8 @@ export const env = createEnv({
     WORKOS_WEBHOOK_SECRET: process.env.WORKOS_WEBHOOK_SECRET,
     WORKOS_ACTION_SECRET: process.env.WORKOS_ACTION_SECRET,
     WORKOS_COOKIE_PASSWORD: process.env.WORKOS_COOKIE_PASSWORD,
-    PET_GALLERY_WORKOS_ORG_ID: process.env.PET_GALLERY_WORKOS_ORG_ID,
-    PET_GALLERY_ADMIN_EMAIL: process.env.PET_GALLERY_ADMIN_EMAIL,
+    WORKOS_ORG_ID: process.env.WORKOS_ORG_ID,
+    ADMIN_EMAIL: process.env.ADMIN_EMAIL,
     UPLOADTHING_TOKEN: process.env.UPLOADTHING_TOKEN,
     NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
     NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
@@ -90,8 +90,8 @@ export function requireAdminAuthEnv() {
     WORKOS_API_KEY: env.WORKOS_API_KEY,
     WORKOS_CLIENT_ID: env.WORKOS_CLIENT_ID,
     WORKOS_COOKIE_PASSWORD: env.WORKOS_COOKIE_PASSWORD,
-    PET_GALLERY_WORKOS_ORG_ID: env.PET_GALLERY_WORKOS_ORG_ID,
-    PET_GALLERY_ADMIN_EMAIL: env.PET_GALLERY_ADMIN_EMAIL,
+    WORKOS_ORG_ID: env.WORKOS_ORG_ID,
+    ADMIN_EMAIL: env.ADMIN_EMAIL,
   }
   const missing = Object.entries(required)
     .filter(([, value]) => !value)
@@ -111,8 +111,8 @@ export function requireAdminAuthEnv() {
     WORKOS_API_KEY: required.WORKOS_API_KEY ?? '',
     WORKOS_CLIENT_ID: required.WORKOS_CLIENT_ID ?? '',
     WORKOS_COOKIE_PASSWORD: required.WORKOS_COOKIE_PASSWORD ?? '',
-    PET_GALLERY_WORKOS_ORG_ID: required.PET_GALLERY_WORKOS_ORG_ID ?? '',
-    PET_GALLERY_ADMIN_EMAIL: required.PET_GALLERY_ADMIN_EMAIL ?? '',
+    WORKOS_ORG_ID: required.WORKOS_ORG_ID ?? '',
+    ADMIN_EMAIL: required.ADMIN_EMAIL ?? '',
   }
 }
 

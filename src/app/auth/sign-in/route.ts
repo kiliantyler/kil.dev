@@ -5,8 +5,21 @@ import { connection, NextResponse, type NextRequest } from 'next/server'
 
 const NO_STORE_CACHE_CONTROL = 'private, no-store, no-cache, must-revalidate, max-age=0'
 
+function isLocalHostname(hostname: string) {
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]' || hostname === '::1'
+}
+
+function requestUrlWithActualHost(request: NextRequest) {
+  const requestUrl = new URL(request.url)
+  const host = request.headers.get('host')?.trim()
+  if (!host) return requestUrl
+
+  const protocol = request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim() || requestUrl.protocol.replace(':', '')
+  return new URL(`${protocol}://${host}${requestUrl.pathname}${requestUrl.search}`)
+}
+
 function readSafeReturnTo(request: NextRequest) {
-  const requestUrl = request.nextUrl ?? new URL(request.url)
+  const requestUrl = requestUrlWithActualHost(request)
   const returnTo = requestUrl.searchParams.get('returnTo')
   if (!returnTo) return '/admin'
 
@@ -28,11 +41,33 @@ function applyNoStoreHeaders(response: NextResponse) {
   return response
 }
 
+function localSignInCanonicalRedirect(request: NextRequest) {
+  const configured = process.env.NEXT_PUBLIC_WORKOS_REDIRECT_URI?.trim()
+  if (!configured) return null
+
+  const requestUrl = requestUrlWithActualHost(request)
+  let configuredUrl: URL
+  try {
+    configuredUrl = new URL(configured)
+  } catch {
+    return null
+  }
+
+  if (!isLocalHostname(configuredUrl.hostname) || !isLocalHostname(requestUrl.hostname)) return null
+  if (requestUrl.origin === configuredUrl.origin) return null
+
+  const canonicalUrl = new URL(`${requestUrl.pathname}${requestUrl.search}`, configuredUrl.origin)
+  return applyNoStoreHeaders(NextResponse.redirect(canonicalUrl))
+}
+
 export async function GET(request: NextRequest) {
   await connection()
-  const { PET_GALLERY_WORKOS_ORG_ID } = requireAdminAuthEnv()
+  const canonicalRedirect = localSignInCanonicalRedirect(request)
+  if (canonicalRedirect) return canonicalRedirect
+
+  const { WORKOS_ORG_ID } = requireAdminAuthEnv()
   const signInUrl = await getSignInUrl({
-    organizationId: PET_GALLERY_WORKOS_ORG_ID,
+    organizationId: WORKOS_ORG_ID,
     returnTo: readSafeReturnTo(request),
     redirectUri: adminAuthRedirectUri(request),
   })

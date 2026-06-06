@@ -25,8 +25,8 @@ const webServer = process.env.PLAYWRIGHT_BASE_URL
         WORKOS_CLIENT_ID: 'client_pet_gallery_e2e',
         WORKOS_COOKIE_PASSWORD: 'pet-gallery-e2e-cookie-password-value',
         NEXT_PUBLIC_WORKOS_REDIRECT_URI: `${e2eBaseURL}/auth/callback`,
-        PET_GALLERY_WORKOS_ORG_ID: 'org_pet_gallery_e2e',
-        PET_GALLERY_ADMIN_EMAIL: 'admin@example.invalid',
+        WORKOS_ORG_ID: 'org_pet_gallery_e2e',
+        ADMIN_EMAIL: 'admin@example.invalid',
         NEXT_PUBLIC_CONVEX_URL: 'https://pet-gallery-e2e.convex.cloud',
         UPLOADTHING_TOKEN: 'uploadthing-token-valid-value',
         // Ensure PostHog env vars are set (even if dummy values) to avoid validation errors

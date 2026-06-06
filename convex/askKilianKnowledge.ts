@@ -190,8 +190,8 @@ async function readAuthKitUser(ctx: AskKilianAdminContext): Promise<AuthKitUser>
 }
 
 export async function requireAskKilianAdmin(ctx: AskKilianAdminContext) {
-  const configuredEmail = normalizeEmail(process.env.PET_GALLERY_ADMIN_EMAIL)
-  const configuredOrgId = process.env.PET_GALLERY_WORKOS_ORG_ID?.trim()
+  const configuredEmail = normalizeEmail(process.env.ADMIN_EMAIL)
+  const configuredOrgId = process.env.WORKOS_ORG_ID?.trim()
 
   if (!configuredEmail || !configuredOrgId) {
     throw new Error('Ask Kilian admin access denied')

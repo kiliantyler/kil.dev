@@ -182,8 +182,8 @@ export function createPetGalleryHarness({
   auth?: AuthMode
   db?: PetGalleryMemoryDb
 } = {}) {
-  vi.stubEnv('PET_GALLERY_ADMIN_EMAIL', 'admin@example.com')
-  vi.stubEnv('PET_GALLERY_WORKOS_ORG_ID', 'org_good')
+  vi.stubEnv('ADMIN_EMAIL', 'admin@example.com')
+  vi.stubEnv('WORKOS_ORG_ID', 'org_good')
   vi.stubEnv('WORKOS_API_KEY', 'sk_test_placeholder')
   vi.stubEnv('WORKOS_CLIENT_ID', 'client_test_placeholder')
   vi.stubEnv('WORKOS_WEBHOOK_SECRET', 'whsec_test_placeholder')

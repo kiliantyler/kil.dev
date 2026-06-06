@@ -397,8 +397,8 @@ describe('admin-managed knowledge lifecycle', () => {
 
 describe('Ask Kilian admin auth guard', () => {
   beforeEach(() => {
-    vi.stubEnv('PET_GALLERY_ADMIN_EMAIL', 'admin@example.com')
-    vi.stubEnv('PET_GALLERY_WORKOS_ORG_ID', 'org_good')
+    vi.stubEnv('ADMIN_EMAIL', 'admin@example.com')
+    vi.stubEnv('WORKOS_ORG_ID', 'org_good')
     vi.stubEnv('VERCEL_PROJECT_ID', 'prj_test')
     vi.stubEnv('AI_GATEWAY_API_KEY', 'ai-gateway-key')
     vi.stubEnv('ASK_KILIAN_CONVEX_ACCESS_TOKEN', '')
@@ -439,11 +439,11 @@ describe('Ask Kilian admin auth guard', () => {
   it('rejects when the configured admin email or organization env is missing', async () => {
     const { requireAskKilianAdmin } = await import('../askKilianKnowledge')
 
-    vi.stubEnv('PET_GALLERY_ADMIN_EMAIL', '')
+    vi.stubEnv('ADMIN_EMAIL', '')
     await expect(requireAskKilianAdmin(askKilianAdminCtx() as never)).rejects.toThrow('Ask Kilian admin access denied')
 
-    vi.stubEnv('PET_GALLERY_ADMIN_EMAIL', 'admin@example.com')
-    vi.stubEnv('PET_GALLERY_WORKOS_ORG_ID', '')
+    vi.stubEnv('ADMIN_EMAIL', 'admin@example.com')
+    vi.stubEnv('WORKOS_ORG_ID', '')
     await expect(requireAskKilianAdmin(askKilianAdminCtx() as never)).rejects.toThrow('Ask Kilian admin access denied')
   })
 

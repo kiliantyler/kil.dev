@@ -192,14 +192,14 @@ async function readAdminAuthCandidate(env: AdminAuthEnv): Promise<AdminAuthCandi
 }
 
 function toAdminAuthContext(candidate: AdminAuthCandidate, env: AdminAuthEnv): AdminAuthContext | null {
-  const { PET_GALLERY_ADMIN_EMAIL, PET_GALLERY_WORKOS_ORG_ID } = env
+  const { ADMIN_EMAIL, WORKOS_ORG_ID } = env
 
   if (
     !candidate.user ||
     !candidate.workosUserId ||
     !candidate.email ||
-    candidate.email !== PET_GALLERY_ADMIN_EMAIL.toLowerCase() ||
-    candidate.workosOrgId !== PET_GALLERY_WORKOS_ORG_ID ||
+    candidate.email !== ADMIN_EMAIL.toLowerCase() ||
+    candidate.workosOrgId !== WORKOS_ORG_ID ||
     !hasUsableAccessToken(candidate.accessToken)
   ) {
     return null
@@ -219,8 +219,8 @@ function shouldRefreshConfiguredAdminOrganizationSession(candidate: AdminAuthCan
   return (
     !!candidate.user &&
     !!candidate.workosUserId &&
-    candidate.email === env.PET_GALLERY_ADMIN_EMAIL.toLowerCase() &&
-    candidate.workosOrgId !== env.PET_GALLERY_WORKOS_ORG_ID
+    candidate.email === env.ADMIN_EMAIL.toLowerCase() &&
+    candidate.workosOrgId !== env.WORKOS_ORG_ID
   )
 }
 

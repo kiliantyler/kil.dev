@@ -36,8 +36,8 @@ function getActionOrganizationId(action: WorkOSActionPayload) {
 }
 
 function getWorkOSActionDenyReason(action: WorkOSActionPayload) {
-  const adminEmail = configuredValue(process.env.PET_GALLERY_ADMIN_EMAIL)
-  const adminOrganizationId = configuredValue(process.env.PET_GALLERY_WORKOS_ORG_ID)
+  const adminEmail = configuredValue(process.env.ADMIN_EMAIL)
+  const adminOrganizationId = configuredValue(process.env.WORKOS_ORG_ID)
   const actionEmail = getActionEmail(action)
   const actionOrganizationId = getActionOrganizationId(action)
 

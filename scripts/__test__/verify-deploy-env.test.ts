@@ -10,12 +10,12 @@ const adminAuthEnv = {
   WORKOS_API_KEY: 'sk_test_admin_auth_key',
   WORKOS_CLIENT_ID: 'client_test_admin_auth_client',
   WORKOS_COOKIE_PASSWORD: 'admin-auth-cookie-password-value',
-  PET_GALLERY_WORKOS_ORG_ID: 'org_test_admin_auth',
-  PET_GALLERY_ADMIN_EMAIL: 'admin@example.test',
+  WORKOS_ORG_ID: 'org_test_admin_auth',
+  ADMIN_EMAIL: 'admin@example.test',
 }
 
 const adminAuthLog =
-  'admin auth environment variables (WORKOS_API_KEY, WORKOS_CLIENT_ID, WORKOS_COOKIE_PASSWORD, PET_GALLERY_WORKOS_ORG_ID, PET_GALLERY_ADMIN_EMAIL)'
+  'admin auth environment variables (WORKOS_API_KEY, WORKOS_CLIENT_ID, WORKOS_COOKIE_PASSWORD, WORKOS_ORG_ID, ADMIN_EMAIL)'
 
 function createExecFile(
   value: string,
