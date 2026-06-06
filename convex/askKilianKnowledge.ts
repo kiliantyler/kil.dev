@@ -871,13 +871,26 @@ export function createSaveAdminKnowledgeEntryHandler({
     const entry = { ...args.entry, status }
 
     if (status === 'disabled') {
+      const isRename = originalStableKey !== entry.stableKey
       await ctx.runMutation(refs.upsertAdminManaged, {
         entry,
-        ragEntryId: existingOriginal?.ragEntryId,
-        ragStatus: existingOriginal?.ragStatus ?? 'deleted',
+        ragEntryId: isRename ? undefined : existingOriginal?.ragEntryId,
+        ragStatus: isRename ? 'deleted' : (existingOriginal?.ragStatus ?? 'deleted'),
         pendingRagEntryCleanupIds: [],
         now: timestamp,
       })
+      if (isRename && existingOriginal) {
+        const pendingRagEntryCleanupIds = uniqueCleanupIds([existingOriginal.ragEntryId])
+        await ctx.runMutation(refs.patchAdminManagedStatus, {
+          stableKey: originalStableKey,
+          status: 'retired',
+          ragEntryId: undefined,
+          ragStatus: existingOriginal.ragEntryId ? 'cleanupPending' : 'deleted',
+          pendingRagEntryCleanupIds,
+          now: timestamp,
+        })
+        await cleanupRagEntries(ctx, rag, refs, originalStableKey, pendingRagEntryCleanupIds)
+      }
       return { stableKey: entry.stableKey, status: 'disabled' as const }
     }
 

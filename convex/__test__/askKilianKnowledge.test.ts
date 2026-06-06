@@ -243,6 +243,60 @@ describe('admin-managed knowledge lifecycle', () => {
     ).resolves.toEqual({ stableKey: 'admin:manual', status: 'disabled' })
     expect(rag.add).not.toHaveBeenCalled()
   })
+
+  it('retires the original disabled admin row when a disabled edit renames its stable key', async () => {
+    const { createSaveAdminKnowledgeEntryHandler } = await import('../askKilianKnowledge')
+    const disabledEntry = existingEntry('admin:manual', {
+      source: 'admin',
+      status: 'disabled',
+      sourcePath: 'admin:/admin/ask-kilian',
+      ragEntryId: undefined,
+      ragStatus: 'deleted',
+    })
+    const renamed = incomingEntry('admin:renamed-manual', {
+      source: 'admin',
+      status: 'disabled',
+      sourcePath: 'admin:/admin/ask-kilian',
+      text: 'Renamed disabled text',
+      contentHash: 'renamed-disabled-hash',
+    })
+    const ctx = {
+      runQuery: vi.fn(async () => [disabledEntry]),
+      runMutation: vi.fn(),
+      runAction: vi.fn(),
+    }
+    const rag = {
+      add: vi.fn(),
+      delete: vi.fn(),
+    }
+
+    await expect(
+      createSaveAdminKnowledgeEntryHandler({ rag: rag as never, now: () => 500 })(ctx, {
+        entry: renamed,
+        originalStableKey: 'admin:manual',
+      }),
+    ).resolves.toEqual({ stableKey: 'admin:renamed-manual', status: 'disabled' })
+    expect(rag.add).not.toHaveBeenCalled()
+    const mutationPayloads = ctx.runMutation.mock.calls.map(([, payload]) => payload)
+    expect(mutationPayloads).toContainEqual({
+      entry: expect.objectContaining({
+        stableKey: 'admin:renamed-manual',
+        status: 'disabled',
+      }),
+      ragEntryId: undefined,
+      ragStatus: 'deleted',
+      pendingRagEntryCleanupIds: [],
+      now: 500,
+    })
+    expect(mutationPayloads).toContainEqual({
+      stableKey: 'admin:manual',
+      status: 'retired',
+      ragEntryId: undefined,
+      ragStatus: 'deleted',
+      pendingRagEntryCleanupIds: [],
+      now: 500,
+    })
+  })
 })
 
 describe('Ask Kilian admin auth guard', () => {
