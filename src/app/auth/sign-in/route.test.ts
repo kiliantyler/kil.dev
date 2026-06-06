@@ -105,6 +105,22 @@ describe('AuthKit sign-in route', () => {
     expect(response.headers.get('location')).toBe('https://workos.example.test/sign-in')
   })
 
+  it('uses the preview request origin as the WorkOS redirect URI when a deployed callback is configured', async () => {
+    getSignInUrl.mockResolvedValue('https://workos.example.test/sign-in')
+    const route = await importRoute({
+      VERCEL_ENV: 'preview',
+      NEXT_PUBLIC_WORKOS_REDIRECT_URI: 'https://kil.dev/auth/callback',
+    })
+
+    await route.GET(request('https://kil-dev-git-feature-ktyler.vercel.app/auth/sign-in?returnTo=%2Fadmin'))
+
+    expect(getSignInUrl).toHaveBeenCalledWith({
+      organizationId: 'org_allowed',
+      returnTo: '/admin',
+      redirectUri: 'https://kil-dev-git-feature-ktyler.vercel.app/auth/callback',
+    })
+  })
+
   it.each([
     'https://evil.example.test/admin',
     '//evil.example.test/admin',

@@ -94,7 +94,7 @@ export function verifyDeployEnv(options: VerifyDeployEnvOptions = {}) {
     return { checked: false as const }
   }
 
-  const vercelSecrets = new Map<(typeof REQUIRED_SHARED_ENV_KEYS)[number], string>()
+  const vercelSecrets = new Map<string, string>()
   for (const key of REQUIRED_SHARED_ENV_KEYS) {
     const value = env[key]?.trim()
     if (!value) {
@@ -116,8 +116,13 @@ export function verifyDeployEnv(options: VerifyDeployEnvOptions = {}) {
       if (isPlaceholderSecret(value)) {
         throw new Error(`Replace placeholder ${key} in the Vercel build environment`)
       }
+      vercelSecrets.set(key, value)
     }
   }
+
+  const convexRuntimeKeys = shouldVerifyAdminAuthEnv
+    ? [...REQUIRED_SHARED_ENV_KEYS, ...REQUIRED_ADMIN_AUTH_ENV_KEYS]
+    : REQUIRED_SHARED_ENV_KEYS
 
   const deployment = getConvexDeploymentTarget(env)
   if (!deployment) {
@@ -145,7 +150,7 @@ export function verifyDeployEnv(options: VerifyDeployEnvOptions = {}) {
     throw new Error(`Missing ${formatRequiredKeysForError()} in Convex deployment ${deployment}`)
   }
 
-  for (const key of REQUIRED_SHARED_ENV_KEYS) {
+  for (const key of convexRuntimeKeys) {
     const convexSecret =
       convexEnvList
         .split('\n')

@@ -1,22 +1,9 @@
 import { requireAdminAuthEnv } from '@/env'
-import { adminAuthRedirectUri } from '@/lib/admin-auth-redirect'
+import { adminAuthRedirectUri, isLocalHostname, requestUrlWithActualHost } from '@/lib/admin-auth-redirect'
 import { getSignInUrl } from '@workos-inc/authkit-nextjs'
 import { connection, NextResponse, type NextRequest } from 'next/server'
 
 const NO_STORE_CACHE_CONTROL = 'private, no-store, no-cache, must-revalidate, max-age=0'
-
-function isLocalHostname(hostname: string) {
-  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]' || hostname === '::1'
-}
-
-function requestUrlWithActualHost(request: NextRequest) {
-  const requestUrl = new URL(request.url)
-  const host = request.headers.get('host')?.trim()
-  if (!host) return requestUrl
-
-  const protocol = request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim() || requestUrl.protocol.replace(':', '')
-  return new URL(`${protocol}://${host}${requestUrl.pathname}${requestUrl.search}`)
-}
 
 function readSafeReturnTo(request: NextRequest) {
   const requestUrl = requestUrlWithActualHost(request)

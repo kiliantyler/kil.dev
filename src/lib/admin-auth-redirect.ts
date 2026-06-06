@@ -1,10 +1,10 @@
 import type { NextRequest } from 'next/server'
 
-function isLocalHostname(hostname: string) {
+export function isLocalHostname(hostname: string) {
   return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]' || hostname === '::1'
 }
 
-function requestUrlWithActualHost(request: Pick<NextRequest, 'url' | 'headers'> | Request) {
+export function requestUrlWithActualHost(request: Pick<NextRequest, 'url' | 'headers'> | Request) {
   const requestUrl = new URL(request.url)
   const host = request.headers.get('host')?.trim()
   if (!host) return requestUrl
@@ -20,6 +20,11 @@ function configuredRedirectUriForRequest(requestUrl: URL) {
   try {
     const configuredUrl = new URL(configured)
     if (isLocalHostname(configuredUrl.hostname) && !isLocalHostname(requestUrl.hostname)) return null
+    if (
+      process.env.VERCEL_ENV === 'preview' &&
+      (!isLocalHostname(configuredUrl.hostname) || !isLocalHostname(requestUrl.hostname))
+    )
+      return null
     return configuredUrl.toString()
   } catch {
     return null

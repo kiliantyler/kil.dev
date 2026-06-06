@@ -233,7 +233,7 @@ describe('env', () => {
     )
   })
 
-  it('keeps Ask Kilian embedding defaults synchronized with .env.example', async () => {
+  it('keeps Ask Kilian and admin auth env values synchronized with .env.example', async () => {
     const { ASK_KILIAN_DEFAULT_EMBEDDING_DIMENSIONS, ASK_KILIAN_DEFAULT_EMBEDDING_MODEL } = await importEnvWith()
     const envExample = readFileSync(join(process.cwd(), '.env.example'), 'utf8')
 
@@ -244,6 +244,10 @@ describe('env', () => {
     expect(envExample).toContain('ASK_KILIAN_GATEWAY_ENV=')
     expect(envExample).toContain(`ASK_KILIAN_EMBEDDING_MODEL=${ASK_KILIAN_DEFAULT_EMBEDDING_MODEL}`)
     expect(envExample).toContain(`ASK_KILIAN_EMBEDDING_DIMENSIONS=${ASK_KILIAN_DEFAULT_EMBEDDING_DIMENSIONS}`)
+    expect(envExample).toContain('WORKOS_ORG_ID=')
+    expect(envExample).toContain('ADMIN_EMAIL=')
+    expect(envExample).not.toContain('PET_GALLERY_WORKOS_ORG_ID=')
+    expect(envExample).not.toContain('PET_GALLERY_ADMIN_EMAIL=')
   })
 
   it('fails closed when the Convex game write secret is missing', async () => {

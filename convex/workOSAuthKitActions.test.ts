@@ -101,6 +101,27 @@ describe('WorkOS AuthKit action handler', () => {
     })
   })
 
+  it('denies authentication actions when ADMIN_EMAIL is blank', async () => {
+    vi.setSystemTime(new Date('2026-05-17T12:00:00.000Z'))
+    const { allowWorkOSAction } = await importActions()
+    vi.stubEnv('ADMIN_EMAIL', '   ')
+
+    expect(
+      allowWorkOSAction(
+        {
+          user: { email: 'admin@example.com' },
+          organization: { id: 'org_admin' },
+        },
+        createResponse('authentication'),
+      ),
+    ).toEqual({
+      type: 'authentication',
+      timestamp: Date.parse('2026-05-17T12:00:00.000Z'),
+      verdict: 'Deny',
+      errorMessage: 'This account is not allowed to access the pet gallery admin.',
+    })
+  })
+
   it('denies user registration actions for a different organization', async () => {
     vi.setSystemTime(new Date('2026-05-17T12:00:00.000Z'))
     const { allowWorkOSAction } = await importActions()
@@ -110,6 +131,27 @@ describe('WorkOS AuthKit action handler', () => {
         {
           userData: { email: 'admin@example.com' },
           invitation: { organizationId: 'org_other' },
+        },
+        createResponse('user_registration'),
+      ),
+    ).toEqual({
+      type: 'user_registration',
+      timestamp: Date.parse('2026-05-17T12:00:00.000Z'),
+      verdict: 'Deny',
+      errorMessage: 'This organization is not allowed to access the pet gallery admin.',
+    })
+  })
+
+  it('denies user registration actions when WORKOS_ORG_ID is blank', async () => {
+    vi.setSystemTime(new Date('2026-05-17T12:00:00.000Z'))
+    const { allowWorkOSAction } = await importActions()
+    vi.stubEnv('WORKOS_ORG_ID', '')
+
+    expect(
+      allowWorkOSAction(
+        {
+          userData: { email: 'admin@example.com' },
+          invitation: { organizationId: 'org_admin' },
         },
         createResponse('user_registration'),
       ),
