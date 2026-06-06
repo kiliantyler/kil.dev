@@ -78,11 +78,13 @@ export function AdminLavaTabs<TValue extends string>({
     }
 
     moveIndicatorTo(activeTab, false)
-    requestAnimationFrame(() => {
+    const frameId = requestAnimationFrame(() => {
       moveIndicatorTo(activeTab, false)
       didInitRef.current = true
       setIndicator(previous => ({ ...previous, animate: true }))
     })
+
+    return () => cancelAnimationFrame(frameId)
   }, [activeTab, hoveredTab, moveIndicatorTo])
 
   useLayoutEffect(() => {

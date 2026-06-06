@@ -37,7 +37,7 @@ export function PetGalleryTabs({ activeTab, onTabChange }: PetGalleryTabsProps) 
       activeTab={activeTab}
       defaultTab="photos"
       ariaLabel="Pet gallery admin sections"
-      testId="pet-gallery-admin-tabs-wrapper"
+      testId="pet-gallery-admin-tabs"
       onTabChange={onTabChange}
     />
   )
