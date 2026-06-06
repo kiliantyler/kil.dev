@@ -16,7 +16,7 @@ import type {
   AskKilianAdminWorkspaceState,
 } from '@/lib/ask-kilian/admin-workspace'
 import type { AskKilianKnowledgeCategory, AskKilianTier } from '@/lib/ask-kilian/types'
-import { useMemo, useRef, useState, useTransition } from 'react'
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 
 export type AskKilianRetrievalPreview = Awaited<ReturnType<typeof previewAskKilianRetrievalAction>>
 export type AskKilianSyncPreview = Awaited<ReturnType<typeof previewAskKilianRepoSyncAction>>
@@ -38,6 +38,7 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
   const latestDetailRequestId = useRef(0)
   const latestRetrievalRequestId = useRef(0)
   const pendingOperationKeys = useRef(new Set<string>())
+  const didLoadInitialDetail = useRef(false)
 
   const selectedEntry = useMemo(
     () => state.entries.find(entry => entry.stableKey === selectedStableKey) ?? null,
@@ -115,6 +116,13 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
       void loadEntryDetail(stableKey)
     })
   }
+
+  useEffect(() => {
+    if (didLoadInitialDetail.current) return
+    didLoadInitialDetail.current = true
+    const initialStableKey = selectedStableKeyRef.current
+    if (initialStableKey) void loadEntryDetail(initialStableKey)
+  }, [])
 
   function saveEntry(input: AdminKnowledgeEntrySaveInput) {
     setKnowledgeError(null)

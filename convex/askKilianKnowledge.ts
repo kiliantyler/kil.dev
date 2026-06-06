@@ -11,10 +11,9 @@ import {
   ASK_KILIAN_RAG_FILTER_VERSION,
   askKilianAdminMutationResultValidator,
   askKilianCategoryValidator,
-  askKilianKnowledgeEntryCoreFields,
-  askKilianKnowledgeEntryDisplayValidator,
+  askKilianKnowledgeEntryDetailDisplayValidator,
   askKilianKnowledgeEntryInputValidator,
-  askKilianRagFilterVersionValidator,
+  askKilianKnowledgeEntryListDisplayValidator,
   askKilianStatusValidator,
   askKilianTierValidator,
 } from './askKilianValidators'
@@ -66,7 +65,8 @@ type AuthKitUser = {
   name?: string | null
 }
 
-type AskKilianKnowledgeEntryDisplay = Infer<typeof askKilianKnowledgeEntryDisplayValidator>
+type AskKilianKnowledgeEntryListDisplay = Infer<typeof askKilianKnowledgeEntryListDisplayValidator>
+type AskKilianKnowledgeEntryDetailDisplay = Infer<typeof askKilianKnowledgeEntryDetailDisplayValidator>
 type AskKilianAdminMutationResult = Infer<typeof askKilianAdminMutationResultValidator>
 
 const syncSummaryValidator = v.object({
@@ -88,29 +88,9 @@ const syncSummaryValidator = v.object({
 })
 export type SyncSummary = Infer<typeof syncSummaryValidator>
 
-const knowledgeEntryWithoutTextValidator = v.object({
-  ...askKilianKnowledgeEntryCoreFields,
-  text: v.optional(v.string()),
-  textSummary: v.string(),
-  ragEntryId: v.optional(v.string()),
-  ragStatus: v.optional(v.string()),
-  ragFilterVersion: v.optional(askKilianRagFilterVersionValidator),
-  pendingRagEntryCleanupIds: v.optional(v.array(v.string())),
-  createdAt: v.optional(v.number()),
-  updatedAt: v.number(),
-  retiredAt: v.optional(v.number()),
-})
+const knowledgeEntryWithoutTextValidator = askKilianKnowledgeEntryListDisplayValidator
 
-const knowledgeEntryWithTextValidator = v.object({
-  ...askKilianKnowledgeEntryCoreFields,
-  ragEntryId: v.optional(v.string()),
-  ragStatus: v.optional(v.string()),
-  ragFilterVersion: v.optional(askKilianRagFilterVersionValidator),
-  pendingRagEntryCleanupIds: v.optional(v.array(v.string())),
-  createdAt: v.optional(v.number()),
-  updatedAt: v.number(),
-  retiredAt: v.optional(v.number()),
-})
+const knowledgeEntryWithTextValidator = askKilianKnowledgeEntryDetailDisplayValidator
 
 const searchResultValidator = v.object({
   stableKey: v.string(),
@@ -707,6 +687,42 @@ export function createSearchKnowledgeHandler({
   }
 }
 
+export function createPreviewKnowledgeHandler({
+  refs = {
+    listSearchable: internal.askKilianKnowledge.listSearchableKnowledgeEntries,
+  },
+}: {
+  refs?: {
+    listSearchable: Parameters<ActionCtx['runQuery']>[0]
+  }
+} = {}) {
+  return async function previewKnowledgeHandler(
+    ctx: Pick<ActionCtx, 'runQuery'>,
+    args: {
+      query: string
+      tier: AskKilianTier
+      includeSpoilers?: boolean
+      categories?: AskKilianKnowledgeCategory[]
+      limit?: number
+    },
+  ) {
+    const cappedLimit = normalizeSearchLimit(args.limit)
+    const categories = normalizeSearchCategories(args.categories)
+    const query = normalizeSearchQuery(args.query)
+    if (!query) return []
+
+    const rows = (await ctx.runQuery(refs.listSearchable, {})) as SearchableKnowledgeEntry[]
+    const lexicalEntries = scoreLexicalKnowledgeEntries(query, rows)
+    if (lexicalEntries.length === 0) return []
+
+    return shapeSearchKnowledgeResults(lexicalEntries, rows, {
+      tier: args.tier,
+      includeSpoilers: args.includeSpoilers ?? false,
+      categories,
+    }).slice(0, cappedLimit)
+  }
+}
+
 export function createSyncRepoKnowledgeHandler({
   rag = askKilianRag,
   now = () => Date.now(),
@@ -1284,24 +1300,24 @@ export const searchKnowledge = internalAction({
 
 export const listAdminKnowledgeEntriesForAdmin = action({
   args: {},
-  returns: v.array(askKilianKnowledgeEntryDisplayValidator),
-  handler: async (ctx): Promise<AskKilianKnowledgeEntryDisplay[]> => {
+  returns: v.array(askKilianKnowledgeEntryListDisplayValidator),
+  handler: async (ctx): Promise<AskKilianKnowledgeEntryListDisplay[]> => {
     await requireAskKilianAdmin(ctx)
     return (await ctx.runQuery(
       internal.askKilianKnowledge.listKnowledgeEntries,
       {},
-    )) as AskKilianKnowledgeEntryDisplay[]
+    )) as AskKilianKnowledgeEntryListDisplay[]
   },
 })
 
 export const getAdminKnowledgeEntryForAdmin = action({
   args: { stableKey: v.string() },
-  returns: v.union(askKilianKnowledgeEntryDisplayValidator, v.null()),
-  handler: async (ctx, args): Promise<AskKilianKnowledgeEntryDisplay | null> => {
+  returns: v.union(askKilianKnowledgeEntryDetailDisplayValidator, v.null()),
+  handler: async (ctx, args): Promise<AskKilianKnowledgeEntryDetailDisplay | null> => {
     await requireAskKilianAdmin(ctx)
     const rows = (await ctx.runQuery(internal.askKilianKnowledge.listKnowledgeEntriesByStableKey, {
       stableKeys: [args.stableKey],
-    })) as AskKilianKnowledgeEntryDisplay[]
+    })) as AskKilianKnowledgeEntryDetailDisplay[]
     return rows[0] ?? null
   },
 })
@@ -1405,6 +1421,27 @@ export const searchKnowledgeForAdmin = action({
     await requireAskKilianAdmin(ctx)
     requireAskKilianAiGatewayApiKey()
     return createSearchKnowledgeHandler()(ctx, {
+      query: args.query,
+      tier: args.tier,
+      includeSpoilers: args.includeSpoilers,
+      categories: args.categories,
+      limit: args.limit,
+    })
+  },
+})
+
+export const previewKnowledgeForAdmin = action({
+  args: {
+    query: v.string(),
+    tier: askKilianTierValidator,
+    includeSpoilers: v.optional(v.boolean()),
+    categories: v.optional(v.array(askKilianCategoryValidator)),
+    limit: v.optional(v.number()),
+  },
+  returns: v.array(searchResultValidator),
+  handler: async (ctx, args) => {
+    await requireAskKilianAdmin(ctx)
+    return createPreviewKnowledgeHandler()(ctx, {
       query: args.query,
       tier: args.tier,
       includeSpoilers: args.includeSpoilers,

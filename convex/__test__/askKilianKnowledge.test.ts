@@ -19,6 +19,7 @@ import { api, internal } from '../_generated/api'
 import {
   clearPendingRagEntryCleanupId,
   createDiffRepoKnowledgeHandler,
+  createPreviewKnowledgeHandler,
   createSearchKnowledgeHandler,
   createSyncRepoKnowledgeHandler,
   diffRepoKnowledgeEntries,
@@ -449,6 +450,65 @@ describe('Ask Kilian admin auth guard', () => {
     const [row] = (await getActionHandler(listAdminKnowledgeEntriesForAdmin)(ctx, {})) as Array<Record<string, unknown>>
     expect(row).not.toHaveProperty('text')
     expect(ctx.runQuery).toHaveBeenCalled()
+  })
+
+  it('projects internal admin list rows with bounded summaries and without source text', async () => {
+    const { listKnowledgeEntries } = await import('../askKilianKnowledge')
+    const longText = `${'summary '.repeat(80)}tail`
+    const collect = vi.fn(async () => [
+      {
+        ...existingEntry('admin:manual', {
+          source: 'admin',
+          sourcePath: 'admin:/admin/ask-kilian',
+          text: longText,
+        }),
+        createdAt: 100,
+        updatedAt: 200,
+      },
+    ])
+    const ctx = {
+      db: {
+        query: vi.fn(() => ({ collect })),
+      },
+    }
+
+    const result = (await getActionHandler(listKnowledgeEntries)(ctx, {})) as Array<Record<string, unknown>>
+    expect(result).toHaveLength(1)
+    const row = result[0]
+    expect(row).toBeDefined()
+
+    expect(row).not.toHaveProperty('text')
+    expect(row?.textSummary).toEqual(longText.trim().replaceAll(/\s+/g, ' ').slice(0, 240))
+    expect((row?.textSummary as string).length).toBeLessThanOrEqual(240)
+  })
+
+  it('runs the admin preview action without AI Gateway configuration', async () => {
+    const { previewKnowledgeForAdmin } = await import('../askKilianKnowledge')
+    vi.stubEnv('AI_GATEWAY_API_KEY', '')
+    const ctx = askKilianAdminCtx({
+      runQuery: vi.fn(async () => [
+        incomingEntry('project:ask-kilian', {
+          category: 'projects',
+          title: 'Ask Kilian',
+          text: 'Ask Kilian admin cockpit and retrieval preview context.',
+        }),
+      ]),
+    })
+
+    await expect(
+      getActionHandler(previewKnowledgeForAdmin)(ctx, {
+        query: 'admin cockpit',
+        tier: 0,
+        includeSpoilers: false,
+        categories: ['projects'],
+        limit: 4,
+      }),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        stableKey: 'project:ask-kilian',
+        score: 0.82,
+      }),
+    ])
   })
 })
 
@@ -1474,6 +1534,40 @@ describe('createSearchKnowledgeHandler', () => {
   })
 })
 
+describe('createPreviewKnowledgeHandler', () => {
+  it('uses lexical stored-row matching without calling RAG search', async () => {
+    const rows = [
+      incomingEntry('project:ask-kilian', {
+        category: 'projects',
+        title: 'Ask Kilian',
+        text: 'Ask Kilian admin cockpit and retrieval preview context.',
+      }),
+      incomingEntry('pet:lux', { category: 'pets', title: 'Lux', text: 'Golden Retriever' }),
+    ]
+    const ctx = { runQuery: vi.fn(async () => rows) }
+    const handler = createPreviewKnowledgeHandler()
+
+    await expect(
+      handler(ctx, {
+        query: 'admin cockpit',
+        tier: 0,
+        includeSpoilers: false,
+        categories: ['projects'],
+        limit: 8,
+      }),
+    ).resolves.toEqual([
+      {
+        stableKey: 'project:ask-kilian',
+        title: 'Ask Kilian',
+        category: 'projects',
+        score: 0.82,
+        text: 'Ask Kilian admin cockpit and retrieval preview context.',
+      },
+    ])
+    expect(ctx.runQuery).toHaveBeenCalledWith(internal.askKilianKnowledge.listSearchableKnowledgeEntries, {})
+  })
+})
+
 describe('generated API exposure', () => {
   it('keeps raw sync, search, and metadata listing internal-only behind guarded public wrappers', () => {
     expect(internal.askKilianKnowledge.syncRepoKnowledge).toBeDefined()
@@ -1492,6 +1586,7 @@ describe('generated API exposure', () => {
     expect(api.askKilianKnowledge.diffRepoKnowledgeForAdmin).toBeDefined()
     expect(api.askKilianKnowledge.syncRepoKnowledgeForAdmin).toBeDefined()
     expect(api.askKilianKnowledge.searchKnowledgeForAdmin).toBeDefined()
+    expect(api.askKilianKnowledge.previewKnowledgeForAdmin).toBeDefined()
     expect(api.askKilianKnowledge.verifyRuntimeEnvForAdmin).toBeDefined()
   })
 })

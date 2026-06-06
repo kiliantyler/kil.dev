@@ -210,7 +210,11 @@ export function KnowledgeTable({
         id: 'title',
         accessorKey: 'title',
         header: ({ column }) => <HeaderButton column={column} label="Title" />,
-        cell: ({ row }) => <span className="block max-w-56 truncate font-medium">{row.original.title}</span>,
+        cell: ({ row }) => (
+          <span className="block max-w-56 truncate font-medium" title={row.original.title}>
+            {row.original.title}
+          </span>
+        ),
       },
       {
         id: 'source',

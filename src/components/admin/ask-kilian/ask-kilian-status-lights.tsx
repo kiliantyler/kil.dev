@@ -1,6 +1,6 @@
 'use client'
 
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { AskKilianAdminStatus } from '@/lib/ask-kilian/admin-workspace'
 import { cn } from '@/utils/utils'
 
@@ -12,24 +12,22 @@ function statusDotClass(level: AskKilianAdminStatus['level']) {
 
 export function AskKilianStatusLights({ statuses }: { statuses: AskKilianAdminStatus[] }) {
   return (
-    <TooltipProvider>
-      <div className="flex flex-wrap gap-3 text-sm" aria-label="Ask Kilian admin status">
-        {statuses.map(status => (
-          <div key={status.label} className="inline-flex items-center gap-2">
-            <span className="font-medium">{status.label}</span>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span
-                  role="status"
-                  aria-label={`${status.label}: ${status.reason}`}
-                  className={cn('size-2.5 rounded-full', statusDotClass(status.level))}
-                />
-              </TooltipTrigger>
-              <TooltipContent>{status.reason}</TooltipContent>
-            </Tooltip>
-          </div>
-        ))}
-      </div>
-    </TooltipProvider>
+    <div className="flex flex-wrap gap-3 text-sm" aria-label="Ask Kilian admin status">
+      {statuses.map(status => (
+        <div key={status.label} className="inline-flex items-center gap-2">
+          <span className="font-medium">{status.label}</span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span
+                role="status"
+                aria-label={`${status.label}: ${status.reason}`}
+                className={cn('size-2.5 rounded-full', statusDotClass(status.level))}
+              />
+            </TooltipTrigger>
+            <TooltipContent>{status.reason}</TooltipContent>
+          </Tooltip>
+        </div>
+      ))}
+    </div>
   )
 }

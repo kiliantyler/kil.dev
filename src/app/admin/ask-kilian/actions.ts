@@ -217,7 +217,7 @@ export async function previewAskKilianRetrievalAction(input: {
   limit: number
 }) {
   const client = await createAskKilianConvexServerClient()
-  const results = await client.action(api.askKilianKnowledge.searchKnowledgeForAdmin, {
+  const results = await client.action(api.askKilianKnowledge.previewKnowledgeForAdmin, {
     query: input.prompt,
     tier: input.tier,
     includeSpoilers: input.includeSpoilers,

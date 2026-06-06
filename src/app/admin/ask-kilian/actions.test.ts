@@ -15,6 +15,7 @@ const {
       disableAdminKnowledgeEntryForAdmin: 'disableAdminKnowledgeEntryForAdmin',
       getAdminKnowledgeEntryForAdmin: 'getAdminKnowledgeEntryForAdmin',
       listAdminKnowledgeEntriesForAdmin: 'listAdminKnowledgeEntriesForAdmin',
+      previewKnowledgeForAdmin: 'previewKnowledgeForAdmin',
       reenableAdminKnowledgeEntryForAdmin: 'reenableAdminKnowledgeEntryForAdmin',
       saveAdminKnowledgeEntryForAdmin: 'saveAdminKnowledgeEntryForAdmin',
       searchKnowledgeForAdmin: 'searchKnowledgeForAdmin',
@@ -119,7 +120,7 @@ describe('Ask Kilian admin server actions', () => {
     expect(Object.keys(actions).some(name => /chat|generate|stream/i.test(name))).toBe(false)
   })
 
-  it('retrieval preview calls only the Convex retrieval action and never AI generation routes', async () => {
+  it('retrieval preview calls only the non-paid Convex preview action and never AI generation routes', async () => {
     const convex = { action: vi.fn(async () => []) }
     createAskKilianConvexServerClient.mockResolvedValue(convex)
     const { previewAskKilianRetrievalAction } = await import('./actions')
@@ -132,13 +133,14 @@ describe('Ask Kilian admin server actions', () => {
       limit: 4,
     })
 
-    expect(convex.action).toHaveBeenCalledWith(api.askKilianKnowledge.searchKnowledgeForAdmin, {
+    expect(convex.action).toHaveBeenCalledWith(api.askKilianKnowledge.previewKnowledgeForAdmin, {
       query: 'What should I ask about projects?',
       tier: 1,
       includeSpoilers: false,
       categories: ['projects'],
       limit: 4,
     })
+    expect(convex.action).not.toHaveBeenCalledWith(api.askKilianKnowledge.searchKnowledgeForAdmin, expect.anything())
     expect(convex.action).toHaveBeenCalledTimes(1)
   })
 

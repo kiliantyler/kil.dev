@@ -45,10 +45,20 @@ export const askKilianKnowledgeEntryInputValidator = v.object(askKilianKnowledge
 
 export const askKilianRagFilterVersionValidator = v.number()
 
-export const askKilianKnowledgeEntryDisplayValidator = v.object({
-  ...askKilianKnowledgeEntryCoreFields,
-  text: v.optional(v.string()),
-  textSummary: v.optional(v.string()),
+export const askKilianKnowledgeEntryCoreFieldsWithoutText = {
+  stableKey: askKilianKnowledgeEntryCoreFields.stableKey,
+  source: askKilianKnowledgeEntryCoreFields.source,
+  status: askKilianKnowledgeEntryCoreFields.status,
+  category: askKilianKnowledgeEntryCoreFields.category,
+  title: askKilianKnowledgeEntryCoreFields.title,
+  contentHash: askKilianKnowledgeEntryCoreFields.contentHash,
+  sourcePath: askKilianKnowledgeEntryCoreFields.sourcePath,
+  minTier: askKilianKnowledgeEntryCoreFields.minTier,
+  spoilerLevel: askKilianKnowledgeEntryCoreFields.spoilerLevel,
+  importance: askKilianKnowledgeEntryCoreFields.importance,
+}
+
+const askKilianKnowledgeEntryDisplayMetadataFields = {
   ragEntryId: v.optional(v.string()),
   ragStatus: v.optional(v.string()),
   ragFilterVersion: v.optional(askKilianRagFilterVersionValidator),
@@ -56,6 +66,18 @@ export const askKilianKnowledgeEntryDisplayValidator = v.object({
   createdAt: v.optional(v.number()),
   updatedAt: v.number(),
   retiredAt: v.optional(v.number()),
+}
+
+export const askKilianKnowledgeEntryListDisplayValidator = v.object({
+  ...askKilianKnowledgeEntryCoreFieldsWithoutText,
+  textSummary: v.string(),
+  ...askKilianKnowledgeEntryDisplayMetadataFields,
+})
+
+export const askKilianKnowledgeEntryDetailDisplayValidator = v.object({
+  ...askKilianKnowledgeEntryCoreFields,
+  textSummary: v.optional(v.string()),
+  ...askKilianKnowledgeEntryDisplayMetadataFields,
 })
 
 export const askKilianAdminMutationResultValidator = v.object({

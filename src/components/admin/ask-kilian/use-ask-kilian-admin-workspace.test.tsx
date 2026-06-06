@@ -181,6 +181,44 @@ async function openWorkspaceHookPage(page: Page, html: string) {
 }
 
 describe('useAskKilianAdminWorkspace', () => {
+  it('loads full detail for the initially selected entry', async () => {
+    const html = await buildWorkspaceHookTestPage()
+    const browser = await chromium.launch()
+    const page = await browser.newPage()
+
+    try {
+      await openWorkspaceHookPage(page, html)
+      await page.waitForFunction(
+        () => (globalThis as WorkspaceHarnessGlobal).askKilianActionMocks.detailResolvers.length === 1,
+      )
+
+      await page.evaluate(() => {
+        ;(globalThis as WorkspaceHarnessGlobal).askKilianActionMocks.detailResolvers.shift()?.({
+          stableKey: 'admin:manual',
+          source: 'admin',
+          status: 'active',
+          category: 'fun',
+          title: 'Manual entry',
+          sourcePath: 'admin:/admin/ask-kilian',
+          contentHash: 'hash-manual',
+          minTier: 0,
+          spoilerLevel: 'none',
+          importance: 0.7,
+          updatedAt: 200,
+          text: 'Initial full detail text',
+        })
+      })
+
+      await page.waitForFunction(
+        () =>
+          (globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.selectedDetail?.text === 'Initial full detail text',
+      )
+    } finally {
+      await page.close()
+      await browser.close()
+    }
+  })
+
   it('does not let an older same-key detail response repopulate detail after refresh', async () => {
     const html = await buildWorkspaceHookTestPage()
     const browser = await chromium.launch()
@@ -188,9 +226,6 @@ describe('useAskKilianAdminWorkspace', () => {
 
     try {
       await openWorkspaceHookPage(page, html)
-      await page.evaluate(() => {
-        void (globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.actions.loadEntryDetail('admin:manual')
-      })
       await page.waitForFunction(
         () => (globalThis as WorkspaceHarnessGlobal).askKilianActionMocks.detailResolvers.length === 1,
       )
