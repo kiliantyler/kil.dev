@@ -44,6 +44,7 @@ export type AdminKnowledgeEntryValidation = {
 
 export type AdminWorkspaceKnowledgeEntry = Omit<AskKilianKnowledgeEntry, 'text'> & {
   text?: string
+  textSummary?: string
   ragEntryId?: string
   ragStatus?: string
   ragFilterVersion?: number

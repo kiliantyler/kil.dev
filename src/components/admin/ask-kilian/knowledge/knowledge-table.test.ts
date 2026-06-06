@@ -23,7 +23,7 @@ function entry(overrides: Partial<AdminWorkspaceKnowledgeEntry>): AdminWorkspace
     importance: 0.5,
     ragStatus: 'indexed',
     updatedAt: 100,
-    text: 'Alpha source text summary',
+    textSummary: 'Alpha source text summary',
     ...overrides,
   }
 }
@@ -33,7 +33,7 @@ const entries = [
     stableKey: 'repo:bravo',
     title: 'Bravo knowledge',
     sourcePath: 'src/content/bravo.md',
-    text: 'Hidden theme text summary',
+    textSummary: 'Hidden theme text summary',
     updatedAt: 200,
   }),
   entry({
@@ -64,11 +64,11 @@ const entries = [
 const bravoEntry = entries[0]!
 
 describe('knowledgeEntryMatchesGlobalSearch', () => {
-  test('matches stable key, title, and source path', () => {
+  test('matches stable key, title, source path, and source text summary', () => {
     expect(knowledgeEntryMatchesGlobalSearch(bravoEntry, 'repo:bravo')).toBe(true)
     expect(knowledgeEntryMatchesGlobalSearch(bravoEntry, 'Bravo knowledge')).toBe(true)
     expect(knowledgeEntryMatchesGlobalSearch(bravoEntry, 'content/bravo')).toBe(true)
-    expect(knowledgeEntryMatchesGlobalSearch(bravoEntry, 'theme text')).toBe(false)
+    expect(knowledgeEntryMatchesGlobalSearch(bravoEntry, 'theme text')).toBe(true)
     expect(knowledgeEntryMatchesGlobalSearch(bravoEntry, 'missing')).toBe(false)
   })
 })

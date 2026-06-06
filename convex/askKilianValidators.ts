@@ -48,6 +48,7 @@ export const askKilianRagFilterVersionValidator = v.number()
 export const askKilianKnowledgeEntryDisplayValidator = v.object({
   ...askKilianKnowledgeEntryCoreFields,
   text: v.optional(v.string()),
+  textSummary: v.optional(v.string()),
   ragEntryId: v.optional(v.string()),
   ragStatus: v.optional(v.string()),
   ragFilterVersion: v.optional(askKilianRagFilterVersionValidator),

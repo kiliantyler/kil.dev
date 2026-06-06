@@ -91,6 +91,7 @@ export type SyncSummary = Infer<typeof syncSummaryValidator>
 const knowledgeEntryWithoutTextValidator = v.object({
   ...askKilianKnowledgeEntryCoreFields,
   text: v.optional(v.string()),
+  textSummary: v.string(),
   ragEntryId: v.optional(v.string()),
   ragStatus: v.optional(v.string()),
   ragFilterVersion: v.optional(askKilianRagFilterVersionValidator),
@@ -132,6 +133,7 @@ const MAX_SEARCH_RESULT_LIMIT = 12
 const SEARCH_OVERFETCH_MULTIPLIER = 3
 const MAX_RAG_SEARCH_LIMIT = MAX_SEARCH_RESULT_LIMIT * SEARCH_OVERFETCH_MULTIPLIER
 const MAX_SEARCH_RESULT_TEXT_LENGTH = 1600
+const MAX_ADMIN_LIST_TEXT_SUMMARY_LENGTH = 240
 const MIN_FULL_MANIFEST_ENTRY_COUNT = 10
 const LEXICAL_MATCH_SCORE = 0.82
 const LEXICAL_STOP_WORDS = new Set([
@@ -261,6 +263,10 @@ function capSearchResultText(text: string) {
   return text.slice(0, MAX_SEARCH_RESULT_TEXT_LENGTH)
 }
 
+function summarizeAdminListText(text: string) {
+  return text.trim().replaceAll(/\s+/g, ' ').slice(0, MAX_ADMIN_LIST_TEXT_SUMMARY_LENGTH)
+}
+
 function projectKnowledgeEntryWithoutText(row: StoredKnowledgeEntry) {
   return {
     stableKey: row.stableKey,
@@ -268,6 +274,7 @@ function projectKnowledgeEntryWithoutText(row: StoredKnowledgeEntry) {
     status: row.status,
     category: row.category,
     title: row.title,
+    textSummary: summarizeAdminListText(row.text),
     contentHash: row.contentHash,
     sourcePath: row.sourcePath,
     minTier: row.minTier,

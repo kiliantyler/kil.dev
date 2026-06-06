@@ -421,10 +421,16 @@ describe('Ask Kilian admin auth guard', () => {
 
   it('admin UI ForAdmin action args omit accessToken and do not require ASK_KILIAN_CONVEX_ACCESS_TOKEN', async () => {
     const { listAdminKnowledgeEntriesForAdmin } = await import('../askKilianKnowledge')
+    const projectedManualEntry = existingEntry('admin:manual', {
+      source: 'admin',
+      sourcePath: 'admin:/admin/ask-kilian',
+    })
+    delete (projectedManualEntry as Partial<typeof projectedManualEntry>).text
     const ctx = askKilianAdminCtx({
       runQuery: vi.fn(async () => [
         {
-          ...existingEntry('admin:manual', { source: 'admin', sourcePath: 'admin:/admin/ask-kilian' }),
+          ...projectedManualEntry,
+          textSummary: 'admin:manual text',
           createdAt: 100,
           updatedAt: 200,
           retiredAt: undefined,
@@ -435,10 +441,13 @@ describe('Ask Kilian admin auth guard', () => {
     await expect(getActionHandler(listAdminKnowledgeEntriesForAdmin)(ctx, {})).resolves.toEqual([
       expect.objectContaining({
         stableKey: 'admin:manual',
+        textSummary: 'admin:manual text',
         createdAt: 100,
         updatedAt: 200,
       }),
     ])
+    const [row] = (await getActionHandler(listAdminKnowledgeEntriesForAdmin)(ctx, {})) as Array<Record<string, unknown>>
+    expect(row).not.toHaveProperty('text')
     expect(ctx.runQuery).toHaveBeenCalled()
   })
 })

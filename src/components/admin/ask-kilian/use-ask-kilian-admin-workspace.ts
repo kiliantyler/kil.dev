@@ -35,6 +35,7 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
   const [pendingOperations, setPendingOperations] = useState(0)
   const selectedStableKeyRef = useRef<string | null>(initialState.selectedStableKey ?? null)
   const latestDetailRequestStableKey = useRef<string | null>(null)
+  const latestDetailRequestId = useRef(0)
   const latestRetrievalRequestId = useRef(0)
   const pendingOperationKeys = useRef(new Set<string>())
 
@@ -51,6 +52,7 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
 
     selectedStableKeyRef.current = nextSelectedStableKey
     latestDetailRequestStableKey.current = nextSelectedStableKey
+    latestDetailRequestId.current += 1
     setState(nextState)
     setSelectedStableKey(nextSelectedStableKey)
     setSelectedDetail(null)
@@ -79,6 +81,8 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
   }
 
   async function loadEntryDetail(stableKey: string) {
+    const requestId = latestDetailRequestId.current + 1
+    latestDetailRequestId.current = requestId
     selectedStableKeyRef.current = stableKey
     latestDetailRequestStableKey.current = stableKey
     setSelectedStableKey(stableKey)
@@ -87,13 +91,17 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
     setPendingOperations(count => count + 1)
     try {
       const detail = await getAskKilianKnowledgeEntryAction(stableKey)
-      if (latestDetailRequestStableKey.current === stableKey && detail?.stableKey === stableKey) {
+      if (
+        latestDetailRequestId.current === requestId &&
+        latestDetailRequestStableKey.current === stableKey &&
+        detail?.stableKey === stableKey
+      ) {
         setSelectedDetail(detail)
         return detail
       }
       return null
     } catch (error) {
-      if (latestDetailRequestStableKey.current === stableKey) {
+      if (latestDetailRequestId.current === requestId && latestDetailRequestStableKey.current === stableKey) {
         setKnowledgeError(error instanceof Error ? error.message : 'Unable to load Ask Kilian entry detail')
       }
       return null
