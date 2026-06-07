@@ -21,12 +21,7 @@ export function getAskKilianChatRoleLabel(role: AskKilianChatMessage['role']) {
 
 export function shouldSubmitAskKilianChatComposer(input: AskKilianChatComposerKeyInput) {
   return (
-    input.key === 'Enter' &&
-    !input.shiftKey &&
-    !input.metaKey &&
-    !input.ctrlKey &&
-    !input.altKey &&
-    !input.isComposing
+    input.key === 'Enter' && !input.shiftKey && !input.metaKey && !input.ctrlKey && !input.altKey && !input.isComposing
   )
 }
 
@@ -115,7 +110,10 @@ export function AskKilianChatPanel({
         {messages.length > 0 ? (
           <div className="grid min-h-full content-end gap-4">
             {messages.map((message, index) => (
-              <AskKilianMessageBubble key={`${message.role}-${index}-${message.content.slice(0, 24)}`} message={message} />
+              <AskKilianMessageBubble
+                key={`${message.role}-${index}-${message.content.slice(0, 24)}`}
+                message={message}
+              />
             ))}
             {isResponding ? <AskKilianTypingBubble /> : null}
           </div>
@@ -179,9 +177,7 @@ function AskKilianMessageBubble({ message }: { message: AskKilianChatMessage }) 
         <div
           className={cn(
             ASK_KILIAN_CHAT_MESSAGE_CONTENT_CLASS,
-            isUser
-              ? 'bg-primary text-primary-foreground'
-              : 'border border-border bg-muted/50 text-foreground',
+            isUser ? 'bg-primary text-primary-foreground' : 'border border-border bg-muted/50 text-foreground',
           )}>
           {message.content}
         </div>
