@@ -8,6 +8,14 @@ type ContextPreviewPanelPreview = {
   contextPreview: string
 }
 
+type ContextPreviewPanelChatResponse = {
+  ok?: boolean
+  status?: string
+  text?: string
+  traceId?: string
+  diagnostics?: unknown
+}
+
 type ContextPreviewPanelSection = {
   id: 'retrieved-context' | 'preview-text' | 'response'
   title: string
@@ -21,12 +29,14 @@ export type ContextPreviewPanelSections = [
   ContextPreviewPanelSection,
 ]
 
-const RESPONSE_PANEL_TEXT =
-  'Live generation is reserved for KTY-66. This panel will be wired after the chat API exists.'
+const EMPTY_RESPONSE_TEXT = 'Generate a response to inspect the admin test answer.'
 
 export function buildContextPreviewPanelSections(
   preview: ContextPreviewPanelPreview | null,
+  chatResponse: ContextPreviewPanelChatResponse | null = null,
 ): ContextPreviewPanelSections {
+  const responseText = chatResponse?.text ?? ''
+
   if (!preview) {
     return [
       {
@@ -44,7 +54,8 @@ export function buildContextPreviewPanelSections(
       {
         id: 'response',
         title: 'Response',
-        text: RESPONSE_PANEL_TEXT,
+        text: responseText,
+        emptyText: EMPTY_RESPONSE_TEXT,
       },
     ]
   }
@@ -70,15 +81,24 @@ export function buildContextPreviewPanelSections(
     {
       id: 'response',
       title: 'Response',
-      text: RESPONSE_PANEL_TEXT,
+      text: responseText,
+      emptyText: EMPTY_RESPONSE_TEXT,
     },
   ]
 }
 
-export function ContextPreviewPanel({ preview }: { preview: ContextPreviewPanelPreview | null }) {
-  const sections = buildContextPreviewPanelSections(preview)
+export function ContextPreviewPanel({
+  preview,
+  chatResponse,
+}: {
+  preview: ContextPreviewPanelPreview | null
+  chatResponse: ContextPreviewPanelChatResponse | null
+}) {
+  const sections = buildContextPreviewPanelSections(preview, chatResponse)
   const retrievedContext = sections[0]
   const previewText = sections[1]
+  const response = sections[2]
+  const diagnosticsText = chatResponse?.diagnostics ? JSON.stringify(chatResponse.diagnostics, null, 2) : ''
 
   return (
     <div className="grid gap-4">
@@ -94,10 +114,29 @@ export function ContextPreviewPanel({ preview }: { preview: ContextPreviewPanelP
       </div>
 
       <section aria-label="KTY-66 response panel" className="border-t border-border/80 pt-4">
-        <h3 className="text-sm font-semibold">Response</h3>
-        <p className="text-sm text-muted-foreground">
-          Live generation is reserved for KTY-66. This panel will be wired after the chat API exists.
-        </p>
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h3 className="text-sm font-semibold">Response</h3>
+          {chatResponse?.traceId ? (
+            <p className="font-mono text-xs text-muted-foreground">Trace {chatResponse.traceId}</p>
+          ) : null}
+        </div>
+
+        {response.text ? (
+          <p className="mt-3 text-sm leading-6 whitespace-pre-wrap text-foreground">{response.text}</p>
+        ) : (
+          <p className="mt-3 text-sm text-muted-foreground">{response.emptyText}</p>
+        )}
+
+        {diagnosticsText ? (
+          <div className="mt-4 grid gap-2">
+            <h4 className="text-xs font-semibold tracking-normal text-muted-foreground uppercase">Diagnostics</h4>
+            <ScrollArea className="max-h-72 rounded-md border border-border bg-muted/20">
+              <pre className="p-3 font-mono text-xs leading-5 whitespace-pre-wrap text-foreground">
+                {diagnosticsText}
+              </pre>
+            </ScrollArea>
+          </div>
+        ) : null}
       </section>
     </div>
   )

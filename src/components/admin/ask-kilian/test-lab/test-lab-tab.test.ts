@@ -6,9 +6,9 @@ import { describe, expect, test } from 'vitest'
 import { buildContextPreviewPanelSections } from './context-preview-panel'
 import {
   TEST_LAB_ACTION_TEXT,
+  buildAskKilianGeneratePayload,
   buildRetrievalPreviewPayload,
   clampRetrievalLimit,
-  containsForbiddenGenerationActionText,
   toggleCategorySelection,
 } from './test-lab-tab'
 
@@ -81,6 +81,55 @@ describe('buildRetrievalPreviewPayload', () => {
   })
 })
 
+describe('buildAskKilianGeneratePayload', () => {
+  test('builds a multi-turn admin generation payload', () => {
+    const result = buildAskKilianGeneratePayload({
+      priorMessages: [
+        { role: 'user', content: '  What is kil.dev?  ' },
+        { role: 'assistant', content: 'A personal site.  ' },
+        { role: 'user', content: '   ' },
+      ],
+      prompt: '  What should I ask next?  ',
+      tier: 2,
+      includeSpoilers: true,
+      categories: ['projects', 'career'],
+      promptOverride: '  Keep it direct.  ',
+      runtimeModelOverride: '  openai/gpt-5-mini  ',
+    })
+
+    expect(result).toEqual({
+      ok: true,
+      payload: {
+        messages: [
+          { role: 'user', content: 'What is kil.dev?' },
+          { role: 'assistant', content: 'A personal site.' },
+          { role: 'user', content: 'What should I ask next?' },
+        ],
+        tier: 2,
+        includeSpoilers: true,
+        categories: ['projects', 'career'],
+        promptOverride: 'Keep it direct.',
+        runtimeModelOverride: 'openai/gpt-5-mini',
+      },
+    })
+  })
+
+  test('empty prompt returns validation error for generation', () => {
+    expect(
+      buildAskKilianGeneratePayload({
+        priorMessages: [{ role: 'user', content: 'Earlier question' }],
+        prompt: '   ',
+        tier: 1,
+        includeSpoilers: false,
+        categories: [],
+      }),
+    ).toEqual({
+      ok: false,
+      error: 'Enter a prompt before generating a response.',
+    })
+  })
+})
+
 describe('buildContextPreviewPanelSections', () => {
   test('no-match retrieval builds the no-results state', () => {
     const sections = buildContextPreviewPanelSections({
@@ -114,11 +163,25 @@ describe('buildContextPreviewPanelSections', () => {
       }).map(section => section.id),
     ).toEqual(['retrieved-context', 'preview-text', 'response'])
   })
+
+  test('response section shows generated text when chat response is present', () => {
+    const sections = buildContextPreviewPanelSections(null, {
+      ok: true,
+      status: 'completed',
+      text: 'Kilian built kil.dev as a personal site.',
+      traceId: 'trace-admin-1',
+      diagnostics: { promptRevisionId: 'prompt_123' },
+    })
+
+    expect(sections[2]).toMatchObject({
+      id: 'response',
+      text: 'Kilian built kil.dev as a personal site.',
+    })
+  })
 })
 
 describe('Test Lab action copy', () => {
-  test('no helper exposes send/generate/chat action text', () => {
-    expect(TEST_LAB_ACTION_TEXT).toEqual(['Preview retrieval'])
-    expect(TEST_LAB_ACTION_TEXT.some(containsForbiddenGenerationActionText)).toBe(false)
+  test('exposes separate retrieval and generation actions', () => {
+    expect(TEST_LAB_ACTION_TEXT).toEqual(['Preview retrieval', 'Generate response'])
   })
 })
