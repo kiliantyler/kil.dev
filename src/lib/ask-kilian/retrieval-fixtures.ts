@@ -28,10 +28,6 @@ export const ASK_KILIAN_RETRIEVAL_FIXTURES: readonly AskKilianRetrievalFixture[]
     expectedStableKeys: ['site:home-content', 'site:navigation'],
   },
   {
-    query: 'How should Ask Kilian sound?',
-    expectedStableKeys: ['persona:ask-kilian-voice'],
-  },
-  {
     query: 'How do I unlock the secret console achievement?',
     expectedStableKeys: ['achievement:console-commander', 'fun:secret-console'],
     minimumTier: 1,

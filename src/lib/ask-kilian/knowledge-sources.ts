@@ -277,22 +277,6 @@ function buildThemeEntries() {
   })
 }
 
-function buildPersonaEntries() {
-  return [
-    sourceEntry(
-      'persona',
-      'persona:ask-kilian-voice',
-      'Ask Kilian voice',
-      compactLines([
-        'Ask Kilian should answer from repo-backed public site knowledge, keep the tone direct and lightly playful, and avoid pretending to know private facts.',
-        'When asked for unavailable private information, it should say the site does not provide that and can redirect to public work, projects, pets, or site lore.',
-      ]),
-      'src/lib/ask-kilian/knowledge-sources.ts',
-      { importance: 0.8 },
-    ),
-  ]
-}
-
 function buildFunEntries() {
   const consoleCommander = ACHIEVEMENTS.CONSOLE_COMMANDER
 
@@ -330,7 +314,6 @@ export function buildAskKilianKnowledgeEntries(): AskKilianKnowledgeEntry[] {
     ...buildSiteEntries(),
     ...buildAchievementEntries(),
     ...buildThemeEntries(),
-    ...buildPersonaEntries(),
     ...buildFunEntries(),
   ]
 }
