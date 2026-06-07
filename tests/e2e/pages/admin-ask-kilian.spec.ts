@@ -36,7 +36,7 @@ test.describe('Admin Ask Kilian', () => {
     await disableAnimations(page)
   })
 
-  test('renders cockpit shell, centered tabs, and KTY-66-owned response panel', async ({ context, page }) => {
+  test('renders cockpit shell, centered tabs, and Test Lab chat interface', async ({ context, page }) => {
     await authorizeAdmin(context)
     await gotoAndWaitForMain(page, '/admin/ask-kilian')
 
@@ -46,10 +46,20 @@ test.describe('Admin Ask Kilian', () => {
     await expect(status.getByText('Runtime', { exact: true })).toBeVisible()
     await expect(status.getByText('RAG', { exact: true })).toBeVisible()
     await page.getByRole('tab', { name: 'Test Lab' }).click()
-    await expect(page.getByRole('region', { name: 'KTY-66 response panel' })).toContainText(
-      'Live generation is reserved for KTY-66',
-    )
-    await expect(page.getByRole('button', { name: /send|generate/i })).toHaveCount(0)
+    await expect(page.getByRole('heading', { level: 2, name: 'Test Lab' })).toBeVisible()
+
+    const chat = page.getByRole('region', { name: 'Ask Kilian chat' })
+    await expect(chat).toBeVisible()
+    await expect(chat.getByText('No messages yet')).toBeVisible()
+
+    const messageInput = chat.getByRole('textbox', { name: 'Message Ask Kilian' })
+    await expect(messageInput).toBeVisible()
+    const sendButton = chat.getByRole('button', { name: 'Send' })
+    await expect(sendButton).toBeDisabled()
+    await messageInput.fill('What should I know about this site?')
+    await expect(sendButton).toBeEnabled()
+
+    await expect(page.getByText('Context and debug output')).toBeVisible()
   })
 
   test('creates and removes access filter chips from search keyboard flows', async ({ context, page }) => {

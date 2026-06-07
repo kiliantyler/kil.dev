@@ -99,6 +99,7 @@ const searchResultValidator = v.object({
   category: askKilianCategoryValidator,
   score: v.number(),
   text: v.string(),
+  contentHash: v.string(),
 })
 
 const runtimeEnvStatusValidator = v.object({
@@ -611,6 +612,7 @@ export function shapeSearchKnowledgeResults(
       category: entry.category,
       score: entry.score,
       text: entry.text,
+      contentHash: entry.contentHash,
     }))
 }
 

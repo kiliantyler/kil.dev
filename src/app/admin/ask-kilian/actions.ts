@@ -1,5 +1,6 @@
 'use server'
 
+import { requireAdminAuthContext } from '@/lib/admin-auth'
 import {
   ADMIN_TEST_BYPASS_COOKIE,
   ADMIN_TEST_BYPASS_COOKIE_VALUE,
@@ -13,10 +14,12 @@ import {
   type AskKilianAdminStatus,
   type AskKilianAdminWorkspaceState,
 } from '@/lib/ask-kilian/admin-workspace-shared'
+import { runAskKilianChatForAdmin, type GenerateAskKilianChatAdminInput } from '@/lib/ask-kilian/chat-runtime'
 import { createAskKilianConvexServerClient } from '@/lib/ask-kilian/convex-server-client'
 import { buildAskKilianKnowledgeEntries } from '@/lib/ask-kilian/knowledge-sources'
 import type { AskKilianKnowledgeCategory, AskKilianTier } from '@/lib/ask-kilian/types'
 import { stableStringify } from '@/utils/stable-stringify'
+import type { FunctionReference } from 'convex/server'
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import { createHash } from 'node:crypto'
@@ -44,6 +47,56 @@ export type AskKilianRepoSyncPreview = AskKilianRepoSyncSummary & {
   confirmationToken: string
 }
 
+type AskKilianRuntimeQuotaInput = {
+  adminTestDailyRequests: number
+  publicDailyRequests: number
+  publicDailyEstimatedTokens: number
+}
+
+type AskKilianPromptConfigSaveInput = {
+  title: string
+  promptText: string
+  notes?: string
+}
+
+type AskKilianRuntimeConfigSaveInput = {
+  modelId: string
+  maxOutputTokens: number
+  temperature: number
+  conversationWindow: number
+  ragLimit: number
+  quota: AskKilianRuntimeQuotaInput
+}
+
+type SavePromptRevisionForAdminArgs = AskKilianPromptConfigSaveInput & {
+  actor: string
+}
+
+type SaveRuntimeConfigForAdminArgs = AskKilianRuntimeConfigSaveInput & {
+  actor: string
+}
+
+type AskKilianChatApi = {
+  askKilianChat: {
+    getActivePromptConfigForAdmin: FunctionReference<'action', 'public', Record<string, never>, unknown>
+    getActiveRuntimeConfigForAdmin: FunctionReference<'action', 'public', Record<string, never>, unknown>
+    savePromptRevisionForAdmin: FunctionReference<
+      'action',
+      'public',
+      SavePromptRevisionForAdminArgs,
+      { promptRevisionId: string }
+    >
+    saveRuntimeConfigForAdmin: FunctionReference<
+      'action',
+      'public',
+      SaveRuntimeConfigForAdminArgs,
+      { runtimeConfigVersionId: string }
+    >
+  }
+}
+
+const askKilianChatApi = (api as unknown as AskKilianChatApi).askKilianChat
+
 function toStatus(label: 'Runtime' | 'RAG', error: unknown): AskKilianAdminStatus {
   return {
     label,
@@ -68,6 +121,10 @@ function summarizeRagStatus(entries: AskKilianAdminWorkspaceState['entries']): A
     }
   }
   return { label: 'RAG', level: 'ready', reason: 'RAG ready', checkedAt: Date.now() }
+}
+
+function askKilianAdminDistinctId(admin: Awaited<ReturnType<typeof requireAdminAuthContext>>) {
+  return `ask-kilian-admin:${admin.workosUserId}`
 }
 
 async function isTestBypassRequest() {
@@ -152,17 +209,45 @@ export async function getAskKilianAdminWorkspaceStateAction(): Promise<AskKilian
 
   const client = await createAskKilianConvexServerClient()
   let runtimeStatus: AskKilianAdminStatus
+  let activePromptConfig: AskKilianAdminWorkspaceState['activePromptConfig']
+  let activeRuntimeConfig: AskKilianAdminWorkspaceState['activeRuntimeConfig']
+  let entries: AskKilianAdminWorkspaceState['entries'] | undefined
   try {
     await client.action(api.askKilianKnowledge.verifyRuntimeEnvForAdmin, {})
-    runtimeStatus = { label: 'Runtime', level: 'ready', reason: 'Runtime ready', checkedAt: Date.now() }
+    entries = await client.action(api.askKilianKnowledge.listAdminKnowledgeEntriesForAdmin, {})
+    activePromptConfig = (await client.action(
+      askKilianChatApi.getActivePromptConfigForAdmin,
+      {},
+    )) as AskKilianAdminWorkspaceState['activePromptConfig']
+    activeRuntimeConfig = (await client.action(
+      askKilianChatApi.getActiveRuntimeConfigForAdmin,
+      {},
+    )) as AskKilianAdminWorkspaceState['activeRuntimeConfig']
+    const missingConfig = [
+      activePromptConfig ? undefined : 'active prompt config',
+      activeRuntimeConfig ? undefined : 'active runtime config',
+    ].filter(Boolean)
+    runtimeStatus =
+      missingConfig.length > 0
+        ? {
+            label: 'Runtime',
+            level: 'degraded',
+            reason: `Missing ${missingConfig.join(' and ')}`,
+            checkedAt: Date.now(),
+          }
+        : { label: 'Runtime', level: 'ready', reason: 'Runtime ready', checkedAt: Date.now() }
   } catch (error) {
     runtimeStatus = toStatus('Runtime', error)
   }
-  const entries = await client.action(api.askKilianKnowledge.listAdminKnowledgeEntriesForAdmin, {})
+  if (!entries) {
+    entries = await client.action(api.askKilianKnowledge.listAdminKnowledgeEntriesForAdmin, {})
+  }
   return {
     entries,
     selectedStableKey: entries[0]?.stableKey,
     runtimeStatus,
+    activePromptConfig,
+    activeRuntimeConfig,
     ragStatus:
       runtimeStatus.level === 'unavailable'
         ? toStatus('RAG', new Error('Runtime unavailable'))
@@ -191,6 +276,40 @@ export async function saveAskKilianAdminEntryAction(input: AdminKnowledgeEntrySa
   })
   revalidatePath('/admin/ask-kilian')
   return getAskKilianAdminWorkspaceStateAction()
+}
+
+export async function saveAskKilianPromptConfigAction(input: AskKilianPromptConfigSaveInput) {
+  const admin = await requireAdminAuthContext()
+  const client = await createAskKilianConvexServerClient()
+  const result = await client.action(askKilianChatApi.savePromptRevisionForAdmin, {
+    title: input.title,
+    promptText: input.promptText,
+    notes: input.notes,
+    actor: admin.email,
+  })
+  revalidatePath('/admin/ask-kilian')
+  return result
+}
+
+export async function saveAskKilianRuntimeConfigAction(input: AskKilianRuntimeConfigSaveInput) {
+  const admin = await requireAdminAuthContext()
+  const client = await createAskKilianConvexServerClient()
+  const result = await client.action(askKilianChatApi.saveRuntimeConfigForAdmin, {
+    modelId: input.modelId,
+    maxOutputTokens: input.maxOutputTokens,
+    temperature: input.temperature,
+    conversationWindow: input.conversationWindow,
+    ragLimit: input.ragLimit,
+    quota: input.quota,
+    actor: admin.email,
+  })
+  revalidatePath('/admin/ask-kilian')
+  return result
+}
+
+export async function generateAskKilianChatAction(input: GenerateAskKilianChatAdminInput) {
+  const admin = await requireAdminAuthContext()
+  return runAskKilianChatForAdmin({ ...input, distinctId: askKilianAdminDistinctId(admin) })
 }
 
 export async function disableAskKilianAdminEntryAction(stableKey: string) {

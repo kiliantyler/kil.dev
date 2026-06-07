@@ -1,4 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+if (!vi.hoisted) {
+  vi.hoisted = (<T>(factory: () => T) => factory()) as typeof vi.hoisted
+}
 
 const {
   api,
@@ -7,9 +11,15 @@ const {
   createAskKilianConvexServerClient,
   isAdminTestBypassEnvEnabled,
   repoEntries,
+  requireAdminAuthContext,
   revalidatePath,
+  runAskKilianChatForAdmin,
 } = vi.hoisted(() => ({
   api: {
+    askKilianChat: {
+      savePromptRevisionForAdmin: 'savePromptRevisionForAdmin',
+      saveRuntimeConfigForAdmin: 'saveRuntimeConfigForAdmin',
+    },
     askKilianKnowledge: {
       diffRepoKnowledgeForAdmin: 'diffRepoKnowledgeForAdmin',
       disableAdminKnowledgeEntryForAdmin: 'disableAdminKnowledgeEntryForAdmin',
@@ -42,9 +52,13 @@ const {
       importance: 0.9,
     },
   ],
+  requireAdminAuthContext: vi.fn(),
   revalidatePath: vi.fn(),
+  runAskKilianChatForAdmin: vi.fn(),
 }))
 
+vi.mock('@/lib/admin-auth', () => ({ requireAdminAuthContext }))
+vi.mock('@/lib/ask-kilian/chat-runtime', () => ({ runAskKilianChatForAdmin }))
 vi.mock('@/lib/ask-kilian/convex-server-client', () => ({ createAskKilianConvexServerClient }))
 vi.mock('@/lib/ask-kilian/knowledge-sources', () => ({ buildAskKilianKnowledgeEntries }))
 vi.mock('@/lib/admin-test-bypass', () => ({
@@ -62,13 +76,28 @@ vi.mock('../../../../convex/_generated/api', () => ({ api }))
 
 describe('Ask Kilian admin server actions', () => {
   beforeEach(() => {
+    buildAskKilianKnowledgeEntries.mockReset()
+    cookieGet.mockReset()
+    createAskKilianConvexServerClient.mockReset()
+    isAdminTestBypassEnvEnabled.mockReset()
+    requireAdminAuthContext.mockReset()
+    revalidatePath.mockReset()
+    runAskKilianChatForAdmin.mockReset()
+
     buildAskKilianKnowledgeEntries.mockReturnValue(repoEntries)
     isAdminTestBypassEnvEnabled.mockReturnValue(false)
-  })
-
-  afterEach(() => {
-    vi.resetModules()
-    vi.clearAllMocks()
+    requireAdminAuthContext.mockResolvedValue({
+      email: 'admin@example.com',
+      accessToken: 'workos-token',
+      workosUserId: 'user_admin_123',
+    })
+    runAskKilianChatForAdmin.mockResolvedValue({
+      ok: true,
+      status: 'completed',
+      text: 'Admin chat result',
+      traceId: 'trace-action-chat',
+      diagnostics: {},
+    })
   })
 
   it('loads workspace state through protected Convex actions', async () => {
@@ -91,6 +120,28 @@ describe('Ask Kilian admin server actions', () => {
           ragStatus: 'ready',
         },
       ])
+      .mockResolvedValueOnce({
+        id: 'prompt-1',
+        title: 'Active prompt',
+        promptText: 'Answer as Ask Kilian.',
+        createdBy: 'admin@example.com',
+        createdAt: 1,
+      })
+      .mockResolvedValueOnce({
+        id: 'runtime-1',
+        modelId: 'test/generation-model',
+        maxOutputTokens: 900,
+        temperature: 0.7,
+        conversationWindow: 8,
+        ragLimit: 6,
+        quota: {
+          adminTestDailyRequests: 100,
+          publicDailyRequests: 40,
+          publicDailyEstimatedTokens: 60_000,
+        },
+        createdBy: 'admin@example.com',
+        createdAt: 1,
+      })
     createAskKilianConvexServerClient.mockResolvedValue(convex)
 
     const { getAskKilianAdminWorkspaceStateAction } = await import('./actions')
@@ -98,6 +149,8 @@ describe('Ask Kilian admin server actions', () => {
       entries: [expect.objectContaining({ stableKey: 'pet:lux' })],
       runtimeStatus: { level: 'ready', label: 'Runtime' },
       ragStatus: { level: 'ready', label: 'RAG' },
+      activePromptConfig: expect.objectContaining({ id: 'prompt-1' }),
+      activeRuntimeConfig: expect.objectContaining({ id: 'runtime-1' }),
     })
   })
 
@@ -134,9 +187,104 @@ describe('Ask Kilian admin server actions', () => {
     expect(createAskKilianConvexServerClient).not.toHaveBeenCalled()
   })
 
-  it('does not expose generation actions', async () => {
+  it('exports prompt/runtime config actions and the Task 8 admin generation action', async () => {
     const actions = await import('./actions')
-    expect(Object.keys(actions).some(name => /chat|generate|stream/i.test(name))).toBe(false)
+    expect(actions.saveAskKilianPromptConfigAction).toEqual(expect.any(Function))
+    expect(actions.saveAskKilianRuntimeConfigAction).toEqual(expect.any(Function))
+    expect(actions.generateAskKilianChatAction).toEqual(expect.any(Function))
+  })
+
+  it('runs admin chat generation with the authenticated admin pseudonymous distinct id', async () => {
+    const { generateAskKilianChatAction } = await import('./actions')
+
+    await expect(
+      generateAskKilianChatAction({
+        messages: [{ role: 'user', content: 'What should I ask about Kilian projects?' }],
+        tier: 2,
+        includeSpoilers: true,
+        categories: ['projects'],
+        promptOverride: 'Answer from this admin prompt.',
+        runtimeModelOverride: 'test/generation-model',
+      }),
+    ).resolves.toEqual({
+      ok: true,
+      status: 'completed',
+      text: 'Admin chat result',
+      traceId: 'trace-action-chat',
+      diagnostics: {},
+    })
+
+    expect(requireAdminAuthContext).toHaveBeenCalledWith()
+    expect(runAskKilianChatForAdmin).toHaveBeenCalledWith({
+      distinctId: 'ask-kilian-admin:user_admin_123',
+      messages: [{ role: 'user', content: 'What should I ask about Kilian projects?' }],
+      tier: 2,
+      includeSpoilers: true,
+      categories: ['projects'],
+      promptOverride: 'Answer from this admin prompt.',
+      runtimeModelOverride: 'test/generation-model',
+    })
+    expect(runAskKilianChatForAdmin.mock.calls[0]?.[0].distinctId).not.toContain('admin@example.com')
+  })
+
+  it('saves prompt config through the protected Ask Kilian chat action and revalidates admin state', async () => {
+    const convex = { action: vi.fn(async () => ({ promptRevisionId: 'prompt-new' })) }
+    createAskKilianConvexServerClient.mockResolvedValue(convex)
+    const { saveAskKilianPromptConfigAction } = await import('./actions')
+
+    await expect(
+      saveAskKilianPromptConfigAction({
+        title: 'Admin prompt',
+        promptText: 'Answer as Kilian using only retrieved context.',
+        notes: 'Initial live chat prompt.',
+      }),
+    ).resolves.toEqual({ promptRevisionId: 'prompt-new' })
+
+    expect(requireAdminAuthContext).toHaveBeenCalledWith()
+    expect(convex.action).toHaveBeenCalledWith(api.askKilianChat.savePromptRevisionForAdmin, {
+      title: 'Admin prompt',
+      promptText: 'Answer as Kilian using only retrieved context.',
+      notes: 'Initial live chat prompt.',
+      actor: 'admin@example.com',
+    })
+    expect(revalidatePath).toHaveBeenCalledWith('/admin/ask-kilian')
+  })
+
+  it('saves runtime config through the protected Ask Kilian chat action and revalidates admin state', async () => {
+    const convex = { action: vi.fn(async () => ({ runtimeConfigVersionId: 'runtime-new' })) }
+    createAskKilianConvexServerClient.mockResolvedValue(convex)
+    const { saveAskKilianRuntimeConfigAction } = await import('./actions')
+
+    await expect(
+      saveAskKilianRuntimeConfigAction({
+        modelId: 'test/generation-model',
+        maxOutputTokens: 900,
+        temperature: 0.7,
+        conversationWindow: 8,
+        ragLimit: 5,
+        quota: {
+          adminTestDailyRequests: 100,
+          publicDailyRequests: 40,
+          publicDailyEstimatedTokens: 60_000,
+        },
+      }),
+    ).resolves.toEqual({ runtimeConfigVersionId: 'runtime-new' })
+
+    expect(requireAdminAuthContext).toHaveBeenCalledWith()
+    expect(convex.action).toHaveBeenCalledWith(api.askKilianChat.saveRuntimeConfigForAdmin, {
+      modelId: 'test/generation-model',
+      maxOutputTokens: 900,
+      temperature: 0.7,
+      conversationWindow: 8,
+      ragLimit: 5,
+      quota: {
+        adminTestDailyRequests: 100,
+        publicDailyRequests: 40,
+        publicDailyEstimatedTokens: 60_000,
+      },
+      actor: 'admin@example.com',
+    })
+    expect(revalidatePath).toHaveBeenCalledWith('/admin/ask-kilian')
   })
 
   it('retrieval preview calls the Convex preview action and never AI generation routes', async () => {
@@ -255,9 +403,13 @@ describe('Ask Kilian admin server actions', () => {
     convex.action
       .mockResolvedValueOnce({ ok: true, aiGatewayConfigured: true, accessTokenConfigured: true })
       .mockResolvedValueOnce([existingEntry])
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ ok: true })
       .mockResolvedValueOnce({ ok: true, aiGatewayConfigured: true, accessTokenConfigured: true })
       .mockResolvedValueOnce([refreshedEntry])
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
     createAskKilianConvexServerClient.mockResolvedValue(convex)
     const { saveAskKilianAdminEntryAction } = await import('./actions')
 
@@ -276,7 +428,7 @@ describe('Ask Kilian admin server actions', () => {
       }),
     ).resolves.toMatchObject({
       entries: [expect.objectContaining({ stableKey: 'admin:new-entry' })],
-      runtimeStatus: { level: 'ready', label: 'Runtime' },
+      runtimeStatus: { level: 'degraded', label: 'Runtime' },
       ragStatus: { level: 'ready', label: 'RAG' },
     })
 
@@ -298,12 +450,14 @@ describe('Ask Kilian admin server actions', () => {
       .mockResolvedValueOnce({ ok: true })
       .mockResolvedValueOnce({ ok: true, aiGatewayConfigured: true, accessTokenConfigured: true })
       .mockResolvedValueOnce([])
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
     createAskKilianConvexServerClient.mockResolvedValue(convex)
     const { disableAskKilianAdminEntryAction } = await import('./actions')
 
     await expect(disableAskKilianAdminEntryAction('admin:old-entry')).resolves.toMatchObject({
       entries: [],
-      runtimeStatus: { level: 'ready', label: 'Runtime' },
+      runtimeStatus: { level: 'degraded', label: 'Runtime' },
       ragStatus: { level: 'degraded', label: 'RAG' },
     })
 
@@ -333,12 +487,14 @@ describe('Ask Kilian admin server actions', () => {
       .mockResolvedValueOnce({ ok: true })
       .mockResolvedValueOnce({ ok: true, aiGatewayConfigured: true, accessTokenConfigured: true })
       .mockResolvedValueOnce([refreshedEntry])
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
     createAskKilianConvexServerClient.mockResolvedValue(convex)
     const { reenableAskKilianAdminEntryAction } = await import('./actions')
 
     await expect(reenableAskKilianAdminEntryAction('admin:old-entry')).resolves.toMatchObject({
       entries: [expect.objectContaining({ stableKey: 'admin:old-entry' })],
-      runtimeStatus: { level: 'ready', label: 'Runtime' },
+      runtimeStatus: { level: 'degraded', label: 'Runtime' },
       ragStatus: { level: 'ready', label: 'RAG' },
     })
 
@@ -423,13 +579,15 @@ describe('Ask Kilian admin server actions', () => {
       .mockResolvedValueOnce(sync)
       .mockResolvedValueOnce({ ok: true, aiGatewayConfigured: true, accessTokenConfigured: true })
       .mockResolvedValueOnce([refreshedEntry])
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
     createAskKilianConvexServerClient.mockResolvedValue(convex)
 
     await expect(applyAskKilianRepoSyncAction(initialPreview.confirmationToken)).resolves.toMatchObject({
       sync: { counts: { created: 1 }, confirmationToken: expect.any(String) },
       state: {
         entries: [expect.objectContaining({ stableKey: 'project:ask-kilian' })],
-        runtimeStatus: { level: 'ready', label: 'Runtime' },
+        runtimeStatus: { level: 'degraded', label: 'Runtime' },
         ragStatus: { level: 'ready', label: 'RAG' },
       },
     })

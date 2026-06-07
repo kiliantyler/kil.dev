@@ -1318,6 +1318,7 @@ describe('shapeSearchKnowledgeResults', () => {
         category: 'pets',
         score: 0.91,
         text: 'rag pet text',
+        contentHash: 'pet:lux:hash',
       },
     ])
   })
@@ -1345,6 +1346,7 @@ describe('shapeSearchKnowledgeResults', () => {
         category: 'pets',
         score: 0.95,
         text: 'Golden Retriever',
+        contentHash: 'pet:lux:hash',
       },
       {
         stableKey: 'career:draftkings',
@@ -1352,6 +1354,7 @@ describe('shapeSearchKnowledgeResults', () => {
         category: 'career',
         score: 0.9,
         text: 'SRE at DraftKings',
+        contentHash: 'career:draftkings:hash',
       },
     ])
   })
@@ -1374,6 +1377,7 @@ describe('shapeSearchKnowledgeResults', () => {
         category: 'pets',
         score: 0.95,
         text: ragContext.slice(0, 1600),
+        contentHash: 'pet:lux:hash',
       },
     ])
   })
@@ -1406,6 +1410,7 @@ describe('shapeSearchKnowledgeResults', () => {
         category: 'pets',
         score: 0.5,
         text: 'current lower score',
+        contentHash: 'pet:lux:hash',
       },
     ])
   })
@@ -1469,6 +1474,7 @@ describe('createSearchKnowledgeHandler', () => {
         category: 'pets',
         score: 0.93,
         text: 'Golden Retriever',
+        contentHash: 'pet:lux:hash',
       },
       {
         stableKey: 'career:draftkings',
@@ -1476,6 +1482,7 @@ describe('createSearchKnowledgeHandler', () => {
         category: 'career',
         score: 0.9,
         text: 'SRE at DraftKings',
+        contentHash: 'career:draftkings:hash',
       },
     ])
   })
@@ -1616,6 +1623,36 @@ describe('createSearchKnowledgeHandler', () => {
 })
 
 describe('createPreviewKnowledgeHandler', () => {
+  it('calls RAG with the same search options as runtime search for the same args', async () => {
+    const rows = [
+      incomingEntry('project:ask-kilian', {
+        category: 'projects',
+        title: 'Ask Kilian',
+        text: 'Ask Kilian admin cockpit and retrieval preview context.',
+      }),
+    ]
+    const runtimeSearch = vi.fn(async () => emptyRagSearchResult())
+    const previewSearch = vi.fn(async () => emptyRagSearchResult())
+    const refs = { listSearchable: internal.askKilianKnowledge.listSearchableKnowledgeEntries }
+    const ctx = { runQuery: vi.fn(async () => rows) }
+    const args = {
+      query: '  semantic admin retrieval prompt  ',
+      tier: 1 as const,
+      includeSpoilers: true,
+      categories: ['projects' as const],
+      limit: 4,
+    }
+
+    await createSearchKnowledgeHandler({ rag: { search: runtimeSearch }, refs })(ctx, args)
+    await createPreviewKnowledgeHandler({ rag: { search: previewSearch }, refs })(ctx, args)
+
+    expect(runtimeSearch).toHaveBeenCalledTimes(1)
+    expect(previewSearch).toHaveBeenCalledTimes(1)
+    const runtimeSearchOptions = (runtimeSearch.mock.calls as unknown as Array<[unknown, unknown]>)[0]?.[1]
+    const previewSearchOptions = (previewSearch.mock.calls as unknown as Array<[unknown, unknown]>)[0]?.[1]
+    expect(previewSearchOptions).toEqual(runtimeSearchOptions)
+  })
+
   it('uses the same RAG retrieval path as production search preview', async () => {
     const rows = [
       incomingEntry('project:ask-kilian', {
@@ -1647,6 +1684,7 @@ describe('createPreviewKnowledgeHandler', () => {
         category: 'projects',
         score: 0.91,
         text: 'Ask Kilian admin cockpit and retrieval preview context.',
+        contentHash: 'project:ask-kilian:hash',
       },
     ])
     expect(search).toHaveBeenCalledWith(

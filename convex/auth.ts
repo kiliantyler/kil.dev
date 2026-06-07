@@ -11,7 +11,9 @@ export function getMissingWorkOSAuthKitEnv() {
 
 export function getAuthKit(): AuthKit<DataModel> {
   return new AuthKit<DataModel>(components.workOSAuthKit, {
-    authFunctions: internal.workOSAuthKitActions,
+    authFunctions: {
+      authKitAction: internal.workOSAuthKitActions.authKitAction,
+    },
   })
 }
 

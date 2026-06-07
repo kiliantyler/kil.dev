@@ -23,7 +23,7 @@ describe('buildAskKilianAdminContextPreview', () => {
     expect(preview).toContain('Tier: Tier 1')
     expect(preview).toContain('Spoilers: excluded')
     expect(preview).toContain('[project:site] kil.dev')
-    expect(preview).toContain('KTY-66 will assemble the final system/persona/chat prompt.')
+    expect(preview).toContain('Runtime chat also uses the active Convex prompt config and fixed guardrails.')
     expect(preview).not.toContain('model')
     expect(preview).not.toContain('temperature')
   })

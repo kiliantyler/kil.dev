@@ -1,0 +1,852 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const mockGetAuthUser = vi.fn()
+const originalAdminEmail = process.env.ADMIN_EMAIL
+const originalWorkosOrgId = process.env.WORKOS_ORG_ID
+
+vi.mock('../auth', () => ({
+  getAuthKit: () => ({
+    getAuthUser: mockGetAuthUser,
+  }),
+}))
+
+import {
+  buildAskKilianRagCorpusVersionKey,
+  createGetActivePromptConfigHandler,
+  createGetActiveRuntimeConfigHandler,
+  createRecordConversationHandler,
+  createReserveQuotaHandler,
+  createRuntimeRagSearchHandler,
+  createSavePromptRevisionHandler,
+  createSaveRuntimeConfigHandler,
+  getActivePromptConfig,
+  getActivePromptConfigForAdmin,
+  getActiveRuntimeConfig,
+  getActiveRuntimeConfigForAdmin,
+  normalizeAskKilianQuotaDay,
+  recordConversationForAdmin,
+  reserveQuotaForAdmin,
+  savePromptRevisionForAdmin,
+  saveRuntimeConfigForAdmin,
+  searchRuntimeRagForAdmin,
+} from '../askKilianChat'
+
+type TestConvexHandler = {
+  _handler: (ctx: unknown, args: Record<string, unknown>) => Promise<unknown>
+}
+
+const getActionHandler = (action: unknown) => (action as TestConvexHandler)._handler
+
+function askKilianAdminIdentity(overrides: Record<string, unknown> = {}) {
+  return {
+    subject: 'user_admin',
+    name: 'Admin User',
+    token: {
+      claims: {
+        org_id: 'org_good',
+      },
+    },
+    ...overrides,
+  }
+}
+
+function askKilianChatAdminCtx({
+  identity = askKilianAdminIdentity(),
+  authUser = { id: 'user_admin', email: 'Admin@Example.com', firstName: 'Admin', lastName: 'User' },
+  runQuery = vi.fn(),
+  runMutation = vi.fn(),
+  runAction = vi.fn(),
+}: {
+  identity?: unknown
+  authUser?: unknown
+  runQuery?: ReturnType<typeof vi.fn>
+  runMutation?: ReturnType<typeof vi.fn>
+  runAction?: ReturnType<typeof vi.fn>
+} = {}) {
+  mockGetAuthUser.mockResolvedValue(authUser)
+  return {
+    auth: {
+      getUserIdentity: vi.fn(async () => identity),
+    },
+    runQuery,
+    runMutation,
+    runAction,
+  }
+}
+
+const runtimeQuota = {
+  adminTestDailyRequests: 100,
+  publicDailyRequests: 40,
+  publicDailyEstimatedTokens: 60_000,
+}
+
+const recordConversationForAdminArgs = {
+  traceId: 'trace-admin-wrapper',
+  messages: [
+    { role: 'user' as const, content: 'What should I know about Kilian?', createdAt: 1 },
+    { role: 'assistant' as const, content: 'Kilian builds careful web things.', createdAt: 2 },
+  ],
+  metadata: {
+    callerMode: 'admin_test' as const,
+    quotaBucket: 'admin_test' as const,
+    status: 'completed' as const,
+    tier: 1 as const,
+    includeSpoilers: false,
+    categories: ['persona' as const],
+    promptRevisionId: 'prompt-1',
+    runtimeConfigVersionId: 'runtime-1',
+    ragCorpusVersionKey: 'rag:v2:abc123',
+    condensedQuery: 'Kilian profile',
+    classification: {
+      scope: 'allowed' as const,
+      behavior: 'answer' as const,
+      topic: 'profile',
+      reason: 'Relevant site/persona question.',
+      source: 'deterministic' as const,
+    },
+    retrievedEntries: [],
+    quotaDecision: {
+      allowed: true,
+      bucket: 'admin_test' as const,
+      reason: 'reserved',
+      remainingDailyRequests: 11,
+    },
+    publicEquivalentQuotaDecision: {
+      allowed: true,
+      bucket: 'public' as const,
+      reason: 'reserved',
+      remainingDailyRequests: 39,
+    },
+    model: {
+      modelId: 'test/generation-model',
+      latencyMs: 123,
+      inputTokens: 100,
+      outputTokens: 40,
+      finishReason: 'stop',
+    },
+    posthogDistinctId: 'ask-kilian-admin:user_admin_123',
+    posthogTraceId: 'ph-trace-1',
+  },
+}
+
+function restoreEnv(key: 'ADMIN_EMAIL' | 'WORKOS_ORG_ID', value: string | undefined) {
+  if (value === undefined) {
+    delete process.env[key]
+    return
+  }
+
+  process.env[key] = value
+}
+
+beforeEach(() => {
+  restoreEnv('ADMIN_EMAIL', originalAdminEmail)
+  restoreEnv('WORKOS_ORG_ID', originalWorkosOrgId)
+  mockGetAuthUser.mockReset()
+})
+
+describe('Ask Kilian chat helpers', () => {
+  it('normalizes quota timestamps to UTC day keys', () => {
+    expect(normalizeAskKilianQuotaDay(new Date('2026-06-06T23:59:59.000Z').getTime())).toBe('2026-06-06')
+  })
+
+  it('builds a RAG corpus version key from sorted entry fingerprints and embedding config', () => {
+    expect(
+      buildAskKilianRagCorpusVersionKey({
+        entries: [
+          { stableKey: 'repo:beta', contentHash: 'hash-beta' },
+          { stableKey: 'repo:alpha', contentHash: 'hash-alpha' },
+        ],
+        ragFilterVersion: 2,
+        embeddingModel: 'alibaba/qwen3-embedding-4b',
+        embeddingDimensions: 2048,
+      }),
+    ).toMatch(/^rag:v2:/)
+  })
+
+  it('deactivates older active prompts and inserts a new active prompt revision', async () => {
+    const now = 1_783_280_001
+    const previousPrompt = { _id: 'prompt-old-1', active: true }
+    const secondPreviousPrompt = { _id: 'prompt-old-2', active: true }
+    const collect = vi.fn(async () => [previousPrompt, secondPreviousPrompt])
+    const eq = vi.fn(() => 'active-query')
+    const withIndex = vi.fn((_index, buildQuery) => {
+      buildQuery({ eq })
+      return { collect }
+    })
+    const db = {
+      insert: vi.fn(async () => 'prompt-new'),
+      patch: vi.fn(async () => null),
+      query: vi.fn(() => ({ withIndex })),
+    }
+    const handler = createSavePromptRevisionHandler({
+      now: () => now,
+      refs: { table: 'askKilianPromptConfigs' },
+    })
+
+    await expect(
+      handler({ db } as never, {
+        title: 'Admin test prompt',
+        promptText: 'Answer like Kilian, grounded in the retrieved context.',
+        notes: 'First admin-editable prompt.',
+        actor: 'admin@example.com',
+      }),
+    ).resolves.toEqual({ promptRevisionId: 'prompt-new' })
+
+    expect(db.query).toHaveBeenCalledWith('askKilianPromptConfigs')
+    expect(withIndex).toHaveBeenCalledWith('by_active', expect.any(Function))
+    expect(eq).toHaveBeenCalledWith('active', true)
+    expect(db.patch).toHaveBeenCalledWith('prompt-old-1', { active: false })
+    expect(db.patch).toHaveBeenCalledWith('prompt-old-2', { active: false })
+    expect(db.insert).toHaveBeenCalledWith('askKilianPromptConfigs', {
+      title: 'Admin test prompt',
+      promptText: 'Answer like Kilian, grounded in the retrieved context.',
+      notes: 'First admin-editable prompt.',
+      active: true,
+      createdBy: 'admin@example.com',
+      createdAt: now,
+    })
+  })
+
+  it('loads the newest active prompt config summary and fails closed when none exists', async () => {
+    const olderPrompt = {
+      _id: 'prompt-old',
+      title: 'Older prompt',
+      promptText: 'Older prompt text.',
+      notes: 'Older notes',
+      createdBy: 'admin@example.com',
+      createdAt: 1,
+    }
+    const newestPrompt = {
+      _id: 'prompt-new',
+      title: 'Newest prompt',
+      promptText: 'Newest prompt text.',
+      createdBy: 'admin@example.com',
+      createdAt: 2,
+    }
+    const collect = vi.fn(async () => [olderPrompt, newestPrompt])
+    const eq = vi.fn(() => 'active-query')
+    const withIndex = vi.fn((_index, buildQuery) => {
+      buildQuery({ eq })
+      return { collect }
+    })
+    const db = {
+      query: vi.fn(() => ({ withIndex })),
+    }
+    const handler = createGetActivePromptConfigHandler({
+      refs: { table: 'askKilianPromptConfigs' },
+    })
+
+    await expect(handler({ db } as never)).resolves.toEqual({
+      id: 'prompt-new',
+      title: 'Newest prompt',
+      promptText: 'Newest prompt text.',
+      createdBy: 'admin@example.com',
+      createdAt: 2,
+    })
+    expect(db.query).toHaveBeenCalledWith('askKilianPromptConfigs')
+    expect(withIndex).toHaveBeenCalledWith('by_active', expect.any(Function))
+    expect(eq).toHaveBeenCalledWith('active', true)
+
+    collect.mockResolvedValueOnce([])
+    await expect(handler({ db } as never)).rejects.toThrow('Missing active Ask Kilian prompt config')
+  })
+
+  it('returns null from the active prompt config query when no active config exists', async () => {
+    const collect = vi.fn(async () => [])
+    const withIndex = vi.fn((_index, buildQuery) => {
+      buildQuery({ eq: vi.fn(() => 'active-query') })
+      return { collect }
+    })
+    const db = {
+      query: vi.fn(() => ({ withIndex })),
+    }
+
+    await expect((getActivePromptConfig as unknown as TestConvexHandler)._handler({ db }, {})).resolves.toBeNull()
+  })
+
+  it('deactivates older active runtime configs and inserts a new active runtime config', async () => {
+    const now = 1_783_280_002
+    const collect = vi.fn(async () => [{ _id: 'runtime-old-1', active: true }])
+    const eq = vi.fn(() => 'active-query')
+    const withIndex = vi.fn((_index, buildQuery) => {
+      buildQuery({ eq })
+      return { collect }
+    })
+    const db = {
+      insert: vi.fn(async () => 'runtime-new'),
+      patch: vi.fn(async () => null),
+      query: vi.fn(() => ({ withIndex })),
+    }
+    const handler = createSaveRuntimeConfigHandler({
+      now: () => now,
+      refs: { table: 'askKilianRuntimeConfigs' },
+    })
+
+    await expect(
+      handler({ db } as never, {
+        modelId: 'test/generation-model',
+        maxOutputTokens: 900,
+        temperature: 0.7,
+        conversationWindow: 8,
+        ragLimit: 5,
+        quota: {
+          adminTestDailyRequests: 100,
+          publicDailyRequests: 40,
+          publicDailyEstimatedTokens: 60_000,
+        },
+        actor: 'admin@example.com',
+      }),
+    ).resolves.toEqual({ runtimeConfigVersionId: 'runtime-new' })
+
+    expect(db.query).toHaveBeenCalledWith('askKilianRuntimeConfigs')
+    expect(withIndex).toHaveBeenCalledWith('by_active', expect.any(Function))
+    expect(eq).toHaveBeenCalledWith('active', true)
+    expect(db.patch).toHaveBeenCalledWith('runtime-old-1', { active: false })
+    expect(db.insert).toHaveBeenCalledWith('askKilianRuntimeConfigs', {
+      modelId: 'test/generation-model',
+      maxOutputTokens: 900,
+      temperature: 0.7,
+      conversationWindow: 8,
+      ragLimit: 5,
+      quota: {
+        adminTestDailyRequests: 100,
+        publicDailyRequests: 40,
+        publicDailyEstimatedTokens: 60_000,
+      },
+      active: true,
+      createdBy: 'admin@example.com',
+      createdAt: now,
+    })
+  })
+
+  it('loads the newest active runtime config summary and fails closed when none exists', async () => {
+    const newestRuntime = {
+      _id: 'runtime-new',
+      modelId: 'test/generation-model',
+      maxOutputTokens: 900,
+      temperature: 0.7,
+      conversationWindow: 8,
+      ragLimit: 5,
+      quota: {
+        adminTestDailyRequests: 100,
+        publicDailyRequests: 40,
+        publicDailyEstimatedTokens: 60_000,
+      },
+      createdBy: 'admin@example.com',
+      createdAt: 2,
+    }
+    const collect = vi.fn(async () => [{ ...newestRuntime, _id: 'runtime-old', createdAt: 1 }, newestRuntime])
+    const eq = vi.fn(() => 'active-query')
+    const withIndex = vi.fn((_index, buildQuery) => {
+      buildQuery({ eq })
+      return { collect }
+    })
+    const db = {
+      query: vi.fn(() => ({ withIndex })),
+    }
+    const handler = createGetActiveRuntimeConfigHandler({
+      refs: { table: 'askKilianRuntimeConfigs' },
+    })
+
+    await expect(handler({ db } as never)).resolves.toEqual({
+      id: 'runtime-new',
+      modelId: 'test/generation-model',
+      maxOutputTokens: 900,
+      temperature: 0.7,
+      conversationWindow: 8,
+      ragLimit: 5,
+      quota: {
+        adminTestDailyRequests: 100,
+        publicDailyRequests: 40,
+        publicDailyEstimatedTokens: 60_000,
+      },
+      createdBy: 'admin@example.com',
+      createdAt: 2,
+    })
+
+    collect.mockResolvedValueOnce([])
+    await expect(handler({ db } as never)).rejects.toThrow('Missing active Ask Kilian runtime config')
+  })
+
+  it('returns null from the active runtime config query when no active config exists', async () => {
+    const collect = vi.fn(async () => [])
+    const withIndex = vi.fn((_index, buildQuery) => {
+      buildQuery({ eq: vi.fn(() => 'active-query') })
+      return { collect }
+    })
+    const db = {
+      query: vi.fn(() => ({ withIndex })),
+    }
+
+    await expect((getActiveRuntimeConfig as unknown as TestConvexHandler)._handler({ db }, {})).resolves.toBeNull()
+  })
+
+  it('reserves admin_test quota without touching public quota', async () => {
+    const now = new Date('2026-06-06T14:30:00.000Z').getTime()
+    const usageRow = {
+      _id: 'usage-admin-2026-06-06',
+      bucket: 'admin_test',
+      day: '2026-06-06',
+      requestCount: 2,
+      estimatedTokens: 900,
+      updatedAt: now - 1_000,
+    }
+    const first = vi.fn(() => usageRow)
+    const indexQuery = {
+      eq: vi.fn(() => indexQuery),
+    }
+    const withIndex = vi.fn((_index, buildQuery) => {
+      buildQuery(indexQuery)
+      return { first }
+    })
+    const db = {
+      insert: vi.fn(),
+      patch: vi.fn(async () => null),
+      query: vi.fn(() => ({ withIndex })),
+    }
+    const handler = createReserveQuotaHandler({
+      now: () => now,
+      refs: { table: 'askKilianQuotaUsage' },
+    })
+
+    await expect(
+      handler({ db } as never, {
+        bucket: 'admin_test',
+        estimatedTokens: 250,
+        quota: {
+          adminTestDailyRequests: 4,
+          publicDailyRequests: 1,
+          publicDailyEstimatedTokens: 1,
+        },
+      }),
+    ).resolves.toEqual({
+      allowed: true,
+      bucket: 'admin_test',
+      reason: 'reserved',
+      remainingDailyRequests: 1,
+    })
+
+    expect(db.query).toHaveBeenCalledWith('askKilianQuotaUsage')
+    expect(withIndex).toHaveBeenCalledWith('by_bucket_day', expect.any(Function))
+    expect(indexQuery.eq).toHaveBeenCalledWith('bucket', 'admin_test')
+    expect(indexQuery.eq).toHaveBeenCalledWith('day', '2026-06-06')
+    expect(indexQuery.eq).not.toHaveBeenCalledWith('bucket', 'public')
+    expect(db.patch).toHaveBeenCalledWith('usage-admin-2026-06-06', {
+      requestCount: 3,
+      estimatedTokens: 1_150,
+      updatedAt: now,
+    })
+    expect(db.insert).not.toHaveBeenCalled()
+  })
+
+  it('blocks when daily request limit is exhausted without upserting usage', async () => {
+    const now = new Date('2026-06-06T18:00:00.000Z').getTime()
+    const usageRow = {
+      _id: 'usage-admin-exhausted',
+      bucket: 'admin_test',
+      day: '2026-06-06',
+      requestCount: 4,
+      estimatedTokens: 2_000,
+      updatedAt: now - 1_000,
+    }
+    const first = vi.fn(() => usageRow)
+    const indexQuery = {
+      eq: vi.fn(() => indexQuery),
+    }
+    const withIndex = vi.fn((_index, buildQuery) => {
+      buildQuery(indexQuery)
+      return { first }
+    })
+    const db = {
+      insert: vi.fn(),
+      patch: vi.fn(),
+      query: vi.fn(() => ({ withIndex })),
+    }
+    const handler = createReserveQuotaHandler({
+      now: () => now,
+      refs: { table: 'askKilianQuotaUsage' },
+    })
+
+    await expect(
+      handler({ db } as never, {
+        bucket: 'admin_test',
+        estimatedTokens: 250,
+        quota: {
+          adminTestDailyRequests: 4,
+          publicDailyRequests: 40,
+          publicDailyEstimatedTokens: 60_000,
+        },
+      }),
+    ).resolves.toEqual({
+      allowed: false,
+      bucket: 'admin_test',
+      reason: 'daily_request_limit_exhausted',
+      remainingDailyRequests: 0,
+    })
+
+    expect(db.insert).not.toHaveBeenCalled()
+    expect(db.patch).not.toHaveBeenCalled()
+  })
+
+  it('blocks public quota when next estimated tokens exceeds the public daily token limit', async () => {
+    const now = new Date('2026-06-06T19:00:00.000Z').getTime()
+    const usageRow = {
+      _id: 'usage-public-2026-06-06',
+      bucket: 'public',
+      day: '2026-06-06',
+      requestCount: 5,
+      estimatedTokens: 950,
+      updatedAt: now - 1_000,
+    }
+    const first = vi.fn(() => usageRow)
+    const indexQuery = {
+      eq: vi.fn(() => indexQuery),
+    }
+    const withIndex = vi.fn((_index, buildQuery) => {
+      buildQuery(indexQuery)
+      return { first }
+    })
+    const db = {
+      insert: vi.fn(),
+      patch: vi.fn(),
+      query: vi.fn(() => ({ withIndex })),
+    }
+    const handler = createReserveQuotaHandler({
+      now: () => now,
+      refs: { table: 'askKilianQuotaUsage' },
+    })
+
+    await expect(
+      handler({ db } as never, {
+        bucket: 'public',
+        estimatedTokens: 51,
+        quota: {
+          adminTestDailyRequests: 100,
+          publicDailyRequests: 40,
+          publicDailyEstimatedTokens: 1_000,
+        },
+      }),
+    ).resolves.toEqual({
+      allowed: false,
+      bucket: 'public',
+      reason: 'daily_estimated_token_limit_exhausted',
+      remainingDailyRequests: 35,
+    })
+
+    expect(db.insert).not.toHaveBeenCalled()
+    expect(db.patch).not.toHaveBeenCalled()
+  })
+
+  it('records a full conversation trace and returns its identifiers', async () => {
+    const now = new Date('2026-06-06T20:00:00.000Z').getTime()
+    const db = {
+      insert: vi.fn(async () => 'conversation-1'),
+    }
+    const handler = createRecordConversationHandler({
+      now: () => now,
+      refs: { table: 'askKilianConversations' },
+    })
+    const messages = [
+      { role: 'user' as const, content: 'What should I know about Kilian?', createdAt: now - 100 },
+      { role: 'assistant' as const, content: 'Kilian ships careful, weird little web things.', createdAt: now },
+    ]
+    const metadata = {
+      callerMode: 'admin_test' as const,
+      quotaBucket: 'admin_test' as const,
+      status: 'completed' as const,
+      tier: 1 as const,
+      includeSpoilers: false,
+      categories: ['persona' as const],
+      promptRevisionId: 'prompt-1',
+      runtimeConfigVersionId: 'runtime-1',
+      ragCorpusVersionKey: 'rag:v2:abc123',
+      condensedQuery: 'Kilian profile',
+      classification: {
+        scope: 'allowed' as const,
+        behavior: 'answer' as const,
+        topic: 'profile',
+        reason: 'Relevant site/persona question.',
+        source: 'deterministic' as const,
+      },
+      retrievedEntries: [
+        {
+          stableKey: 'repo:profile',
+          title: 'Profile',
+          category: 'persona' as const,
+          score: 0.91,
+          contentHash: 'hash-profile',
+        },
+      ],
+      quotaDecision: {
+        allowed: true,
+        bucket: 'admin_test' as const,
+        reason: 'reserved',
+        remainingDailyRequests: 11,
+      },
+      publicEquivalentQuotaDecision: {
+        allowed: true,
+        bucket: 'public' as const,
+        reason: 'reserved',
+        remainingDailyRequests: 39,
+      },
+      model: {
+        modelId: 'test/generation-model',
+        latencyMs: 1_234,
+        inputTokens: 100,
+        outputTokens: 40,
+        finishReason: 'stop',
+      },
+      posthogDistinctId: 'admin@example.com',
+      posthogTraceId: 'ph-trace-1',
+    }
+
+    await expect(
+      handler({ db } as never, {
+        traceId: 'trace-ask-kilian-1',
+        messages,
+        metadata,
+      }),
+    ).resolves.toEqual({
+      conversationId: 'conversation-1',
+      traceId: 'trace-ask-kilian-1',
+    })
+
+    expect(db.insert).toHaveBeenCalledWith('askKilianConversations', {
+      traceId: 'trace-ask-kilian-1',
+      messages,
+      metadata,
+      createdAt: now,
+      updatedAt: now,
+    })
+  })
+
+  it('builds a condensed runtime RAG query and returns search results with a corpus version key', async () => {
+    const searchResults = [
+      {
+        stableKey: 'repo:kil-dev',
+        title: 'kil.dev',
+        category: 'projects' as const,
+        score: 0.92,
+        text: 'kil.dev is Kilian Tyler portfolio site.',
+      },
+    ]
+    const searchKnowledge = vi.fn(async () => searchResults)
+    const buildVersionKey = vi.fn(() => 'rag:v2:test')
+    const handler = createRuntimeRagSearchHandler({
+      searchKnowledge,
+      buildVersionKey,
+    })
+
+    await expect(
+      handler({ runQuery: vi.fn() } as never, {
+        messages: [
+          { role: 'user', content: 'Tell me about the site.' },
+          { role: 'assistant', content: 'Ask about projects.' },
+        ],
+        latestUserMessage: 'What is Kilian doing with kil.dev?',
+        tier: 1,
+        includeSpoilers: false,
+        categories: ['projects'],
+        limit: 4,
+      }),
+    ).resolves.toEqual({
+      condensedQuery:
+        'user: Tell me about the site.\nassistant: Ask about projects.\nlatest: What is Kilian doing with kil.dev?',
+      ragCorpusVersionKey: 'rag:v2:test',
+      results: searchResults,
+    })
+    expect(searchKnowledge).toHaveBeenCalledWith(expect.anything(), {
+      query:
+        'user: Tell me about the site.\nassistant: Ask about projects.\nlatest: What is Kilian doing with kil.dev?',
+      tier: 1,
+      includeSpoilers: false,
+      categories: ['projects'],
+      limit: 4,
+    })
+    expect(buildVersionKey).toHaveBeenCalledWith(searchResults)
+  })
+
+  it('uses stable content hashes and current RAG config in the runtime corpus version key', async () => {
+    const sameResultsDifferentOrder = [
+      {
+        stableKey: 'repo:beta',
+        title: 'Beta',
+        category: 'projects' as const,
+        score: 0.72,
+        text: 'Beta text that should not be fingerprinted when contentHash exists.',
+        contentHash: 'hash-beta',
+      },
+      {
+        stableKey: 'repo:alpha',
+        title: 'Alpha',
+        category: 'persona' as const,
+        score: 0.91,
+        text: 'Alpha text that should not be fingerprinted when contentHash exists.',
+        contentHash: 'hash-alpha',
+      },
+    ]
+    const handler = createRuntimeRagSearchHandler({
+      searchKnowledge: vi.fn(async () => sameResultsDifferentOrder),
+    })
+
+    const result = await handler({ runQuery: vi.fn() } as never, {
+      messages: [],
+      latestUserMessage: 'What should I know about Kilian?',
+      tier: 2,
+      includeSpoilers: true,
+      categories: ['persona', 'projects'],
+      limit: 8,
+    })
+
+    expect(result.ragCorpusVersionKey).toBe(
+      buildAskKilianRagCorpusVersionKey({
+        entries: [
+          { stableKey: 'repo:alpha', contentHash: 'hash-alpha' },
+          { stableKey: 'repo:beta', contentHash: 'hash-beta' },
+        ],
+        ragFilterVersion: 2,
+        embeddingModel: 'alibaba/qwen3-embedding-4b',
+        embeddingDimensions: 2048,
+      }),
+    )
+  })
+
+  it('falls back to stable key, score, and title when runtime RAG results lack content hashes', async () => {
+    const resultsWithoutHashes = [
+      {
+        stableKey: 'repo:kil-dev',
+        title: 'kil.dev',
+        category: 'projects' as const,
+        score: 0.91,
+        text: 'First text body.',
+      },
+    ]
+    const resultsWithChangedText = [
+      {
+        ...resultsWithoutHashes[0]!,
+        text: 'Changed text body should not change the fallback fingerprint.',
+      },
+    ]
+    const firstHandler = createRuntimeRagSearchHandler({
+      searchKnowledge: vi.fn(async () => resultsWithoutHashes),
+    })
+    const secondHandler = createRuntimeRagSearchHandler({
+      searchKnowledge: vi.fn(async () => resultsWithChangedText),
+    })
+    const args = {
+      messages: [],
+      latestUserMessage: 'What is kil.dev?',
+      tier: 0 as const,
+      includeSpoilers: false,
+      categories: ['projects' as const],
+      limit: 4,
+    }
+
+    const first = await firstHandler({ runQuery: vi.fn() } as never, args)
+    const second = await secondHandler({ runQuery: vi.fn() } as never, args)
+
+    expect(first.ragCorpusVersionKey).toBe(second.ragCorpusVersionKey)
+    expect(first.ragCorpusVersionKey).toBe(
+      buildAskKilianRagCorpusVersionKey({
+        entries: [{ stableKey: 'repo:kil-dev', contentHash: 'fallback:0.91:kil.dev' }],
+        ragFilterVersion: 2,
+        embeddingModel: 'alibaba/qwen3-embedding-4b',
+        embeddingDimensions: 2048,
+      }),
+    )
+  })
+
+  it('rejects every public chat ForAdmin wrapper before Convex work when the admin identity is unauthorized', async () => {
+    process.env.ADMIN_EMAIL = 'admin@example.com'
+    process.env.WORKOS_ORG_ID = 'org_good'
+    const ctx = askKilianChatAdminCtx({ identity: null })
+    const cases = [
+      [getActivePromptConfigForAdmin, {}],
+      [getActiveRuntimeConfigForAdmin, {}],
+      [
+        savePromptRevisionForAdmin,
+        {
+          title: 'Admin test prompt',
+          promptText: 'Answer like Kilian, grounded in the retrieved context.',
+          notes: 'First admin-editable prompt.',
+          actor: 'admin@example.com',
+        },
+      ],
+      [
+        saveRuntimeConfigForAdmin,
+        {
+          modelId: 'test/generation-model',
+          maxOutputTokens: 900,
+          temperature: 0.7,
+          conversationWindow: 8,
+          ragLimit: 5,
+          quota: runtimeQuota,
+          actor: 'admin@example.com',
+        },
+      ],
+      [
+        reserveQuotaForAdmin,
+        {
+          bucket: 'admin_test',
+          estimatedTokens: 250,
+          quota: runtimeQuota,
+        },
+      ],
+      [recordConversationForAdmin, recordConversationForAdminArgs],
+      [
+        searchRuntimeRagForAdmin,
+        {
+          messages: [],
+          latestUserMessage: 'What is kil.dev?',
+          tier: 0,
+          includeSpoilers: false,
+          categories: ['projects'],
+          limit: 4,
+        },
+      ],
+    ] as const
+
+    for (const [actionForAdmin, args] of cases) {
+      await expect(getActionHandler(actionForAdmin)(ctx, args)).rejects.toThrow('Ask Kilian admin access denied')
+    }
+
+    expect(ctx.runQuery).not.toHaveBeenCalled()
+    expect(ctx.runMutation).not.toHaveBeenCalled()
+    expect(ctx.runAction).not.toHaveBeenCalled()
+  })
+
+  it('rejects save ForAdmin actor mismatches before running internal mutations', async () => {
+    process.env.ADMIN_EMAIL = 'admin@example.com'
+    process.env.WORKOS_ORG_ID = 'org_good'
+    const cases = [
+      [
+        savePromptRevisionForAdmin,
+        {
+          title: 'Admin test prompt',
+          promptText: 'Answer like Kilian, grounded in the retrieved context.',
+          notes: 'First admin-editable prompt.',
+          actor: 'other@example.com',
+        },
+      ],
+      [
+        saveRuntimeConfigForAdmin,
+        {
+          modelId: 'test/generation-model',
+          maxOutputTokens: 900,
+          temperature: 0.7,
+          conversationWindow: 8,
+          ragLimit: 5,
+          quota: runtimeQuota,
+          actor: 'other@example.com',
+        },
+      ],
+    ] as const
+
+    for (const [actionForAdmin, args] of cases) {
+      const ctx = askKilianChatAdminCtx()
+
+      await expect(getActionHandler(actionForAdmin)(ctx, args)).rejects.toThrow('Ask Kilian admin access denied')
+      expect(ctx.runMutation).not.toHaveBeenCalled()
+    }
+  })
+})

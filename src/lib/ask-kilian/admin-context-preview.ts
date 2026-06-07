@@ -39,6 +39,6 @@ export function buildAskKilianAdminContextPreview(input: AskKilianAdminContextPr
     'Retrieved context:',
     entries,
     '',
-    'KTY-66 will assemble the final system/persona/chat prompt.',
+    'This preview shows retrieved RAG context only. Runtime chat also uses the active Convex prompt config and fixed guardrails.',
   ].join('\n')
 }
