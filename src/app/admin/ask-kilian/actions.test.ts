@@ -9,6 +9,7 @@ const {
   repoEntries,
   requireAdminAuthContext,
   revalidatePath,
+  runAskKilianChatForAdmin,
 } = vi.hoisted(() => ({
   api: {
     askKilianChat: {
@@ -49,9 +50,11 @@ const {
   ],
   requireAdminAuthContext: vi.fn(),
   revalidatePath: vi.fn(),
+  runAskKilianChatForAdmin: vi.fn(),
 }))
 
 vi.mock('@/lib/admin-auth', () => ({ requireAdminAuthContext }))
+vi.mock('@/lib/ask-kilian/chat-runtime', () => ({ runAskKilianChatForAdmin }))
 vi.mock('@/lib/ask-kilian/convex-server-client', () => ({ createAskKilianConvexServerClient }))
 vi.mock('@/lib/ask-kilian/knowledge-sources', () => ({ buildAskKilianKnowledgeEntries }))
 vi.mock('@/lib/admin-test-bypass', () => ({
@@ -72,6 +75,13 @@ describe('Ask Kilian admin server actions', () => {
     buildAskKilianKnowledgeEntries.mockReturnValue(repoEntries)
     isAdminTestBypassEnvEnabled.mockReturnValue(false)
     requireAdminAuthContext.mockResolvedValue({ email: 'admin@example.com', accessToken: 'workos-token' })
+    runAskKilianChatForAdmin.mockResolvedValue({
+      ok: true,
+      status: 'completed',
+      text: 'Admin chat result',
+      traceId: 'trace-action-chat',
+      diagnostics: {},
+    })
   })
 
   afterEach(() => {
@@ -142,11 +152,43 @@ describe('Ask Kilian admin server actions', () => {
     expect(createAskKilianConvexServerClient).not.toHaveBeenCalled()
   })
 
-  it('exports prompt/runtime config actions without exposing generation actions before Task 8', async () => {
+  it('exports prompt/runtime config actions and the Task 8 admin generation action', async () => {
     const actions = await import('./actions')
     expect(actions.saveAskKilianPromptConfigAction).toEqual(expect.any(Function))
     expect(actions.saveAskKilianRuntimeConfigAction).toEqual(expect.any(Function))
-    expect(Object.keys(actions).some(name => /generate|stream/i.test(name))).toBe(false)
+    expect(actions.generateAskKilianChatAction).toEqual(expect.any(Function))
+  })
+
+  it('runs admin chat generation with the authenticated admin distinct id', async () => {
+    const { generateAskKilianChatAction } = await import('./actions')
+
+    await expect(
+      generateAskKilianChatAction({
+        messages: [{ role: 'user', content: 'What should I ask about Kilian projects?' }],
+        tier: 2,
+        includeSpoilers: true,
+        categories: ['projects'],
+        promptOverride: 'Answer from this admin prompt.',
+        runtimeModelOverride: 'openai/gpt-5-mini',
+      }),
+    ).resolves.toEqual({
+      ok: true,
+      status: 'completed',
+      text: 'Admin chat result',
+      traceId: 'trace-action-chat',
+      diagnostics: {},
+    })
+
+    expect(requireAdminAuthContext).toHaveBeenCalledWith()
+    expect(runAskKilianChatForAdmin).toHaveBeenCalledWith({
+      distinctId: 'admin@example.com',
+      messages: [{ role: 'user', content: 'What should I ask about Kilian projects?' }],
+      tier: 2,
+      includeSpoilers: true,
+      categories: ['projects'],
+      promptOverride: 'Answer from this admin prompt.',
+      runtimeModelOverride: 'openai/gpt-5-mini',
+    })
   })
 
   it('saves prompt config through the protected Ask Kilian chat action and revalidates admin state', async () => {

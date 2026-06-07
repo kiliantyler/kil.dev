@@ -14,6 +14,7 @@ import {
   type AskKilianAdminStatus,
   type AskKilianAdminWorkspaceState,
 } from '@/lib/ask-kilian/admin-workspace-shared'
+import { runAskKilianChatForAdmin, type GenerateAskKilianChatAdminInput } from '@/lib/ask-kilian/chat-runtime'
 import { createAskKilianConvexServerClient } from '@/lib/ask-kilian/convex-server-client'
 import { buildAskKilianKnowledgeEntries } from '@/lib/ask-kilian/knowledge-sources'
 import type { AskKilianKnowledgeCategory, AskKilianTier } from '@/lib/ask-kilian/types'
@@ -270,6 +271,11 @@ export async function saveAskKilianRuntimeConfigAction(input: AskKilianRuntimeCo
   })
   revalidatePath('/admin/ask-kilian')
   return result
+}
+
+export async function generateAskKilianChatAction(input: GenerateAskKilianChatAdminInput) {
+  const admin = await requireAdminAuthContext()
+  return runAskKilianChatForAdmin({ ...input, distinctId: admin.email })
 }
 
 export async function disableAskKilianAdminEntryAction(stableKey: string) {
