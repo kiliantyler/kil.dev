@@ -58,19 +58,29 @@ export type BuildAskKilianChatRequestResult =
       error: AskKilianChatRequestError
     }
 
+export type BuildAskKilianChatRequestOptions = {
+  conversationWindow?: number
+}
+
 export function normalizeAskKilianConversationWindow(
   messages: readonly AskKilianChatMessage[],
+  conversationWindow = ASK_KILIAN_CHAT_CONTEXT_WINDOW,
 ): AskKilianChatMessage[] {
+  const windowSize = normalizeConversationWindowSize(conversationWindow)
+
   return messages
     .map(message => ({
       role: message.role,
       content: message.content.trim(),
     }))
     .filter(message => message.content.length > 0)
-    .slice(-ASK_KILIAN_CHAT_CONTEXT_WINDOW)
+    .slice(-windowSize)
 }
 
-export function buildAskKilianChatRequest(input: AskKilianChatRequestInput): BuildAskKilianChatRequestResult {
+export function buildAskKilianChatRequest(
+  input: AskKilianChatRequestInput,
+  options: BuildAskKilianChatRequestOptions = {},
+): BuildAskKilianChatRequestResult {
   const latestUserMessage = findLatestUserMessage(input.messages)
 
   if (latestUserMessage.length === 0) {
@@ -95,7 +105,7 @@ export function buildAskKilianChatRequest(input: AskKilianChatRequestInput): Bui
 
   const request: AskKilianChatRequest = {
     callerMode: input.callerMode,
-    messages: normalizeAskKilianConversationWindow(input.messages),
+    messages: normalizeAskKilianConversationWindow(input.messages, options.conversationWindow),
     latestUserMessage,
     quotaBucket: input.callerMode,
     tier: input.tier,
@@ -118,6 +128,11 @@ export function buildAskKilianChatRequest(input: AskKilianChatRequestInput): Bui
     ok: true,
     request,
   }
+}
+
+function normalizeConversationWindowSize(value: number): number {
+  if (!Number.isFinite(value)) return ASK_KILIAN_CHAT_CONTEXT_WINDOW
+  return Math.max(1, Math.floor(value))
 }
 
 function findLatestUserMessage(messages: readonly AskKilianChatMessage[]): string {

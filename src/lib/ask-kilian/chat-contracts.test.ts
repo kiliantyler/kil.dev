@@ -104,4 +104,35 @@ describe('Ask Kilian chat contracts', () => {
       { role: 'user', content: 'seventh' },
     ])
   })
+
+  it('honors a non-default conversation window when normalizing a request', () => {
+    const result = buildAskKilianChatRequest(
+      {
+        callerMode: 'admin_test',
+        messages: [
+          { role: 'user', content: ' first ' },
+          { role: 'assistant', content: ' second ' },
+          { role: 'user', content: ' third ' },
+          { role: 'assistant', content: ' fourth ' },
+          { role: 'user', content: ' fifth ' },
+        ],
+        tier: 1,
+        includeSpoilers: false,
+        categories: ['projects'],
+      },
+      { conversationWindow: 3 },
+    )
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) {
+      return
+    }
+
+    expect(result.request.latestUserMessage).toBe('fifth')
+    expect(result.request.messages).toEqual([
+      { role: 'user', content: 'third' },
+      { role: 'assistant', content: 'fourth' },
+      { role: 'user', content: 'fifth' },
+    ])
+  })
 })

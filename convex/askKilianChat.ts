@@ -513,29 +513,19 @@ export const getActiveRuntimeConfig = internalQuery({
 
 export const getActivePromptConfigForAdmin = action({
   args: {},
-  returns: promptConfigSummaryValidator,
-  handler: async (ctx: ActionCtx): Promise<PromptConfigSummary> => {
+  returns: v.union(promptConfigSummaryValidator, v.null()),
+  handler: async (ctx: ActionCtx): Promise<PromptConfigSummary | null> => {
     await requireAskKilianAdmin(ctx)
-    const promptConfig = (await ctx.runQuery(
-      askKilianChatInternalApi.getActivePromptConfig,
-      {},
-    )) as PromptConfigSummary | null
-    if (!promptConfig) throw new Error('Missing active Ask Kilian prompt config')
-    return promptConfig
+    return (await ctx.runQuery(askKilianChatInternalApi.getActivePromptConfig, {})) as PromptConfigSummary | null
   },
 })
 
 export const getActiveRuntimeConfigForAdmin = action({
   args: {},
-  returns: runtimeConfigSummaryValidator,
-  handler: async (ctx: ActionCtx): Promise<RuntimeConfigSummary> => {
+  returns: v.union(runtimeConfigSummaryValidator, v.null()),
+  handler: async (ctx: ActionCtx): Promise<RuntimeConfigSummary | null> => {
     await requireAskKilianAdmin(ctx)
-    const runtimeConfig = (await ctx.runQuery(
-      askKilianChatInternalApi.getActiveRuntimeConfig,
-      {},
-    )) as RuntimeConfigSummary | null
-    if (!runtimeConfig) throw new Error('Missing active Ask Kilian runtime config')
-    return runtimeConfig
+    return (await ctx.runQuery(askKilianChatInternalApi.getActiveRuntimeConfig, {})) as RuntimeConfigSummary | null
   },
 })
 
@@ -718,7 +708,7 @@ export function normalizeAskKilianQuotaDay(timestamp: number) {
 }
 
 export function stableShortHash(input: string) {
-  let hash = 0x811C9DC5
+  let hash = 2_166_136_261
 
   for (const character of input) {
     hash ^= character.codePointAt(0) ?? 0

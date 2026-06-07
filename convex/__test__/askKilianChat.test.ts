@@ -9,8 +9,14 @@ import {
   createRuntimeRagSearchHandler,
   createSavePromptRevisionHandler,
   createSaveRuntimeConfigHandler,
+  getActivePromptConfig,
+  getActiveRuntimeConfig,
   normalizeAskKilianQuotaDay,
 } from '../askKilianChat'
+
+type TestConvexHandler = {
+  _handler: (ctx: unknown, args: Record<string, never>) => Promise<unknown>
+}
 
 describe('Ask Kilian chat helpers', () => {
   it('normalizes quota timestamps to UTC day keys', () => {
@@ -119,6 +125,19 @@ describe('Ask Kilian chat helpers', () => {
     await expect(handler({ db } as never)).rejects.toThrow('Missing active Ask Kilian prompt config')
   })
 
+  it('returns null from the active prompt config query when no active config exists', async () => {
+    const collect = vi.fn(async () => [])
+    const withIndex = vi.fn((_index, buildQuery) => {
+      buildQuery({ eq: vi.fn(() => 'active-query') })
+      return { collect }
+    })
+    const db = {
+      query: vi.fn(() => ({ withIndex })),
+    }
+
+    await expect((getActivePromptConfig as unknown as TestConvexHandler)._handler({ db }, {})).resolves.toBeNull()
+  })
+
   it('deactivates older active runtime configs and inserts a new active runtime config', async () => {
     const now = 1_783_280_002
     const collect = vi.fn(async () => [{ _id: 'runtime-old-1', active: true }])
@@ -221,6 +240,19 @@ describe('Ask Kilian chat helpers', () => {
 
     collect.mockResolvedValueOnce([])
     await expect(handler({ db } as never)).rejects.toThrow('Missing active Ask Kilian runtime config')
+  })
+
+  it('returns null from the active runtime config query when no active config exists', async () => {
+    const collect = vi.fn(async () => [])
+    const withIndex = vi.fn((_index, buildQuery) => {
+      buildQuery({ eq: vi.fn(() => 'active-query') })
+      return { collect }
+    })
+    const db = {
+      query: vi.fn(() => ({ withIndex })),
+    }
+
+    await expect((getActiveRuntimeConfig as unknown as TestConvexHandler)._handler({ db }, {})).resolves.toBeNull()
   })
 
   it('reserves admin_test quota without touching public quota', async () => {

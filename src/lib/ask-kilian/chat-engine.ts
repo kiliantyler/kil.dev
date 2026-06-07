@@ -17,6 +17,9 @@ const FIXED_ASK_KILIAN_GUARDRAILS = [
   'Keep answers concise, specific, and in the Ask Kilian voice.',
 ].join('\n')
 
+const ASK_KILIAN_NO_RAG_CORPUS_VERSION_KEY = 'rag:no-rag:v1'
+const ASK_KILIAN_PROVIDER_ERROR_TEXT = 'Ask Kilian could not finish this response.'
+
 export type AskKilianChatEngineInput = AskKilianChatRequestInput & {
   distinctId: string
 }
@@ -157,19 +160,18 @@ async function runAskKilianChatEngine(
   input: AskKilianChatEngineInput,
 ): Promise<AskKilianChatEngineResult> {
   const traceId = deps.createTraceId()
-  const requestResult = buildAskKilianChatRequest(input)
+  const requestValidationResult = buildAskKilianChatRequest(input)
 
-  if (!requestResult.ok) {
+  if (!requestValidationResult.ok) {
     return {
       ok: false,
       status: 'failed',
-      reason: requestResult.error.code,
+      reason: requestValidationResult.error.code,
       traceId,
       diagnostics: {},
     }
   }
 
-  const request = requestResult.request
   const [promptConfig, runtimeConfig] = await Promise.all([
     deps.loadActivePromptConfig(),
     deps.loadActiveRuntimeConfig(),
@@ -197,6 +199,24 @@ async function runAskKilianChatEngine(
     }
   }
 
+  const runtimeRequestResult = buildAskKilianChatRequest(input, {
+    conversationWindow: runtimeConfig.conversationWindow,
+  })
+
+  if (!runtimeRequestResult.ok) {
+    return {
+      ok: false,
+      status: 'failed',
+      reason: runtimeRequestResult.error.code,
+      traceId,
+      diagnostics: {
+        promptRevisionId: promptConfig.id,
+        runtimeConfigVersionId: runtimeConfig.id,
+      },
+    }
+  }
+
+  const request = runtimeRequestResult.request
   const baseDiagnostics = {
     promptRevisionId: promptConfig.id,
     runtimeConfigVersionId: runtimeConfig.id,
@@ -226,24 +246,68 @@ async function runAskKilianChatEngine(
     }
   }
 
-  const ragResult = await deps.searchRag({
-    messages: request.messages,
-    latestUserMessage: request.latestUserMessage,
-    tier: request.tier,
-    includeSpoilers: request.includeSpoilers,
-    categories: request.categories,
-    limit: runtimeConfig.ragLimit,
-  })
+  let providerStage: 'rag' | 'model' = 'rag'
+  let ragResult: Awaited<ReturnType<AskKilianChatEngineDeps['searchRag']>> | undefined
+  let modelResult: Awaited<ReturnType<typeof buildHandledResponse>> | undefined
+
+  try {
+    ragResult = shouldUseRagAndModel(classification)
+      ? await deps.searchRag({
+          messages: request.messages,
+          latestUserMessage: request.latestUserMessage,
+          tier: request.tier,
+          includeSpoilers: request.includeSpoilers,
+          categories: request.categories,
+          limit: runtimeConfig.ragLimit,
+        })
+      : {
+          condensedQuery: request.latestUserMessage,
+          ragCorpusVersionKey: ASK_KILIAN_NO_RAG_CORPUS_VERSION_KEY,
+          entries: [],
+        }
+    providerStage = 'model'
+    modelResult = await buildHandledResponse({
+      deps,
+      traceId,
+      request,
+      promptConfig,
+      runtimeConfig,
+      classification,
+      ragEntries: ragResult.entries,
+    })
+  } catch (error) {
+    return handleReservedProviderFailure({
+      deps,
+      input,
+      traceId,
+      request,
+      promptConfig,
+      runtimeConfig,
+      classification,
+      quotaDecision,
+      reason: `${providerStage}_error`,
+      error,
+      ragResult,
+    })
+  }
+
+  if (ragResult === undefined || modelResult === undefined) {
+    return handleReservedProviderFailure({
+      deps,
+      input,
+      traceId,
+      request,
+      promptConfig,
+      runtimeConfig,
+      classification,
+      quotaDecision,
+      reason: 'model_error',
+      error: new Error('Ask Kilian provider result was not produced'),
+      ragResult,
+    })
+  }
+
   const retrievedEntries = ragResult.entries.map(toRetrievedEntryRef)
-  const modelResult = await buildHandledResponse({
-    deps,
-    traceId,
-    request,
-    promptConfig,
-    runtimeConfig,
-    classification,
-    ragEntries: ragResult.entries,
-  })
   const modelMetadata = modelResult.model
   const metadata: AskKilianTraceMetadata = {
     callerMode: request.callerMode,
@@ -327,6 +391,105 @@ async function runAskKilianChatEngine(
   }
 }
 
+async function handleReservedProviderFailure({
+  deps,
+  input,
+  traceId,
+  request,
+  promptConfig,
+  runtimeConfig,
+  classification,
+  quotaDecision,
+  reason,
+  error,
+  ragResult,
+}: {
+  deps: AskKilianChatEngineDeps
+  input: AskKilianChatEngineInput
+  traceId: string
+  request: AskKilianChatRequest
+  promptConfig: AskKilianPromptConfigSummary
+  runtimeConfig: AskKilianRuntimeConfigSummary
+  classification: AskKilianClassificationDecision
+  quotaDecision: AskKilianQuotaDecision
+  reason: 'rag_error' | 'model_error'
+  error: unknown
+  ragResult?: Awaited<ReturnType<AskKilianChatEngineDeps['searchRag']>>
+}): Promise<AskKilianChatEngineResult> {
+  const errorMessage = error instanceof Error ? error.message : 'Unknown Ask Kilian provider failure'
+  const modelMetadata = buildFailedModelMetadata(request, runtimeConfig)
+  const retrievedEntries = ragResult?.entries.map(toRetrievedEntryRef) ?? []
+  const ragCorpusVersionKey = ragResult?.ragCorpusVersionKey ?? ASK_KILIAN_NO_RAG_CORPUS_VERSION_KEY
+  const metadata: AskKilianTraceMetadata = {
+    callerMode: request.callerMode,
+    quotaBucket: request.quotaBucket,
+    status: 'failed',
+    tier: request.tier,
+    includeSpoilers: request.includeSpoilers,
+    categories: request.categories,
+    promptRevisionId: promptConfig.id,
+    runtimeConfigVersionId: runtimeConfig.id,
+    ragCorpusVersionKey,
+    condensedQuery: ragResult?.condensedQuery ?? request.latestUserMessage,
+    classification,
+    retrievedEntries,
+    quotaDecision,
+    model: modelMetadata,
+    posthogDistinctId: input.distinctId,
+    posthogTraceId: traceId,
+    error: errorMessage,
+  }
+  let conversationId: string | undefined
+
+  try {
+    const conversation = await deps.recordConversation({
+      traceId,
+      messages: buildTraceMessages(request.messages, ASK_KILIAN_PROVIDER_ERROR_TEXT, deps.now()),
+      metadata,
+    })
+    conversationId = conversation.conversationId
+  } catch {
+    // The structured failure result should still reach the caller when durable logging is unavailable.
+  }
+
+  try {
+    await deps.captureMetric({
+      event: 'ask_kilian_chat_failed',
+      distinctId: input.distinctId,
+      traceId,
+      status: 'failed',
+      bucket: request.quotaBucket,
+      modelId: modelMetadata.modelId,
+      latencyMs: modelMetadata.latencyMs,
+      promptRevisionId: promptConfig.id,
+      runtimeConfigVersionId: runtimeConfig.id,
+      ragCorpusVersionKey,
+      retrievedCount: retrievedEntries.length,
+      classificationScope: classification.scope,
+      classificationBehavior: classification.behavior,
+    })
+  } catch {
+    // Metrics are intentionally best effort; conversation logging is the durable trace.
+  }
+
+  return {
+    ok: false,
+    status: 'failed',
+    reason,
+    traceId,
+    diagnostics: {
+      promptRevisionId: promptConfig.id,
+      runtimeConfigVersionId: runtimeConfig.id,
+      ragCorpusVersionKey,
+      classification,
+      quotaDecision,
+      retrievedEntries,
+      model: modelMetadata,
+      conversationId,
+    },
+  }
+}
+
 async function buildHandledResponse({
   deps,
   traceId,
@@ -379,6 +542,21 @@ async function buildHandledResponse({
       latencyMs: 0,
       finishReason: classification.behavior,
     },
+  }
+}
+
+function shouldUseRagAndModel(classification: AskKilianClassificationDecision) {
+  return classification.behavior === 'answer' || classification.behavior === 'fake_lore'
+}
+
+function buildFailedModelMetadata(
+  request: AskKilianChatRequest,
+  runtimeConfig: AskKilianRuntimeConfigSummary,
+): AskKilianModelMetadata {
+  return {
+    modelId: request.runtimeModelOverride ?? runtimeConfig.modelId,
+    latencyMs: 0,
+    finishReason: 'error',
   }
 }
 
@@ -475,6 +653,8 @@ function estimateChatTokens(request: AskKilianChatRequest, runtimeConfig: AskKil
   return Math.ceil(inputCharacters / 4) + runtimeConfig.maxOutputTokens
 }
 
-function metricEventForStatus(status: Exclude<AskKilianChatStatus, 'failed'>) {
-  return status === 'completed' ? 'ask_kilian_chat_completed' : 'ask_kilian_classification_decision'
+function metricEventForStatus(status: AskKilianChatStatus) {
+  if (status === 'completed') return 'ask_kilian_chat_completed'
+  if (status === 'failed') return 'ask_kilian_chat_failed'
+  return 'ask_kilian_classification_decision'
 }

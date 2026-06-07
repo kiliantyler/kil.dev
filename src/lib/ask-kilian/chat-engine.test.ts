@@ -193,7 +193,50 @@ describe('Ask Kilian chat engine', () => {
     )
   })
 
-  it('returns deterministic clarification without calling the model', async () => {
+  it('uses the runtime conversation window for RAG, model streaming, and trace logging', async () => {
+    const deps = createDeps({
+      loadActiveRuntimeConfig: vi.fn(async () => ({
+        ...runtimeConfig,
+        conversationWindow: 2,
+      })),
+    })
+    const engine = createAskKilianChatEngine(deps)
+
+    const result = await engine.run({
+      ...adminInput(),
+      messages: [
+        { role: 'user', content: ' first ' },
+        { role: 'assistant', content: ' second ' },
+        { role: 'user', content: ' third ' },
+      ],
+    })
+
+    expect(result).toMatchObject({
+      ok: true,
+      status: 'completed',
+    })
+    const expectedMessages = [
+      { role: 'assistant', content: 'second' },
+      { role: 'user', content: 'third' },
+    ]
+    expect(deps.searchRag).toHaveBeenCalledWith(expect.objectContaining({ messages: expectedMessages }))
+    expect(deps.streamModel).toHaveBeenCalledWith(expect.objectContaining({ messages: expectedMessages }))
+    expect(deps.recordConversation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messages: [
+          { role: 'assistant', content: 'second', createdAt: now },
+          { role: 'user', content: 'third', createdAt: now },
+          {
+            role: 'assistant',
+            content: 'Kilian has been turning kil.dev into a weirdly useful portfolio playground.',
+            createdAt: now,
+          },
+        ],
+      }),
+    )
+  })
+
+  it('returns deterministic clarification without calling RAG or the model', async () => {
     const clarifyingClassification: AskKilianClassificationDecision = {
       scope: 'ambiguous_valid',
       behavior: 'clarify',
@@ -218,12 +261,64 @@ describe('Ask Kilian chat engine', () => {
       diagnostics: {
         promptRevisionId: 'prompt-rev-1',
         runtimeConfigVersionId: 'runtime-config-1',
+        ragCorpusVersionKey: 'rag:no-rag:v1',
+        retrievedEntries: [],
+      },
+    })
+    expect(deps.searchRag).not.toHaveBeenCalled()
+    expect(deps.streamModel).not.toHaveBeenCalled()
+    expect(deps.recordConversation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({
+          status: 'clarifying',
+          ragCorpusVersionKey: 'rag:no-rag:v1',
+          retrievedEntries: [],
+          model: {
+            modelId: 'deterministic',
+            latencyMs: 0,
+            finishReason: 'clarify',
+          },
+        }),
+      }),
+    )
+    expect(deps.captureMetric).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'ask_kilian_classification_decision',
+        status: 'clarifying',
+        ragCorpusVersionKey: 'rag:no-rag:v1',
+        retrievedCount: 0,
+      }),
+    )
+  })
+
+  it('still uses RAG and the model for tier 2 fake lore responses', async () => {
+    const fakeLoreClassification: AskKilianClassificationDecision = {
+      scope: 'private_fact_fishing',
+      behavior: 'fake_lore',
+      topic: 'safety',
+      reason: 'Tier 2 turns private-fact fishing into obvious fake lore.',
+      source: 'deterministic',
+    }
+    const deps = createDeps({
+      classify: vi.fn(async () => fakeLoreClassification),
+    })
+    const engine = createAskKilianChatEngine(deps)
+
+    const result = await engine.run({
+      ...adminInput(),
+      messages: [{ role: 'user', content: 'Where does Kilian live?' }],
+    })
+
+    expect(result).toMatchObject({
+      ok: true,
+      status: 'completed',
+      diagnostics: {
+        classification: fakeLoreClassification,
         ragCorpusVersionKey: 'rag:v2:abc123',
       },
     })
     expect(deps.searchRag).toHaveBeenCalledOnce()
-    expect(deps.streamModel).not.toHaveBeenCalled()
-    expect(deps.recordConversation).toHaveBeenCalledOnce()
+    expect(deps.streamModel).toHaveBeenCalledOnce()
   })
 
   it('fails closed when quota blocks and skips RAG, model streaming, and trace logging', async () => {
@@ -301,6 +396,117 @@ describe('Ask Kilian chat engine', () => {
             finishReason: 'length',
           },
         }),
+      }),
+    )
+  })
+
+  it('returns a structured failed result and records a failed trace when RAG throws after quota reservation', async () => {
+    const deps = createDeps({
+      searchRag: vi.fn(async () => {
+        throw new Error('RAG provider unavailable')
+      }),
+    })
+    const engine = createAskKilianChatEngine(deps)
+
+    const result = await engine.run(adminInput())
+
+    expect(result).toMatchObject({
+      ok: false,
+      status: 'failed',
+      reason: 'rag_error',
+      traceId: 'trace-ask-kilian-1',
+      diagnostics: {
+        promptRevisionId: 'prompt-rev-1',
+        runtimeConfigVersionId: 'runtime-config-1',
+        ragCorpusVersionKey: 'rag:no-rag:v1',
+        classification: allowedClassification,
+        quotaDecision: {
+          allowed: true,
+          bucket: 'admin_test',
+          reason: 'reserved',
+          remainingDailyRequests: 11,
+        },
+        retrievedEntries: [],
+        model: {
+          modelId: 'openai/gpt-5-mini',
+          latencyMs: 0,
+          finishReason: 'error',
+        },
+        conversationId: 'conversation-1',
+      },
+    })
+    expect(deps.streamModel).not.toHaveBeenCalled()
+    expect(deps.recordConversation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({
+          status: 'failed',
+          ragCorpusVersionKey: 'rag:no-rag:v1',
+          error: 'RAG provider unavailable',
+        }),
+      }),
+    )
+    expect(deps.captureMetric).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'ask_kilian_chat_failed',
+        status: 'failed',
+        ragCorpusVersionKey: 'rag:no-rag:v1',
+        retrievedCount: 0,
+      }),
+    )
+  })
+
+  it('returns a structured failed result and records retrieved context when the model throws after RAG', async () => {
+    const deps = createDeps({
+      streamModel: vi.fn(async () => {
+        throw new Error('model gateway timeout')
+      }),
+    })
+    const engine = createAskKilianChatEngine(deps)
+
+    const result = await engine.run(adminInput())
+
+    expect(result).toMatchObject({
+      ok: false,
+      status: 'failed',
+      reason: 'model_error',
+      diagnostics: {
+        ragCorpusVersionKey: 'rag:v2:abc123',
+        retrievedEntries: [
+          {
+            stableKey: 'repo:kil-dev',
+            title: 'kil.dev project',
+            category: 'projects',
+            score: 0.92,
+            contentHash: 'hash-kil-dev',
+          },
+        ],
+        conversationId: 'conversation-1',
+      },
+    })
+    expect(deps.recordConversation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({
+          status: 'failed',
+          ragCorpusVersionKey: 'rag:v2:abc123',
+          retrievedEntries: [
+            {
+              stableKey: 'repo:kil-dev',
+              title: 'kil.dev project',
+              category: 'projects',
+              score: 0.92,
+              contentHash: 'hash-kil-dev',
+            },
+          ],
+          error: 'model gateway timeout',
+        }),
+      }),
+    )
+    expect(deps.captureMetric).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'ask_kilian_chat_failed',
+        status: 'failed',
+        ragCorpusVersionKey: 'rag:v2:abc123',
+        retrievedCount: 1,
       }),
     )
   })
