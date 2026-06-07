@@ -17,7 +17,13 @@ import {
   askKilianQuotaBucketValidator,
   askKilianTraceMetadataValidator,
 } from './askKilianChatValidators'
-import { requireAskKilianAdmin } from './askKilianKnowledge'
+import {
+  askKilianCategoryValidator,
+  askKilianTierValidator,
+  ASK_KILIAN_RAG_FILTER_VERSION,
+} from './askKilianValidators'
+import { createSearchKnowledgeHandler, requireAskKilianAdmin } from './askKilianKnowledge'
+import { ASK_KILIAN_DEFAULT_EMBEDDING_DIMENSIONS, ASK_KILIAN_DEFAULT_EMBEDDING_MODEL } from './askKilianRag'
 
 type AskKilianPromptConfig = Doc<'askKilianPromptConfigs'>
 type AskKilianRuntimeConfig = Doc<'askKilianRuntimeConfigs'>
@@ -57,6 +63,14 @@ type ReserveQuotaRefs = {
 
 type RecordConversationRefs = {
   table: 'askKilianConversations'
+}
+
+type ActivePromptConfigRefs = {
+  table: 'askKilianPromptConfigs'
+}
+
+type ActiveRuntimeConfigRefs = {
+  table: 'askKilianRuntimeConfigs'
 }
 
 type SavePromptRevisionInternalArgs = SavePromptRevisionInput & {
@@ -140,7 +154,30 @@ const runtimeConfigSummaryValidator = v.object({
 })
 type RuntimeConfigSummary = Infer<typeof runtimeConfigSummaryValidator>
 
+const runtimeRagMessageValidator = v.object({
+  role: v.union(v.literal('user'), v.literal('assistant')),
+  content: v.string(),
+})
+
+const runtimeRagSearchResultValidator = v.object({
+  stableKey: v.string(),
+  title: v.string(),
+  category: askKilianCategoryValidator,
+  score: v.number(),
+  text: v.string(),
+})
+type RuntimeRagSearchResult = Infer<typeof runtimeRagSearchResultValidator>
+
+const runtimeRagSearchResponseValidator = v.object({
+  condensedQuery: v.string(),
+  ragCorpusVersionKey: v.string(),
+  results: v.array(runtimeRagSearchResultValidator),
+})
+type RuntimeRagSearchResponse = Infer<typeof runtimeRagSearchResponseValidator>
+
 const askKilianChatInternalApi = (anyApi.askKilianChat as unknown as {
+  getActivePromptConfig: FunctionReference<'query', 'internal', Record<string, never>, PromptConfigSummary | null>
+  getActiveRuntimeConfig: FunctionReference<'query', 'internal', Record<string, never>, RuntimeConfigSummary | null>
   savePromptRevision: FunctionReference<
     'mutation',
     'internal',
@@ -256,6 +293,38 @@ export function createSaveRuntimeConfigHandler({
   }
 }
 
+export function createGetActivePromptConfigHandler({
+  refs = { table: 'askKilianPromptConfigs' },
+}: {
+  refs?: ActivePromptConfigRefs
+} = {}) {
+  return async (ctx: Pick<QueryCtx, 'db'>): Promise<PromptConfigSummary> => {
+    const rows = await ctx.db
+      .query(refs.table)
+      .withIndex('by_active', query => query.eq('active', true))
+      .collect()
+    const activePrompt = rows.toSorted((a, b) => b.createdAt - a.createdAt)[0]
+    if (!activePrompt) throw new Error('Missing active Ask Kilian prompt config')
+    return promptConfigToSummary(activePrompt as AskKilianPromptConfig)
+  }
+}
+
+export function createGetActiveRuntimeConfigHandler({
+  refs = { table: 'askKilianRuntimeConfigs' },
+}: {
+  refs?: ActiveRuntimeConfigRefs
+} = {}) {
+  return async (ctx: Pick<QueryCtx, 'db'>): Promise<RuntimeConfigSummary> => {
+    const rows = await ctx.db
+      .query(refs.table)
+      .withIndex('by_active', query => query.eq('active', true))
+      .collect()
+    const activeRuntimeConfig = rows.toSorted((a, b) => b.createdAt - a.createdAt)[0]
+    if (!activeRuntimeConfig) throw new Error('Missing active Ask Kilian runtime config')
+    return runtimeConfigToSummary(activeRuntimeConfig as AskKilianRuntimeConfig)
+  }
+}
+
 function getDailyRequestLimit(input: ReserveQuotaInput): number {
   return input.bucket === 'admin_test' ? input.quota.adminTestDailyRequests : input.quota.publicDailyRequests
 }
@@ -356,16 +425,82 @@ export function createRecordConversationHandler({
   }
 }
 
+function buildRuntimeRagCorpusVersionKey(results: RuntimeRagSearchResult[]) {
+  return buildAskKilianRagCorpusVersionKey({
+    entries: results.map(result => ({
+      stableKey: result.stableKey,
+      contentHash: stableShortHash(result.text),
+    })),
+    ragFilterVersion: ASK_KILIAN_RAG_FILTER_VERSION,
+    embeddingModel: ASK_KILIAN_DEFAULT_EMBEDDING_MODEL,
+    embeddingDimensions: ASK_KILIAN_DEFAULT_EMBEDDING_DIMENSIONS,
+  })
+}
+
+function buildRuntimeCondensedQuery(input: {
+  messages: Array<{ role: 'user' | 'assistant'; content: string }>
+  latestUserMessage: string
+}) {
+  const recentContext = input.messages
+    .map(message => `${message.role}: ${message.content.trim()}`)
+    .filter(line => !line.endsWith(':'))
+    .join('\n')
+  return [recentContext, `latest: ${input.latestUserMessage.trim()}`].filter(part => part.trim().length > 0).join('\n').slice(0, 2_000)
+}
+
+export function createRuntimeRagSearchHandler({
+  searchKnowledge = createSearchKnowledgeHandler(),
+  buildVersionKey = buildRuntimeRagCorpusVersionKey,
+}: {
+  searchKnowledge?: (
+    ctx: Pick<ActionCtx, 'runQuery'>,
+    args: {
+      query: string
+      tier: Infer<typeof askKilianTierValidator>
+      includeSpoilers: boolean
+      categories: Array<Infer<typeof askKilianCategoryValidator>>
+      limit: number
+    },
+  ) => Promise<RuntimeRagSearchResult[]>
+  buildVersionKey?: (results: RuntimeRagSearchResult[]) => string
+} = {}) {
+  return async function runtimeRagSearchHandler(
+    ctx: Pick<ActionCtx, 'runQuery'>,
+    args: {
+      messages: Array<{ role: 'user' | 'assistant'; content: string }>
+      latestUserMessage: string
+      tier: Infer<typeof askKilianTierValidator>
+      includeSpoilers: boolean
+      categories: Array<Infer<typeof askKilianCategoryValidator>>
+      limit: number
+    },
+  ): Promise<RuntimeRagSearchResponse> {
+    const condensedQuery = buildRuntimeCondensedQuery(args)
+    const results = await searchKnowledge(ctx, {
+      query: condensedQuery,
+      tier: args.tier,
+      includeSpoilers: args.includeSpoilers,
+      categories: args.categories,
+      limit: args.limit,
+    })
+    return {
+      condensedQuery,
+      ragCorpusVersionKey: buildVersionKey(results),
+      results,
+    }
+  }
+}
+
 export const getActivePromptConfig = internalQuery({
   args: {},
   returns: v.union(promptConfigSummaryValidator, v.null()),
   handler: async (ctx: QueryCtx): Promise<PromptConfigSummary | null> => {
-    const rows = await ctx.db
-      .query('askKilianPromptConfigs')
-      .withIndex('by_active', query => query.eq('active', true))
-      .collect()
-    const activePrompt = rows.toSorted((a, b) => b.createdAt - a.createdAt)[0]
-    return activePrompt ? promptConfigToSummary(activePrompt) : null
+    try {
+      return await createGetActivePromptConfigHandler()(ctx)
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Missing active Ask Kilian prompt config') return null
+      throw error
+    }
   },
 })
 
@@ -373,12 +508,38 @@ export const getActiveRuntimeConfig = internalQuery({
   args: {},
   returns: v.union(runtimeConfigSummaryValidator, v.null()),
   handler: async (ctx: QueryCtx): Promise<RuntimeConfigSummary | null> => {
-    const rows = await ctx.db
-      .query('askKilianRuntimeConfigs')
-      .withIndex('by_active', query => query.eq('active', true))
-      .collect()
-    const activeRuntimeConfig = rows.toSorted((a, b) => b.createdAt - a.createdAt)[0]
-    return activeRuntimeConfig ? runtimeConfigToSummary(activeRuntimeConfig) : null
+    try {
+      return await createGetActiveRuntimeConfigHandler()(ctx)
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Missing active Ask Kilian runtime config') return null
+      throw error
+    }
+  },
+})
+
+export const getActivePromptConfigForAdmin = action({
+  args: {},
+  returns: promptConfigSummaryValidator,
+  handler: async (ctx: ActionCtx): Promise<PromptConfigSummary> => {
+    await requireAskKilianAdmin(ctx)
+    const promptConfig = (await ctx.runQuery(askKilianChatInternalApi.getActivePromptConfig, {})) as
+      | PromptConfigSummary
+      | null
+    if (!promptConfig) throw new Error('Missing active Ask Kilian prompt config')
+    return promptConfig
+  },
+})
+
+export const getActiveRuntimeConfigForAdmin = action({
+  args: {},
+  returns: runtimeConfigSummaryValidator,
+  handler: async (ctx: ActionCtx): Promise<RuntimeConfigSummary> => {
+    await requireAskKilianAdmin(ctx)
+    const runtimeConfig = (await ctx.runQuery(askKilianChatInternalApi.getActiveRuntimeConfig, {})) as
+      | RuntimeConfigSummary
+      | null
+    if (!runtimeConfig) throw new Error('Missing active Ask Kilian runtime config')
+    return runtimeConfig
   },
 })
 
@@ -537,6 +698,22 @@ export const recordConversationForAdmin = action({
       metadata: args.metadata,
       now: Date.now(),
     }) as Promise<RecordConversationResult>
+  },
+})
+
+export const searchRuntimeRagForAdmin = action({
+  args: {
+    messages: v.array(runtimeRagMessageValidator),
+    latestUserMessage: v.string(),
+    tier: askKilianTierValidator,
+    includeSpoilers: v.boolean(),
+    categories: v.array(askKilianCategoryValidator),
+    limit: v.number(),
+  },
+  returns: runtimeRagSearchResponseValidator,
+  handler: async (ctx: ActionCtx, args): Promise<RuntimeRagSearchResponse> => {
+    await requireAskKilianAdmin(ctx)
+    return createRuntimeRagSearchHandler()(ctx, args)
   },
 })
 

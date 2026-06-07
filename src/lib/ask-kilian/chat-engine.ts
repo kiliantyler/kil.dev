@@ -86,12 +86,14 @@ export type AskKilianChatEngineDeps = {
     quota: AskKilianRuntimeConfigSummary['quota']
   }) => Promise<AskKilianQuotaDecision>
   searchRag: (input: {
-    query: string
+    messages: AskKilianChatMessage[]
+    latestUserMessage: string
     tier: AskKilianChatRequest['tier']
     includeSpoilers: boolean
     categories: AskKilianKnowledgeCategory[]
     limit: number
   }) => Promise<{
+    condensedQuery?: string
     ragCorpusVersionKey: string
     entries: AskKilianRagEntry[]
   }>
@@ -225,7 +227,8 @@ async function runAskKilianChatEngine(
   }
 
   const ragResult = await deps.searchRag({
-    query: request.latestUserMessage,
+    messages: request.messages,
+    latestUserMessage: request.latestUserMessage,
     tier: request.tier,
     includeSpoilers: request.includeSpoilers,
     categories: request.categories,
@@ -252,7 +255,7 @@ async function runAskKilianChatEngine(
     promptRevisionId: promptConfig.id,
     runtimeConfigVersionId: runtimeConfig.id,
     ragCorpusVersionKey: ragResult.ragCorpusVersionKey,
-    condensedQuery: request.latestUserMessage,
+    condensedQuery: ragResult.condensedQuery ?? request.latestUserMessage,
     classification,
     retrievedEntries,
     quotaDecision,

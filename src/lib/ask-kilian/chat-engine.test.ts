@@ -133,7 +133,8 @@ describe('Ask Kilian chat engine', () => {
       quota: runtimeConfig.quota,
     })
     expect(deps.searchRag).toHaveBeenCalledWith({
-      query: 'What is Kilian doing with kil.dev?',
+      messages: [{ role: 'user', content: 'What is Kilian doing with kil.dev?' }],
+      latestUserMessage: 'What is Kilian doing with kil.dev?',
       tier: 2,
       includeSpoilers: true,
       categories: ['projects'],

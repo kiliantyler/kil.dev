@@ -2,8 +2,11 @@ import { describe, expect, it, vi } from 'vitest'
 
 import {
   buildAskKilianRagCorpusVersionKey,
+  createGetActivePromptConfigHandler,
+  createGetActiveRuntimeConfigHandler,
   createRecordConversationHandler,
   createReserveQuotaHandler,
+  createRuntimeRagSearchHandler,
   createSavePromptRevisionHandler,
   createSaveRuntimeConfigHandler,
   normalizeAskKilianQuotaDay,
@@ -75,6 +78,50 @@ describe('Ask Kilian chat helpers', () => {
     })
   })
 
+  it('loads the newest active prompt config summary and fails closed when none exists', async () => {
+    const olderPrompt = {
+      _id: 'prompt-old',
+      title: 'Older prompt',
+      promptText: 'Older prompt text.',
+      notes: 'Older notes',
+      createdBy: 'admin@example.com',
+      createdAt: 1,
+    }
+    const newestPrompt = {
+      _id: 'prompt-new',
+      title: 'Newest prompt',
+      promptText: 'Newest prompt text.',
+      createdBy: 'admin@example.com',
+      createdAt: 2,
+    }
+    const collect = vi.fn(async () => [olderPrompt, newestPrompt])
+    const eq = vi.fn(() => 'active-query')
+    const withIndex = vi.fn((_index, buildQuery) => {
+      buildQuery({ eq })
+      return { collect }
+    })
+    const db = {
+      query: vi.fn(() => ({ withIndex })),
+    }
+    const handler = createGetActivePromptConfigHandler({
+      refs: { table: 'askKilianPromptConfigs' },
+    })
+
+    await expect(handler({ db } as never)).resolves.toEqual({
+      id: 'prompt-new',
+      title: 'Newest prompt',
+      promptText: 'Newest prompt text.',
+      createdBy: 'admin@example.com',
+      createdAt: 2,
+    })
+    expect(db.query).toHaveBeenCalledWith('askKilianPromptConfigs')
+    expect(withIndex).toHaveBeenCalledWith('by_active', expect.any(Function))
+    expect(eq).toHaveBeenCalledWith('active', true)
+
+    collect.mockResolvedValueOnce([])
+    await expect(handler({ db } as never)).rejects.toThrow('Missing active Ask Kilian prompt config')
+  })
+
   it('deactivates older active runtime configs and inserts a new active runtime config', async () => {
     const now = 1_783_280_002
     const collect = vi.fn(async () => [{ _id: 'runtime-old-1', active: true }])
@@ -131,6 +178,55 @@ describe('Ask Kilian chat helpers', () => {
       createdBy: 'admin@example.com',
       createdAt: now,
     })
+  })
+
+  it('loads the newest active runtime config summary and fails closed when none exists', async () => {
+    const newestRuntime = {
+      _id: 'runtime-new',
+      modelId: 'openai/gpt-5-mini',
+      maxOutputTokens: 900,
+      temperature: 0.7,
+      conversationWindow: 8,
+      ragLimit: 5,
+      quota: {
+        adminTestDailyRequests: 100,
+        publicDailyRequests: 40,
+        publicDailyEstimatedTokens: 60_000,
+      },
+      createdBy: 'admin@example.com',
+      createdAt: 2,
+    }
+    const collect = vi.fn(async () => [{ ...newestRuntime, _id: 'runtime-old', createdAt: 1 }, newestRuntime])
+    const eq = vi.fn(() => 'active-query')
+    const withIndex = vi.fn((_index, buildQuery) => {
+      buildQuery({ eq })
+      return { collect }
+    })
+    const db = {
+      query: vi.fn(() => ({ withIndex })),
+    }
+    const handler = createGetActiveRuntimeConfigHandler({
+      refs: { table: 'askKilianRuntimeConfigs' },
+    })
+
+    await expect(handler({ db } as never)).resolves.toEqual({
+      id: 'runtime-new',
+      modelId: 'openai/gpt-5-mini',
+      maxOutputTokens: 900,
+      temperature: 0.7,
+      conversationWindow: 8,
+      ragLimit: 5,
+      quota: {
+        adminTestDailyRequests: 100,
+        publicDailyRequests: 40,
+        publicDailyEstimatedTokens: 60_000,
+      },
+      createdBy: 'admin@example.com',
+      createdAt: 2,
+    })
+
+    collect.mockResolvedValueOnce([])
+    await expect(handler({ db } as never)).rejects.toThrow('Missing active Ask Kilian runtime config')
   })
 
   it('reserves admin_test quota without touching public quota', async () => {
@@ -382,5 +478,53 @@ describe('Ask Kilian chat helpers', () => {
       createdAt: now,
       updatedAt: now,
     })
+  })
+
+  it('builds a condensed runtime RAG query and returns search results with a corpus version key', async () => {
+    const searchResults = [
+      {
+        stableKey: 'repo:kil-dev',
+        title: 'kil.dev',
+        category: 'projects' as const,
+        score: 0.92,
+        text: 'kil.dev is Kilian Tyler portfolio site.',
+      },
+    ]
+    const searchKnowledge = vi.fn(async () => searchResults)
+    const buildVersionKey = vi.fn(() => 'rag:v2:test')
+    const handler = createRuntimeRagSearchHandler({
+      searchKnowledge,
+      buildVersionKey,
+    })
+
+    await expect(
+      handler(
+        { runQuery: vi.fn() } as never,
+        {
+          messages: [
+            { role: 'user', content: 'Tell me about the site.' },
+            { role: 'assistant', content: 'Ask about projects.' },
+          ],
+          latestUserMessage: 'What is Kilian doing with kil.dev?',
+          tier: 1,
+          includeSpoilers: false,
+          categories: ['projects'],
+          limit: 4,
+        },
+      ),
+    ).resolves.toEqual({
+      condensedQuery:
+        'user: Tell me about the site.\nassistant: Ask about projects.\nlatest: What is Kilian doing with kil.dev?',
+      ragCorpusVersionKey: 'rag:v2:test',
+      results: searchResults,
+    })
+    expect(searchKnowledge).toHaveBeenCalledWith(expect.anything(), {
+      query: 'user: Tell me about the site.\nassistant: Ask about projects.\nlatest: What is Kilian doing with kil.dev?',
+      tier: 1,
+      includeSpoilers: false,
+      categories: ['projects'],
+      limit: 4,
+    })
+    expect(buildVersionKey).toHaveBeenCalledWith(searchResults)
   })
 })

@@ -9,6 +9,8 @@
  */
 
 import type * as _utils from "../_utils.js";
+import type * as askKilianChat from "../askKilianChat.js";
+import type * as askKilianChatValidators from "../askKilianChatValidators.js";
 import type * as askKilianKnowledge from "../askKilianKnowledge.js";
 import type * as askKilianRag from "../askKilianRag.js";
 import type * as askKilianValidators from "../askKilianValidators.js";
@@ -33,6 +35,8 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   _utils: typeof _utils;
+  askKilianChat: typeof askKilianChat;
+  askKilianChatValidators: typeof askKilianChatValidators;
   askKilianKnowledge: typeof askKilianKnowledge;
   askKilianRag: typeof askKilianRag;
   askKilianValidators: typeof askKilianValidators;
