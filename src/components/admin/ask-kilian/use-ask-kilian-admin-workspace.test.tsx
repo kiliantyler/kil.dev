@@ -418,8 +418,7 @@ describe('useAskKilianAdminWorkspace', () => {
       })
       await page.waitForFunction(
         () =>
-          (globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.chatResponse?.text ===
-          'Latest generated response.',
+          (globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.chatResponse?.text === 'Latest generated response.',
       )
 
       await page.evaluate(() => {

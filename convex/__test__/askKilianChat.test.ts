@@ -52,15 +52,12 @@ describe('Ask Kilian chat helpers', () => {
     })
 
     await expect(
-      handler(
-        { db } as never,
-        {
-          title: 'Admin test prompt',
-          promptText: 'Answer like Kilian, grounded in the retrieved context.',
-          notes: 'First admin-editable prompt.',
-          actor: 'admin@example.com',
-        },
-      ),
+      handler({ db } as never, {
+        title: 'Admin test prompt',
+        promptText: 'Answer like Kilian, grounded in the retrieved context.',
+        notes: 'First admin-editable prompt.',
+        actor: 'admin@example.com',
+      }),
     ).resolves.toEqual({ promptRevisionId: 'prompt-new' })
 
     expect(db.query).toHaveBeenCalledWith('askKilianPromptConfigs')
@@ -141,22 +138,19 @@ describe('Ask Kilian chat helpers', () => {
     })
 
     await expect(
-      handler(
-        { db } as never,
-        {
-          modelId: 'openai/gpt-5-mini',
-          maxOutputTokens: 900,
-          temperature: 0.7,
-          conversationWindow: 8,
-          ragLimit: 5,
-          quota: {
-            adminTestDailyRequests: 100,
-            publicDailyRequests: 40,
-            publicDailyEstimatedTokens: 60_000,
-          },
-          actor: 'admin@example.com',
+      handler({ db } as never, {
+        modelId: 'openai/gpt-5-mini',
+        maxOutputTokens: 900,
+        temperature: 0.7,
+        conversationWindow: 8,
+        ragLimit: 5,
+        quota: {
+          adminTestDailyRequests: 100,
+          publicDailyRequests: 40,
+          publicDailyEstimatedTokens: 60_000,
         },
-      ),
+        actor: 'admin@example.com',
+      }),
     ).resolves.toEqual({ runtimeConfigVersionId: 'runtime-new' })
 
     expect(db.query).toHaveBeenCalledWith('askKilianRuntimeConfigs')
@@ -258,18 +252,15 @@ describe('Ask Kilian chat helpers', () => {
     })
 
     await expect(
-      handler(
-        { db } as never,
-        {
-          bucket: 'admin_test',
-          estimatedTokens: 250,
-          quota: {
-            adminTestDailyRequests: 4,
-            publicDailyRequests: 1,
-            publicDailyEstimatedTokens: 1,
-          },
+      handler({ db } as never, {
+        bucket: 'admin_test',
+        estimatedTokens: 250,
+        quota: {
+          adminTestDailyRequests: 4,
+          publicDailyRequests: 1,
+          publicDailyEstimatedTokens: 1,
         },
-      ),
+      }),
     ).resolves.toEqual({
       allowed: true,
       bucket: 'admin_test',
@@ -319,18 +310,15 @@ describe('Ask Kilian chat helpers', () => {
     })
 
     await expect(
-      handler(
-        { db } as never,
-        {
-          bucket: 'admin_test',
-          estimatedTokens: 250,
-          quota: {
-            adminTestDailyRequests: 4,
-            publicDailyRequests: 40,
-            publicDailyEstimatedTokens: 60_000,
-          },
+      handler({ db } as never, {
+        bucket: 'admin_test',
+        estimatedTokens: 250,
+        quota: {
+          adminTestDailyRequests: 4,
+          publicDailyRequests: 40,
+          publicDailyEstimatedTokens: 60_000,
         },
-      ),
+      }),
     ).resolves.toEqual({
       allowed: false,
       bucket: 'admin_test',
@@ -371,18 +359,15 @@ describe('Ask Kilian chat helpers', () => {
     })
 
     await expect(
-      handler(
-        { db } as never,
-        {
-          bucket: 'public',
-          estimatedTokens: 51,
-          quota: {
-            adminTestDailyRequests: 100,
-            publicDailyRequests: 40,
-            publicDailyEstimatedTokens: 1_000,
-          },
+      handler({ db } as never, {
+        bucket: 'public',
+        estimatedTokens: 51,
+        quota: {
+          adminTestDailyRequests: 100,
+          publicDailyRequests: 40,
+          publicDailyEstimatedTokens: 1_000,
         },
-      ),
+      }),
     ).resolves.toEqual({
       allowed: false,
       bucket: 'public',
@@ -458,14 +443,11 @@ describe('Ask Kilian chat helpers', () => {
     }
 
     await expect(
-      handler(
-        { db } as never,
-        {
-          traceId: 'trace-ask-kilian-1',
-          messages,
-          metadata,
-        },
-      ),
+      handler({ db } as never, {
+        traceId: 'trace-ask-kilian-1',
+        messages,
+        metadata,
+      }),
     ).resolves.toEqual({
       conversationId: 'conversation-1',
       traceId: 'trace-ask-kilian-1',
@@ -498,20 +480,17 @@ describe('Ask Kilian chat helpers', () => {
     })
 
     await expect(
-      handler(
-        { runQuery: vi.fn() } as never,
-        {
-          messages: [
-            { role: 'user', content: 'Tell me about the site.' },
-            { role: 'assistant', content: 'Ask about projects.' },
-          ],
-          latestUserMessage: 'What is Kilian doing with kil.dev?',
-          tier: 1,
-          includeSpoilers: false,
-          categories: ['projects'],
-          limit: 4,
-        },
-      ),
+      handler({ runQuery: vi.fn() } as never, {
+        messages: [
+          { role: 'user', content: 'Tell me about the site.' },
+          { role: 'assistant', content: 'Ask about projects.' },
+        ],
+        latestUserMessage: 'What is Kilian doing with kil.dev?',
+        tier: 1,
+        includeSpoilers: false,
+        categories: ['projects'],
+        limit: 4,
+      }),
     ).resolves.toEqual({
       condensedQuery:
         'user: Tell me about the site.\nassistant: Ask about projects.\nlatest: What is Kilian doing with kil.dev?',
@@ -519,7 +498,8 @@ describe('Ask Kilian chat helpers', () => {
       results: searchResults,
     })
     expect(searchKnowledge).toHaveBeenCalledWith(expect.anything(), {
-      query: 'user: Tell me about the site.\nassistant: Ask about projects.\nlatest: What is Kilian doing with kil.dev?',
+      query:
+        'user: Tell me about the site.\nassistant: Ask about projects.\nlatest: What is Kilian doing with kil.dev?',
       tier: 1,
       includeSpoilers: false,
       categories: ['projects'],
@@ -551,17 +531,14 @@ describe('Ask Kilian chat helpers', () => {
       searchKnowledge: vi.fn(async () => sameResultsDifferentOrder),
     })
 
-    const result = await handler(
-      { runQuery: vi.fn() } as never,
-      {
-        messages: [],
-        latestUserMessage: 'What should I know about Kilian?',
-        tier: 2,
-        includeSpoilers: true,
-        categories: ['persona', 'projects'],
-        limit: 8,
-      },
-    )
+    const result = await handler({ runQuery: vi.fn() } as never, {
+      messages: [],
+      latestUserMessage: 'What should I know about Kilian?',
+      tier: 2,
+      includeSpoilers: true,
+      categories: ['persona', 'projects'],
+      limit: 8,
+    })
 
     expect(result.ragCorpusVersionKey).toBe(
       buildAskKilianRagCorpusVersionKey({
