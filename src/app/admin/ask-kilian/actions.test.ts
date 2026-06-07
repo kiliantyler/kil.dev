@@ -109,6 +109,28 @@ describe('Ask Kilian admin server actions', () => {
           ragStatus: 'ready',
         },
       ])
+      .mockResolvedValueOnce({
+        id: 'prompt-1',
+        title: 'Active prompt',
+        promptText: 'Answer as Ask Kilian.',
+        createdBy: 'admin@example.com',
+        createdAt: 1,
+      })
+      .mockResolvedValueOnce({
+        id: 'runtime-1',
+        modelId: 'test/generation-model',
+        maxOutputTokens: 900,
+        temperature: 0.7,
+        conversationWindow: 8,
+        ragLimit: 6,
+        quota: {
+          adminTestDailyRequests: 100,
+          publicDailyRequests: 40,
+          publicDailyEstimatedTokens: 60_000,
+        },
+        createdBy: 'admin@example.com',
+        createdAt: 1,
+      })
     createAskKilianConvexServerClient.mockResolvedValue(convex)
 
     const { getAskKilianAdminWorkspaceStateAction } = await import('./actions')
@@ -116,6 +138,8 @@ describe('Ask Kilian admin server actions', () => {
       entries: [expect.objectContaining({ stableKey: 'pet:lux' })],
       runtimeStatus: { level: 'ready', label: 'Runtime' },
       ragStatus: { level: 'ready', label: 'RAG' },
+      activePromptConfig: expect.objectContaining({ id: 'prompt-1' }),
+      activeRuntimeConfig: expect.objectContaining({ id: 'runtime-1' }),
     })
   })
 
@@ -169,7 +193,7 @@ describe('Ask Kilian admin server actions', () => {
         includeSpoilers: true,
         categories: ['projects'],
         promptOverride: 'Answer from this admin prompt.',
-        runtimeModelOverride: 'openai/gpt-5-mini',
+        runtimeModelOverride: 'test/generation-model',
       }),
     ).resolves.toEqual({
       ok: true,
@@ -187,7 +211,7 @@ describe('Ask Kilian admin server actions', () => {
       includeSpoilers: true,
       categories: ['projects'],
       promptOverride: 'Answer from this admin prompt.',
-      runtimeModelOverride: 'openai/gpt-5-mini',
+      runtimeModelOverride: 'test/generation-model',
     })
   })
 
@@ -221,7 +245,7 @@ describe('Ask Kilian admin server actions', () => {
 
     await expect(
       saveAskKilianRuntimeConfigAction({
-        modelId: 'openai/gpt-5-mini',
+        modelId: 'test/generation-model',
         maxOutputTokens: 900,
         temperature: 0.7,
         conversationWindow: 8,
@@ -236,7 +260,7 @@ describe('Ask Kilian admin server actions', () => {
 
     expect(requireAdminAuthContext).toHaveBeenCalledWith()
     expect(convex.action).toHaveBeenCalledWith(api.askKilianChat.saveRuntimeConfigForAdmin, {
-      modelId: 'openai/gpt-5-mini',
+      modelId: 'test/generation-model',
       maxOutputTokens: 900,
       temperature: 0.7,
       conversationWindow: 8,
@@ -367,9 +391,13 @@ describe('Ask Kilian admin server actions', () => {
     convex.action
       .mockResolvedValueOnce({ ok: true, aiGatewayConfigured: true, accessTokenConfigured: true })
       .mockResolvedValueOnce([existingEntry])
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ ok: true })
       .mockResolvedValueOnce({ ok: true, aiGatewayConfigured: true, accessTokenConfigured: true })
       .mockResolvedValueOnce([refreshedEntry])
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
     createAskKilianConvexServerClient.mockResolvedValue(convex)
     const { saveAskKilianAdminEntryAction } = await import('./actions')
 
@@ -388,7 +416,7 @@ describe('Ask Kilian admin server actions', () => {
       }),
     ).resolves.toMatchObject({
       entries: [expect.objectContaining({ stableKey: 'admin:new-entry' })],
-      runtimeStatus: { level: 'ready', label: 'Runtime' },
+      runtimeStatus: { level: 'degraded', label: 'Runtime' },
       ragStatus: { level: 'ready', label: 'RAG' },
     })
 
@@ -410,12 +438,14 @@ describe('Ask Kilian admin server actions', () => {
       .mockResolvedValueOnce({ ok: true })
       .mockResolvedValueOnce({ ok: true, aiGatewayConfigured: true, accessTokenConfigured: true })
       .mockResolvedValueOnce([])
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
     createAskKilianConvexServerClient.mockResolvedValue(convex)
     const { disableAskKilianAdminEntryAction } = await import('./actions')
 
     await expect(disableAskKilianAdminEntryAction('admin:old-entry')).resolves.toMatchObject({
       entries: [],
-      runtimeStatus: { level: 'ready', label: 'Runtime' },
+      runtimeStatus: { level: 'degraded', label: 'Runtime' },
       ragStatus: { level: 'degraded', label: 'RAG' },
     })
 
@@ -445,12 +475,14 @@ describe('Ask Kilian admin server actions', () => {
       .mockResolvedValueOnce({ ok: true })
       .mockResolvedValueOnce({ ok: true, aiGatewayConfigured: true, accessTokenConfigured: true })
       .mockResolvedValueOnce([refreshedEntry])
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
     createAskKilianConvexServerClient.mockResolvedValue(convex)
     const { reenableAskKilianAdminEntryAction } = await import('./actions')
 
     await expect(reenableAskKilianAdminEntryAction('admin:old-entry')).resolves.toMatchObject({
       entries: [expect.objectContaining({ stableKey: 'admin:old-entry' })],
-      runtimeStatus: { level: 'ready', label: 'Runtime' },
+      runtimeStatus: { level: 'degraded', label: 'Runtime' },
       ragStatus: { level: 'ready', label: 'RAG' },
     })
 
@@ -535,13 +567,15 @@ describe('Ask Kilian admin server actions', () => {
       .mockResolvedValueOnce(sync)
       .mockResolvedValueOnce({ ok: true, aiGatewayConfigured: true, accessTokenConfigured: true })
       .mockResolvedValueOnce([refreshedEntry])
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
     createAskKilianConvexServerClient.mockResolvedValue(convex)
 
     await expect(applyAskKilianRepoSyncAction(initialPreview.confirmationToken)).resolves.toMatchObject({
       sync: { counts: { created: 1 }, confirmationToken: expect.any(String) },
       state: {
         entries: [expect.objectContaining({ stableKey: 'project:ask-kilian' })],
-        runtimeStatus: { level: 'ready', label: 'Runtime' },
+        runtimeStatus: { level: 'degraded', label: 'Runtime' },
         ragStatus: { level: 'ready', label: 'RAG' },
       },
     })

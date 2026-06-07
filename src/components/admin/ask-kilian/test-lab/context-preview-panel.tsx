@@ -12,6 +12,7 @@ type ContextPreviewPanelChatResponse = {
   ok?: boolean
   status?: string
   text?: string
+  reason?: string
   traceId?: string
   diagnostics?: unknown
 }
@@ -35,7 +36,10 @@ export function buildContextPreviewPanelSections(
   preview: ContextPreviewPanelPreview | null,
   chatResponse: ContextPreviewPanelChatResponse | null = null,
 ): ContextPreviewPanelSections {
-  const responseText = chatResponse?.text ?? ''
+  const responseText =
+    chatResponse?.ok === false
+      ? `Generation failed: ${chatResponse.reason ?? chatResponse.status ?? 'unknown_error'}`
+      : (chatResponse?.text ?? '')
 
   if (!preview) {
     return [
@@ -108,7 +112,7 @@ export function ContextPreviewPanel({
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4">
         <ContextPreviewPane section={retrievedContext} />
         <ContextPreviewPane section={previewText} />
       </div>
@@ -148,7 +152,7 @@ function ContextPreviewPane({ section }: { section: ContextPreviewPanelSection }
       <div className="border-b border-border px-3 py-2">
         <h3 className="text-sm font-semibold">{section.title}</h3>
       </div>
-      <ScrollArea className="h-72">
+      <ScrollArea className="max-h-72">
         {section.text ? (
           <pre className="p-3 font-mono text-xs leading-5 whitespace-pre-wrap text-foreground">{section.text}</pre>
         ) : (

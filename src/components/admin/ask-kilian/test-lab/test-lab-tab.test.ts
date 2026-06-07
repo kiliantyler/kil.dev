@@ -5,10 +5,14 @@ import {
 import { describe, expect, test } from 'vitest'
 import { buildContextPreviewPanelSections } from './context-preview-panel'
 import {
+  ASK_KILIAN_MODEL_PRESETS,
   TEST_LAB_ACTION_TEXT,
   buildAskKilianGeneratePayload,
+  buildAskKilianRuntimeConfigPayload,
   buildRetrievalPreviewPayload,
   clampRetrievalLimit,
+  formatSelectedCategoriesLabel,
+  resolveModelPickerValue,
   toggleCategorySelection,
 } from './test-lab-tab'
 
@@ -81,6 +85,14 @@ describe('buildRetrievalPreviewPayload', () => {
   })
 })
 
+describe('formatSelectedCategoriesLabel', () => {
+  test('summarizes the category multiselect state', () => {
+    expect(formatSelectedCategoriesLabel([])).toBe('All categories')
+    expect(formatSelectedCategoriesLabel(['projects'])).toBe('projects')
+    expect(formatSelectedCategoriesLabel(['projects', 'career', 'pets'])).toBe('3 categories')
+  })
+})
+
 describe('buildAskKilianGeneratePayload', () => {
   test('builds a multi-turn admin generation payload', () => {
     const result = buildAskKilianGeneratePayload({
@@ -94,7 +106,7 @@ describe('buildAskKilianGeneratePayload', () => {
       includeSpoilers: true,
       categories: ['projects', 'career'],
       promptOverride: '  Keep it direct.  ',
-      runtimeModelOverride: '  openai/gpt-5-mini  ',
+      runtimeModelOverride: '  test/generation-model  ',
     })
 
     expect(result).toEqual({
@@ -109,7 +121,7 @@ describe('buildAskKilianGeneratePayload', () => {
         includeSpoilers: true,
         categories: ['projects', 'career'],
         promptOverride: 'Keep it direct.',
-        runtimeModelOverride: 'openai/gpt-5-mini',
+        runtimeModelOverride: 'test/generation-model',
       },
     })
   })
@@ -127,6 +139,73 @@ describe('buildAskKilianGeneratePayload', () => {
       ok: false,
       error: 'Enter a prompt before generating a response.',
     })
+  })
+})
+
+describe('buildAskKilianRuntimeConfigPayload', () => {
+  test('requires an explicit active model id', () => {
+    expect(
+      buildAskKilianRuntimeConfigPayload({
+        modelId: '   ',
+        maxOutputTokens: 900,
+        temperature: 0.7,
+        conversationWindow: 8,
+        ragLimit: 6,
+        adminTestDailyRequests: 100,
+        publicDailyRequests: 40,
+        publicDailyEstimatedTokens: 60_000,
+      }),
+    ).toEqual({
+      ok: false,
+      error: 'Enter an active model id before saving runtime config.',
+    })
+  })
+
+  test('normalizes runtime config without applying a model fallback', () => {
+    expect(
+      buildAskKilianRuntimeConfigPayload({
+        modelId: '  test/generation-model  ',
+        maxOutputTokens: 900.8,
+        temperature: 2.5,
+        conversationWindow: 8.2,
+        ragLimit: 99,
+        adminTestDailyRequests: 100.5,
+        publicDailyRequests: 40.9,
+        publicDailyEstimatedTokens: 60_000.1,
+      }),
+    ).toEqual({
+      ok: true,
+      payload: {
+        modelId: 'test/generation-model',
+        maxOutputTokens: 900,
+        temperature: 2,
+        conversationWindow: 8,
+        ragLimit: 12,
+        quota: {
+          adminTestDailyRequests: 100,
+          publicDailyRequests: 40,
+          publicDailyEstimatedTokens: 60_000,
+        },
+      },
+    })
+  })
+})
+
+describe('Ask Kilian model picker presets', () => {
+  test('offers curated Gateway presets and a custom fallback path', () => {
+    expect(ASK_KILIAN_MODEL_PRESETS.map(model => model.id)).toEqual([
+      'google/gemini-3.1-flash-lite',
+      'openai/gpt-4.1-mini',
+      'xai/grok-4.1-fast-non-reasoning',
+      'deepseek/deepseek-v4-flash',
+      'alibaba/qwen3.5-flash',
+      'alibaba/qwen-3-30b',
+      'anthropic/claude-haiku-4.5',
+      'openai/gpt-5.4-mini',
+    ])
+    expect(resolveModelPickerValue('openai/gpt-4.1-mini')).toBe('openai/gpt-4.1-mini')
+    expect(resolveModelPickerValue('provider/custom-model')).toBe('custom')
+    expect(resolveModelPickerValue('   ')).toBe('unset')
   })
 })
 
@@ -178,10 +257,25 @@ describe('buildContextPreviewPanelSections', () => {
       text: 'Kilian built kil.dev as a personal site.',
     })
   })
+
+  test('response section shows failed generation reasons', () => {
+    const sections = buildContextPreviewPanelSections(null, {
+      ok: false,
+      status: 'failed',
+      reason: 'missing_active_prompt_config',
+      traceId: 'trace-admin-failed',
+      diagnostics: {},
+    })
+
+    expect(sections[2]).toMatchObject({
+      id: 'response',
+      text: 'Generation failed: missing_active_prompt_config',
+    })
+  })
 })
 
 describe('Test Lab action copy', () => {
   test('exposes separate retrieval and generation actions', () => {
-    expect(TEST_LAB_ACTION_TEXT).toEqual(['Preview retrieval', 'Generate response'])
+    expect(TEST_LAB_ACTION_TEXT).toEqual(['Preview retrieval', 'Send message'])
   })
 })

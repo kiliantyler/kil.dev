@@ -78,6 +78,8 @@ type SaveRuntimeConfigForAdminArgs = AskKilianRuntimeConfigSaveInput & {
 
 type AskKilianChatApi = {
   askKilianChat: {
+    getActivePromptConfigForAdmin: FunctionReference<'action', 'public', Record<string, never>, unknown>
+    getActiveRuntimeConfigForAdmin: FunctionReference<'action', 'public', Record<string, never>, unknown>
     savePromptRevisionForAdmin: FunctionReference<
       'action',
       'public',
@@ -203,17 +205,45 @@ export async function getAskKilianAdminWorkspaceStateAction(): Promise<AskKilian
 
   const client = await createAskKilianConvexServerClient()
   let runtimeStatus: AskKilianAdminStatus
+  let activePromptConfig: AskKilianAdminWorkspaceState['activePromptConfig']
+  let activeRuntimeConfig: AskKilianAdminWorkspaceState['activeRuntimeConfig']
+  let entries: AskKilianAdminWorkspaceState['entries'] | undefined
   try {
     await client.action(api.askKilianKnowledge.verifyRuntimeEnvForAdmin, {})
-    runtimeStatus = { label: 'Runtime', level: 'ready', reason: 'Runtime ready', checkedAt: Date.now() }
+    entries = await client.action(api.askKilianKnowledge.listAdminKnowledgeEntriesForAdmin, {})
+    activePromptConfig = (await client.action(
+      askKilianChatApi.getActivePromptConfigForAdmin,
+      {},
+    )) as AskKilianAdminWorkspaceState['activePromptConfig']
+    activeRuntimeConfig = (await client.action(
+      askKilianChatApi.getActiveRuntimeConfigForAdmin,
+      {},
+    )) as AskKilianAdminWorkspaceState['activeRuntimeConfig']
+    const missingConfig = [
+      activePromptConfig ? undefined : 'active prompt config',
+      activeRuntimeConfig ? undefined : 'active runtime config',
+    ].filter(Boolean)
+    runtimeStatus =
+      missingConfig.length > 0
+        ? {
+            label: 'Runtime',
+            level: 'degraded',
+            reason: `Missing ${missingConfig.join(' and ')}`,
+            checkedAt: Date.now(),
+          }
+        : { label: 'Runtime', level: 'ready', reason: 'Runtime ready', checkedAt: Date.now() }
   } catch (error) {
     runtimeStatus = toStatus('Runtime', error)
   }
-  const entries = await client.action(api.askKilianKnowledge.listAdminKnowledgeEntriesForAdmin, {})
+  if (!entries) {
+    entries = await client.action(api.askKilianKnowledge.listAdminKnowledgeEntriesForAdmin, {})
+  }
   return {
     entries,
     selectedStableKey: entries[0]?.stableKey,
     runtimeStatus,
+    activePromptConfig,
+    activeRuntimeConfig,
     ragStatus:
       runtimeStatus.level === 'unavailable'
         ? toStatus('RAG', new Error('Runtime unavailable'))

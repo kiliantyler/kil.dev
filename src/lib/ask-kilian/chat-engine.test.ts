@@ -15,7 +15,7 @@ const promptConfig = {
 
 const runtimeConfig = {
   id: 'runtime-config-1',
-  modelId: 'openai/gpt-5-mini',
+  modelId: 'test/generation-model',
   maxOutputTokens: 320,
   temperature: 0.4,
   conversationWindow: 6,
@@ -66,7 +66,7 @@ function createDeps(overrides: Partial<AskKilianChatEngineDeps> = {}): AskKilian
     streamModel: vi.fn(async () => ({
       text: 'Kilian has been turning kil.dev into a weirdly useful portfolio playground.',
       metadata: {
-        modelId: 'openai/gpt-5-mini',
+        modelId: 'test/generation-model',
         latencyMs: 842,
         inputTokens: 188,
         outputTokens: 21,
@@ -110,7 +110,7 @@ describe('Ask Kilian chat engine', () => {
         runtimeConfigVersionId: 'runtime-config-1',
         ragCorpusVersionKey: 'rag:v2:abc123',
         model: {
-          modelId: 'openai/gpt-5-mini',
+          modelId: 'test/generation-model',
           latencyMs: 842,
           inputTokens: 188,
           outputTokens: 21,
@@ -142,7 +142,7 @@ describe('Ask Kilian chat engine', () => {
     })
     expect(deps.streamModel).toHaveBeenCalledWith(
       expect.objectContaining({
-        modelId: 'openai/gpt-5-mini',
+        modelId: 'test/generation-model',
         maxOutputTokens: 320,
         temperature: 0.4,
         systemPrompt: expect.stringContaining('Answer like Kilian'),
@@ -173,7 +173,7 @@ describe('Ask Kilian chat engine', () => {
         ragCorpusVersionKey: 'rag:v2:abc123',
         classification: allowedClassification,
         model: {
-          modelId: 'openai/gpt-5-mini',
+          modelId: 'test/generation-model',
           latencyMs: 842,
           inputTokens: 188,
           outputTokens: 21,
@@ -361,7 +361,7 @@ describe('Ask Kilian chat engine', () => {
       streamModel: vi.fn(async () => ({
         text: 'Ask Kilian response with measured model metadata.',
         metadata: {
-          modelId: 'vercel/openai/gpt-5-mini',
+          modelId: 'vercel/test/generation-model',
           latencyMs: 1_437,
           inputTokens: 231,
           outputTokens: 17,
@@ -377,7 +377,7 @@ describe('Ask Kilian chat engine', () => {
       ok: true,
       diagnostics: {
         model: {
-          modelId: 'vercel/openai/gpt-5-mini',
+          modelId: 'vercel/test/generation-model',
           latencyMs: 1_437,
           inputTokens: 231,
           outputTokens: 17,
@@ -389,7 +389,7 @@ describe('Ask Kilian chat engine', () => {
       expect.objectContaining({
         metadata: expect.objectContaining({
           model: {
-            modelId: 'vercel/openai/gpt-5-mini',
+            modelId: 'vercel/test/generation-model',
             latencyMs: 1_437,
             inputTokens: 231,
             outputTokens: 17,
@@ -428,7 +428,7 @@ describe('Ask Kilian chat engine', () => {
         },
         retrievedEntries: [],
         model: {
-          modelId: 'openai/gpt-5-mini',
+          modelId: 'test/generation-model',
           latencyMs: 0,
           finishReason: 'error',
         },

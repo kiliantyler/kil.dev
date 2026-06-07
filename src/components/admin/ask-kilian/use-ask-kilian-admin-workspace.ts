@@ -10,6 +10,8 @@ import {
   previewAskKilianRetrievalAction,
   reenableAskKilianAdminEntryAction,
   saveAskKilianAdminEntryAction,
+  saveAskKilianPromptConfigAction,
+  saveAskKilianRuntimeConfigAction,
 } from '@/app/admin/ask-kilian/actions'
 import type {
   AdminKnowledgeEntrySaveInput,
@@ -260,6 +262,7 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
 
   function generateChat(input: Parameters<typeof generateAskKilianChatAction>[0]) {
     setChatError(null)
+    setChatResponse(null)
     runWorkspaceOperation(async () => {
       const requestId = latestChatRequestId.current + 1
       latestChatRequestId.current = requestId
@@ -272,6 +275,43 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
         }
       }
     })
+  }
+
+  function clearChatResponse() {
+    setChatError(null)
+    setChatResponse(null)
+  }
+
+  function savePromptConfig(input: Parameters<typeof saveAskKilianPromptConfigAction>[0]) {
+    setChatError(null)
+    setPendingOperations(count => count + 1)
+    return saveAskKilianPromptConfigAction(input)
+      .then(async () => {
+        const nextState = await getAskKilianAdminWorkspaceStateAction()
+        startTransition(() => applyState(nextState))
+      })
+      .catch(error => {
+        const message = error instanceof Error ? error.message : 'Unable to save Ask Kilian prompt config'
+        setChatError(message)
+        throw new Error(message)
+      })
+      .finally(() => setPendingOperations(count => Math.max(0, count - 1)))
+  }
+
+  function saveRuntimeConfig(input: Parameters<typeof saveAskKilianRuntimeConfigAction>[0]) {
+    setChatError(null)
+    setPendingOperations(count => count + 1)
+    return saveAskKilianRuntimeConfigAction(input)
+      .then(async () => {
+        const nextState = await getAskKilianAdminWorkspaceStateAction()
+        startTransition(() => applyState(nextState))
+      })
+      .catch(error => {
+        const message = error instanceof Error ? error.message : 'Unable to save Ask Kilian runtime config'
+        setChatError(message)
+        throw new Error(message)
+      })
+      .finally(() => setPendingOperations(count => Math.max(0, count - 1)))
   }
 
   const isOperationPending = isPending || pendingOperations > 0
@@ -301,6 +341,9 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
       markSyncPreviewStale: () => setCurrentSyncPreviewStale(true),
       previewRetrieval,
       generateChat,
+      clearChatResponse,
+      savePromptConfig,
+      saveRuntimeConfig,
     },
   }
 }

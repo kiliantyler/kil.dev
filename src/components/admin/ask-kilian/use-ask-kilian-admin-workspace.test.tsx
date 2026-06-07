@@ -139,6 +139,14 @@ async function buildWorkspaceHookTestPage() {
       export async function saveAskKilianAdminEntryAction() {
         return new Promise(resolve => saveResolvers.push(resolve))
       }
+
+      export async function saveAskKilianPromptConfigAction() {
+        return { promptRevisionId: 'prompt-new' }
+      }
+
+      export async function saveAskKilianRuntimeConfigAction() {
+        return { runtimeConfigVersionId: 'runtime-new' }
+      }
     `,
   )
 

@@ -158,7 +158,7 @@ describe('Ask Kilian chat helpers', () => {
 
     await expect(
       handler({ db } as never, {
-        modelId: 'openai/gpt-5-mini',
+        modelId: 'test/generation-model',
         maxOutputTokens: 900,
         temperature: 0.7,
         conversationWindow: 8,
@@ -177,7 +177,7 @@ describe('Ask Kilian chat helpers', () => {
     expect(eq).toHaveBeenCalledWith('active', true)
     expect(db.patch).toHaveBeenCalledWith('runtime-old-1', { active: false })
     expect(db.insert).toHaveBeenCalledWith('askKilianRuntimeConfigs', {
-      modelId: 'openai/gpt-5-mini',
+      modelId: 'test/generation-model',
       maxOutputTokens: 900,
       temperature: 0.7,
       conversationWindow: 8,
@@ -196,7 +196,7 @@ describe('Ask Kilian chat helpers', () => {
   it('loads the newest active runtime config summary and fails closed when none exists', async () => {
     const newestRuntime = {
       _id: 'runtime-new',
-      modelId: 'openai/gpt-5-mini',
+      modelId: 'test/generation-model',
       maxOutputTokens: 900,
       temperature: 0.7,
       conversationWindow: 8,
@@ -224,7 +224,7 @@ describe('Ask Kilian chat helpers', () => {
 
     await expect(handler({ db } as never)).resolves.toEqual({
       id: 'runtime-new',
-      modelId: 'openai/gpt-5-mini',
+      modelId: 'test/generation-model',
       maxOutputTokens: 900,
       temperature: 0.7,
       conversationWindow: 8,
@@ -464,7 +464,7 @@ describe('Ask Kilian chat helpers', () => {
         remainingDailyRequests: 39,
       },
       model: {
-        modelId: 'openai/gpt-5-mini',
+        modelId: 'test/generation-model',
         latencyMs: 1_234,
         inputTokens: 100,
         outputTokens: 40,
