@@ -61,6 +61,7 @@ export type BuildAskKilianChatRequestResult =
 
 export type BuildAskKilianChatRequestOptions = {
   conversationWindow?: number
+  validateConversationLength?: boolean
 }
 
 export function normalizeAskKilianConversationWindow(
@@ -105,9 +106,12 @@ export function buildAskKilianChatRequest(
   }
 
   const messages = normalizeAskKilianConversationWindow(input.messages, options.conversationWindow)
-  const conversationLength = messages.reduce((total, message) => total + message.content.length, 0)
+  const shouldValidateConversationLength = options.validateConversationLength ?? true
+  const conversationLength = shouldValidateConversationLength
+    ? messages.reduce((total, message) => total + message.content.length, 0)
+    : 0
 
-  if (conversationLength > ASK_KILIAN_CHAT_MAX_CONVERSATION_LENGTH) {
+  if (shouldValidateConversationLength && conversationLength > ASK_KILIAN_CHAT_MAX_CONVERSATION_LENGTH) {
     return {
       ok: false,
       error: {

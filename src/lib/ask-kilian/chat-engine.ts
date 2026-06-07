@@ -160,7 +160,9 @@ async function runAskKilianChatEngine(
   input: AskKilianChatEngineInput,
 ): Promise<AskKilianChatEngineResult> {
   const traceId = deps.createTraceId()
-  const requestValidationResult = buildAskKilianChatRequest(input)
+  const requestValidationResult = buildAskKilianChatRequest(input, {
+    validateConversationLength: false,
+  })
 
   if (!requestValidationResult.ok) {
     return {

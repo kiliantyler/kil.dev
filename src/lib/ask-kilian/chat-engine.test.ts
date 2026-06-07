@@ -236,6 +236,34 @@ describe('Ask Kilian chat engine', () => {
     )
   })
 
+  it('defers retained conversation size validation until the runtime conversation window is loaded', async () => {
+    const deps = createDeps({
+      loadActiveRuntimeConfig: vi.fn(async () => ({
+        ...runtimeConfig,
+        conversationWindow: 1,
+      })),
+    })
+    const engine = createAskKilianChatEngine(deps)
+
+    const result = await engine.run({
+      ...adminInput(),
+      messages: [
+        { role: 'assistant', content: 'a'.repeat(3_500) },
+        { role: 'user', content: 'Earlier short question' },
+        { role: 'assistant', content: 'b'.repeat(3_500) },
+        { role: 'user', content: 'What should I know about kil.dev?' },
+      ],
+    })
+
+    expect(result).toMatchObject({
+      ok: true,
+      status: 'completed',
+    })
+    const expectedMessages = [{ role: 'user', content: 'What should I know about kil.dev?' }]
+    expect(deps.searchRag).toHaveBeenCalledWith(expect.objectContaining({ messages: expectedMessages }))
+    expect(deps.streamModel).toHaveBeenCalledWith(expect.objectContaining({ messages: expectedMessages }))
+  })
+
   it('returns deterministic clarification without calling RAG or the model', async () => {
     const clarifyingClassification: AskKilianClassificationDecision = {
       scope: 'ambiguous_valid',
