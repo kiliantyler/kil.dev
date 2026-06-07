@@ -9,7 +9,7 @@ export type AskKilianClassificationScope =
   | 'ambiguous_risky'
 
 export type AskKilianClassificationBehavior = 'answer' | 'clarify' | 'refuse' | 'redirect' | 'fake_lore'
-export type AskKilianClassificationSource = 'deterministic' | 'llm' | 'fail_closed'
+type AskKilianClassificationSource = 'deterministic' | 'llm' | 'fail_closed'
 
 export type AskKilianClassificationDecision = {
   scope: AskKilianClassificationScope
@@ -19,7 +19,7 @@ export type AskKilianClassificationDecision = {
   source: AskKilianClassificationSource
 }
 
-export type AskKilianLlmClassifier = (input: {
+type AskKilianLlmClassifier = (input: {
   prompt: string
   tier: AskKilianTier
 }) => Promise<AskKilianClassificationDecision>

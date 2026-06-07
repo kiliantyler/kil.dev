@@ -1,9 +1,9 @@
 import type { AskKilianClassificationBehavior, AskKilianClassificationScope } from './chat-classifier'
 import type { AskKilianChatQuotaBucket, AskKilianChatStatus } from './chat-contracts'
 
-export type AskKilianQuotaBucket = AskKilianChatQuotaBucket
+type AskKilianQuotaBucket = AskKilianChatQuotaBucket
 
-export type AskKilianPostHogEventName =
+type AskKilianPostHogEventName =
   | 'ask_kilian_chat_started'
   | 'ask_kilian_chat_completed'
   | 'ask_kilian_chat_failed'

@@ -109,7 +109,7 @@ export type RetrievalPreviewPayloadResult =
       error: typeof EMPTY_PROMPT_ERROR
     }
 
-export type AskKilianGeneratePayload = {
+type AskKilianGeneratePayload = {
   messages: AskKilianChatMessage[]
   tier: AskKilianTier
   includeSpoilers: boolean
@@ -138,7 +138,7 @@ export type AskKilianGeneratePayloadResult =
       error: typeof EMPTY_GENERATION_PROMPT_ERROR
     }
 
-export type RuntimeConfigPayload = {
+type RuntimeConfigPayload = {
   modelId: string
   maxOutputTokens: number
   temperature: number

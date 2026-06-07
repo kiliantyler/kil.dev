@@ -24,7 +24,7 @@ export type AskKilianChatEngineInput = AskKilianChatRequestInput & {
   distinctId: string
 }
 
-export type AskKilianQuotaDecision = {
+type AskKilianQuotaDecision = {
   allowed: boolean
   bucket: AskKilianChatRequest['quotaBucket']
   reason: string
@@ -40,7 +40,7 @@ export type AskKilianRagEntry = {
   contentHash?: string
 }
 
-export type AskKilianModelMetadata = {
+type AskKilianModelMetadata = {
   modelId: string
   latencyMs: number
   inputTokens?: number
@@ -48,11 +48,11 @@ export type AskKilianModelMetadata = {
   finishReason?: string
 }
 
-export type AskKilianTraceMessage = AskKilianChatMessage & {
+type AskKilianTraceMessage = AskKilianChatMessage & {
   createdAt: number
 }
 
-export type AskKilianTraceMetadata = {
+type AskKilianTraceMetadata = {
   callerMode: AskKilianChatRequest['callerMode']
   quotaBucket: AskKilianChatRequest['quotaBucket']
   status: AskKilianChatStatus
@@ -122,7 +122,7 @@ export type AskKilianChatEngineDeps = {
   captureMetric: (input: AskKilianPostHogEventInput) => Promise<void>
 }
 
-export type AskKilianChatEngineDiagnostics = {
+type AskKilianChatEngineDiagnostics = {
   promptRevisionId?: string
   runtimeConfigVersionId?: string
   ragCorpusVersionKey?: string

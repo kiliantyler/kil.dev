@@ -4,11 +4,11 @@ export const ASK_KILIAN_CHAT_MAX_INPUT_LENGTH = 2_000
 export const ASK_KILIAN_CHAT_MAX_CONVERSATION_LENGTH = 6_000
 export const ASK_KILIAN_CHAT_CONTEXT_WINDOW = 6
 
-export const ASK_KILIAN_CHAT_CALLER_MODES = ['admin_test', 'public'] as const
-export const ASK_KILIAN_CHAT_QUOTA_BUCKETS = ['admin_test', 'public'] as const
-export const ASK_KILIAN_CHAT_STATUSES = ['completed', 'refused', 'clarifying', 'failed'] as const
+const ASK_KILIAN_CHAT_CALLER_MODES = ['admin_test', 'public'] as const
+const ASK_KILIAN_CHAT_QUOTA_BUCKETS = ['admin_test', 'public'] as const
+const ASK_KILIAN_CHAT_STATUSES = ['completed', 'refused', 'clarifying', 'failed'] as const
 
-export type AskKilianChatCallerMode = (typeof ASK_KILIAN_CHAT_CALLER_MODES)[number]
+type AskKilianChatCallerMode = (typeof ASK_KILIAN_CHAT_CALLER_MODES)[number]
 export type AskKilianChatQuotaBucket = (typeof ASK_KILIAN_CHAT_QUOTA_BUCKETS)[number]
 export type AskKilianChatStatus = (typeof ASK_KILIAN_CHAT_STATUSES)[number]
 
@@ -39,7 +39,7 @@ export type AskKilianChatRequest = {
   runtimeModelOverride?: string
 }
 
-export type AskKilianChatRequestError =
+type AskKilianChatRequestError =
   | {
       code: 'empty_input'
       message: string
