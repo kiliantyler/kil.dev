@@ -1,4 +1,14 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const mockGetAuthUser = vi.fn()
+const originalAdminEmail = process.env.ADMIN_EMAIL
+const originalWorkosOrgId = process.env.WORKOS_ORG_ID
+
+vi.mock('../auth', () => ({
+  getAuthKit: () => ({
+    getAuthUser: mockGetAuthUser,
+  }),
+}))
 
 import {
   buildAskKilianRagCorpusVersionKey,
@@ -10,13 +20,129 @@ import {
   createSavePromptRevisionHandler,
   createSaveRuntimeConfigHandler,
   getActivePromptConfig,
+  getActivePromptConfigForAdmin,
   getActiveRuntimeConfig,
+  getActiveRuntimeConfigForAdmin,
   normalizeAskKilianQuotaDay,
+  recordConversationForAdmin,
+  reserveQuotaForAdmin,
+  savePromptRevisionForAdmin,
+  saveRuntimeConfigForAdmin,
+  searchRuntimeRagForAdmin,
 } from '../askKilianChat'
 
 type TestConvexHandler = {
-  _handler: (ctx: unknown, args: Record<string, never>) => Promise<unknown>
+  _handler: (ctx: unknown, args: Record<string, unknown>) => Promise<unknown>
 }
+
+const getActionHandler = (action: unknown) => (action as TestConvexHandler)._handler
+
+function askKilianAdminIdentity(overrides: Record<string, unknown> = {}) {
+  return {
+    subject: 'user_admin',
+    name: 'Admin User',
+    token: {
+      claims: {
+        org_id: 'org_good',
+      },
+    },
+    ...overrides,
+  }
+}
+
+function askKilianChatAdminCtx({
+  identity = askKilianAdminIdentity(),
+  authUser = { id: 'user_admin', email: 'Admin@Example.com', firstName: 'Admin', lastName: 'User' },
+  runQuery = vi.fn(),
+  runMutation = vi.fn(),
+  runAction = vi.fn(),
+}: {
+  identity?: unknown
+  authUser?: unknown
+  runQuery?: ReturnType<typeof vi.fn>
+  runMutation?: ReturnType<typeof vi.fn>
+  runAction?: ReturnType<typeof vi.fn>
+} = {}) {
+  mockGetAuthUser.mockResolvedValue(authUser)
+  return {
+    auth: {
+      getUserIdentity: vi.fn(async () => identity),
+    },
+    runQuery,
+    runMutation,
+    runAction,
+  }
+}
+
+const runtimeQuota = {
+  adminTestDailyRequests: 100,
+  publicDailyRequests: 40,
+  publicDailyEstimatedTokens: 60_000,
+}
+
+const recordConversationForAdminArgs = {
+  traceId: 'trace-admin-wrapper',
+  messages: [
+    { role: 'user' as const, content: 'What should I know about Kilian?', createdAt: 1 },
+    { role: 'assistant' as const, content: 'Kilian builds careful web things.', createdAt: 2 },
+  ],
+  metadata: {
+    callerMode: 'admin_test' as const,
+    quotaBucket: 'admin_test' as const,
+    status: 'completed' as const,
+    tier: 1 as const,
+    includeSpoilers: false,
+    categories: ['persona' as const],
+    promptRevisionId: 'prompt-1',
+    runtimeConfigVersionId: 'runtime-1',
+    ragCorpusVersionKey: 'rag:v2:abc123',
+    condensedQuery: 'Kilian profile',
+    classification: {
+      scope: 'allowed' as const,
+      behavior: 'answer' as const,
+      topic: 'profile',
+      reason: 'Relevant site/persona question.',
+      source: 'deterministic' as const,
+    },
+    retrievedEntries: [],
+    quotaDecision: {
+      allowed: true,
+      bucket: 'admin_test' as const,
+      reason: 'reserved',
+      remainingDailyRequests: 11,
+    },
+    publicEquivalentQuotaDecision: {
+      allowed: true,
+      bucket: 'public' as const,
+      reason: 'reserved',
+      remainingDailyRequests: 39,
+    },
+    model: {
+      modelId: 'test/generation-model',
+      latencyMs: 123,
+      inputTokens: 100,
+      outputTokens: 40,
+      finishReason: 'stop',
+    },
+    posthogDistinctId: 'ask-kilian-admin:user_admin_123',
+    posthogTraceId: 'ph-trace-1',
+  },
+}
+
+function restoreEnv(key: 'ADMIN_EMAIL' | 'WORKOS_ORG_ID', value: string | undefined) {
+  if (value === undefined) {
+    delete process.env[key]
+    return
+  }
+
+  process.env[key] = value
+}
+
+beforeEach(() => {
+  restoreEnv('ADMIN_EMAIL', originalAdminEmail)
+  restoreEnv('WORKOS_ORG_ID', originalWorkosOrgId)
+  mockGetAuthUser.mockReset()
+})
 
 describe('Ask Kilian chat helpers', () => {
   it('normalizes quota timestamps to UTC day keys', () => {
@@ -628,5 +754,99 @@ describe('Ask Kilian chat helpers', () => {
         embeddingDimensions: 2048,
       }),
     )
+  })
+
+  it('rejects every public chat ForAdmin wrapper before Convex work when the admin identity is unauthorized', async () => {
+    process.env.ADMIN_EMAIL = 'admin@example.com'
+    process.env.WORKOS_ORG_ID = 'org_good'
+    const ctx = askKilianChatAdminCtx({ identity: null })
+    const cases = [
+      [getActivePromptConfigForAdmin, {}],
+      [getActiveRuntimeConfigForAdmin, {}],
+      [
+        savePromptRevisionForAdmin,
+        {
+          title: 'Admin test prompt',
+          promptText: 'Answer like Kilian, grounded in the retrieved context.',
+          notes: 'First admin-editable prompt.',
+          actor: 'admin@example.com',
+        },
+      ],
+      [
+        saveRuntimeConfigForAdmin,
+        {
+          modelId: 'test/generation-model',
+          maxOutputTokens: 900,
+          temperature: 0.7,
+          conversationWindow: 8,
+          ragLimit: 5,
+          quota: runtimeQuota,
+          actor: 'admin@example.com',
+        },
+      ],
+      [
+        reserveQuotaForAdmin,
+        {
+          bucket: 'admin_test',
+          estimatedTokens: 250,
+          quota: runtimeQuota,
+        },
+      ],
+      [recordConversationForAdmin, recordConversationForAdminArgs],
+      [
+        searchRuntimeRagForAdmin,
+        {
+          messages: [],
+          latestUserMessage: 'What is kil.dev?',
+          tier: 0,
+          includeSpoilers: false,
+          categories: ['projects'],
+          limit: 4,
+        },
+      ],
+    ] as const
+
+    for (const [actionForAdmin, args] of cases) {
+      await expect(getActionHandler(actionForAdmin)(ctx, args)).rejects.toThrow('Ask Kilian admin access denied')
+    }
+
+    expect(ctx.runQuery).not.toHaveBeenCalled()
+    expect(ctx.runMutation).not.toHaveBeenCalled()
+    expect(ctx.runAction).not.toHaveBeenCalled()
+  })
+
+  it('rejects save ForAdmin actor mismatches before running internal mutations', async () => {
+    process.env.ADMIN_EMAIL = 'admin@example.com'
+    process.env.WORKOS_ORG_ID = 'org_good'
+    const cases = [
+      [
+        savePromptRevisionForAdmin,
+        {
+          title: 'Admin test prompt',
+          promptText: 'Answer like Kilian, grounded in the retrieved context.',
+          notes: 'First admin-editable prompt.',
+          actor: 'other@example.com',
+        },
+      ],
+      [
+        saveRuntimeConfigForAdmin,
+        {
+          modelId: 'test/generation-model',
+          maxOutputTokens: 900,
+          temperature: 0.7,
+          conversationWindow: 8,
+          ragLimit: 5,
+          quota: runtimeQuota,
+          actor: 'other@example.com',
+        },
+      ],
+    ] as const
+
+    for (const [actionForAdmin, args] of cases) {
+      const ctx = askKilianChatAdminCtx()
+
+      await expect(getActionHandler(actionForAdmin)(ctx, args)).rejects.toThrow('Ask Kilian admin access denied')
+      expect(ctx.runMutation).not.toHaveBeenCalled()
+    }
   })
 })

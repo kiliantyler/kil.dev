@@ -1,6 +1,7 @@
 import type { AskKilianKnowledgeCategory, AskKilianTier } from './types'
 
 export const ASK_KILIAN_CHAT_MAX_INPUT_LENGTH = 2_000
+export const ASK_KILIAN_CHAT_MAX_CONVERSATION_LENGTH = 6_000
 export const ASK_KILIAN_CHAT_CONTEXT_WINDOW = 6
 
 export const ASK_KILIAN_CHAT_CALLER_MODES = ['admin_test', 'public'] as const
@@ -103,9 +104,22 @@ export function buildAskKilianChatRequest(
     }
   }
 
+  const messages = normalizeAskKilianConversationWindow(input.messages, options.conversationWindow)
+  const conversationLength = messages.reduce((total, message) => total + message.content.length, 0)
+
+  if (conversationLength > ASK_KILIAN_CHAT_MAX_CONVERSATION_LENGTH) {
+    return {
+      ok: false,
+      error: {
+        code: 'input_too_large',
+        message: `Ask Kilian conversations must be ${ASK_KILIAN_CHAT_MAX_CONVERSATION_LENGTH} characters or fewer.`,
+      },
+    }
+  }
+
   const request: AskKilianChatRequest = {
     callerMode: input.callerMode,
-    messages: normalizeAskKilianConversationWindow(input.messages, options.conversationWindow),
+    messages,
     latestUserMessage,
     quotaBucket: input.callerMode,
     tier: input.tier,

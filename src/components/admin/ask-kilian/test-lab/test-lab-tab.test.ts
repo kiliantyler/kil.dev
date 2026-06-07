@@ -3,7 +3,7 @@ import {
   type AskKilianAdminRetrievedContext,
 } from '@/lib/ask-kilian/admin-context-preview'
 import { describe, expect, test } from 'vitest'
-import { buildContextPreviewPanelSections } from './context-preview-panel'
+import { CONTEXT_PREVIEW_EMPTY_COPY, buildContextPreviewPanelSections } from './context-preview-panel'
 import {
   ASK_KILIAN_MODEL_PRESETS,
   TEST_LAB_ACTION_TEXT,
@@ -189,6 +189,39 @@ describe('buildAskKilianRuntimeConfigPayload', () => {
       },
     })
   })
+
+  test.each([
+    { label: 'NaN', value: Number.NaN, temperature: 0 },
+    { label: 'Infinity', value: Infinity, temperature: 2 },
+    { label: '-Infinity', value: -Infinity, temperature: 0 },
+  ])('normalizes $label runtime config numbers before saving', ({ value, temperature }) => {
+    const result = buildAskKilianRuntimeConfigPayload({
+      modelId: 'test/generation-model',
+      maxOutputTokens: value,
+      temperature: value,
+      conversationWindow: value,
+      ragLimit: value,
+      adminTestDailyRequests: value,
+      publicDailyRequests: value,
+      publicDailyEstimatedTokens: value,
+    })
+
+    expect(result).toEqual({
+      ok: true,
+      payload: {
+        modelId: 'test/generation-model',
+        maxOutputTokens: 1,
+        temperature,
+        conversationWindow: 1,
+        ragLimit: 1,
+        quota: {
+          adminTestDailyRequests: 1,
+          publicDailyRequests: 1,
+          publicDailyEstimatedTokens: 1,
+        },
+      },
+    })
+  })
 })
 
 describe('Ask Kilian model picker presets', () => {
@@ -210,6 +243,14 @@ describe('Ask Kilian model picker presets', () => {
 })
 
 describe('buildContextPreviewPanelSections', () => {
+  test('empty context debug copy reflects the wired chat flow', () => {
+    expect(CONTEXT_PREVIEW_EMPTY_COPY).toBe(
+      'Preview retrieval or send a message to inspect context and response details.',
+    )
+    expect(CONTEXT_PREVIEW_EMPTY_COPY).not.toContain('KTY-66')
+    expect(CONTEXT_PREVIEW_EMPTY_COPY).not.toContain('before wiring')
+  })
+
   test('no-match retrieval builds the no-results state', () => {
     const sections = buildContextPreviewPanelSections({
       results: [],

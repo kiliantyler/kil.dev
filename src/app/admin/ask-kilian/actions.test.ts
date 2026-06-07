@@ -1,4 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+if (!vi.hoisted) {
+  vi.hoisted = (<T>(factory: () => T) => factory()) as typeof vi.hoisted
+}
 
 const {
   api,
@@ -72,9 +76,21 @@ vi.mock('../../../../convex/_generated/api', () => ({ api }))
 
 describe('Ask Kilian admin server actions', () => {
   beforeEach(() => {
+    buildAskKilianKnowledgeEntries.mockReset()
+    cookieGet.mockReset()
+    createAskKilianConvexServerClient.mockReset()
+    isAdminTestBypassEnvEnabled.mockReset()
+    requireAdminAuthContext.mockReset()
+    revalidatePath.mockReset()
+    runAskKilianChatForAdmin.mockReset()
+
     buildAskKilianKnowledgeEntries.mockReturnValue(repoEntries)
     isAdminTestBypassEnvEnabled.mockReturnValue(false)
-    requireAdminAuthContext.mockResolvedValue({ email: 'admin@example.com', accessToken: 'workos-token' })
+    requireAdminAuthContext.mockResolvedValue({
+      email: 'admin@example.com',
+      accessToken: 'workos-token',
+      workosUserId: 'user_admin_123',
+    })
     runAskKilianChatForAdmin.mockResolvedValue({
       ok: true,
       status: 'completed',
@@ -82,11 +98,6 @@ describe('Ask Kilian admin server actions', () => {
       traceId: 'trace-action-chat',
       diagnostics: {},
     })
-  })
-
-  afterEach(() => {
-    vi.resetModules()
-    vi.clearAllMocks()
   })
 
   it('loads workspace state through protected Convex actions', async () => {
@@ -183,7 +194,7 @@ describe('Ask Kilian admin server actions', () => {
     expect(actions.generateAskKilianChatAction).toEqual(expect.any(Function))
   })
 
-  it('runs admin chat generation with the authenticated admin distinct id', async () => {
+  it('runs admin chat generation with the authenticated admin pseudonymous distinct id', async () => {
     const { generateAskKilianChatAction } = await import('./actions')
 
     await expect(
@@ -205,7 +216,7 @@ describe('Ask Kilian admin server actions', () => {
 
     expect(requireAdminAuthContext).toHaveBeenCalledWith()
     expect(runAskKilianChatForAdmin).toHaveBeenCalledWith({
-      distinctId: 'admin@example.com',
+      distinctId: 'ask-kilian-admin:user_admin_123',
       messages: [{ role: 'user', content: 'What should I ask about Kilian projects?' }],
       tier: 2,
       includeSpoilers: true,
@@ -213,6 +224,7 @@ describe('Ask Kilian admin server actions', () => {
       promptOverride: 'Answer from this admin prompt.',
       runtimeModelOverride: 'test/generation-model',
     })
+    expect(runAskKilianChatForAdmin.mock.calls[0]?.[0].distinctId).not.toContain('admin@example.com')
   })
 
   it('saves prompt config through the protected Ask Kilian chat action and revalidates admin state', async () => {

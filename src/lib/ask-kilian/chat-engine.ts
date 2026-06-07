@@ -511,7 +511,19 @@ async function buildHandledResponse({
   text: string
   model: AskKilianModelMetadata
 }> {
-  if (classification.behavior === 'answer' || classification.behavior === 'fake_lore') {
+  if (classification.behavior === 'fake_lore') {
+    return {
+      status: 'completed',
+      text: deterministicTextForBehavior(classification),
+      model: {
+        modelId: 'deterministic',
+        latencyMs: 0,
+        finishReason: classification.behavior,
+      },
+    }
+  }
+
+  if (classification.behavior === 'answer') {
     const streamResult = await deps.streamModel({
       modelId: request.runtimeModelOverride ?? runtimeConfig.modelId,
       maxOutputTokens: runtimeConfig.maxOutputTokens,
@@ -546,7 +558,7 @@ async function buildHandledResponse({
 }
 
 function shouldUseRagAndModel(classification: AskKilianClassificationDecision) {
-  return classification.behavior === 'answer' || classification.behavior === 'fake_lore'
+  return classification.behavior === 'answer'
 }
 
 function buildFailedModelMetadata(
@@ -614,6 +626,10 @@ function deterministicTextForBehavior(classification: AskKilianClassificationDec
 
   if (classification.behavior === 'redirect') {
     return 'Ask Kilian is for questions about Kilian and kil.dev, not general-purpose AI work. Ask about the site, projects, career, pets, themes, or achievements.'
+  }
+
+  if (classification.behavior === 'fake_lore') {
+    return 'Obviously fake lore: Kilian lives inside a tiny filing cabinet under kil.dev, where every drawer contains another even smaller portfolio site. Real private facts stay private.'
   }
 
   return 'Ask Kilian cannot help with private facts or sensitive personal details.'

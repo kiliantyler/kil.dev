@@ -31,6 +31,7 @@ export type ContextPreviewPanelSections = [
 ]
 
 const EMPTY_RESPONSE_TEXT = 'Generate a response to inspect the admin test answer.'
+export const CONTEXT_PREVIEW_EMPTY_COPY = 'Preview retrieval or send a message to inspect context and response details.'
 
 export function buildContextPreviewPanelSections(
   preview: ContextPreviewPanelPreview | null,
@@ -108,7 +109,7 @@ export function ContextPreviewPanel({
     <div className="grid gap-4">
       {preview ? null : (
         <div className="rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">
-          Preview retrieval to inspect context before KTY-66 wiring.
+          {CONTEXT_PREVIEW_EMPTY_COPY}
         </div>
       )}
 

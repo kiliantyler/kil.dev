@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+if (!vi.hoisted) {
+  vi.hoisted = (<T>(factory: () => T) => factory()) as typeof vi.hoisted
+}
+
 const { requireAdminAuthContext, runAskKilianChatForAdmin } = vi.hoisted(() => ({
   requireAdminAuthContext: vi.fn(),
   runAskKilianChatForAdmin: vi.fn(),
@@ -26,10 +30,9 @@ function postAskKilianChatRaw(body: string) {
 
 describe('POST /api/ask-kilian/chat', () => {
   beforeEach(() => {
-    vi.resetModules()
     requireAdminAuthContext.mockReset()
     runAskKilianChatForAdmin.mockReset()
-    requireAdminAuthContext.mockResolvedValue({ email: 'admin@example.com' })
+    requireAdminAuthContext.mockResolvedValue({ email: 'admin@example.com', workosUserId: 'user_admin_123' })
     runAskKilianChatForAdmin.mockResolvedValue({
       ok: true,
       status: 'completed',
@@ -48,12 +51,13 @@ describe('POST /api/ask-kilian/chat', () => {
     expect(response.headers.get('Cache-Control')).toBe('no-store')
     expect(requireAdminAuthContext).toHaveBeenCalledWith()
     expect(runAskKilianChatForAdmin).toHaveBeenCalledWith({
-      distinctId: 'admin@example.com',
+      distinctId: 'ask-kilian-admin:user_admin_123',
       messages: [{ role: 'user', content: 'What should I ask Kilian about projects?' }],
       tier: 1,
       includeSpoilers: false,
       categories: [],
     })
+    expect(runAskKilianChatForAdmin.mock.calls[0]?.[0].distinctId).not.toContain('admin@example.com')
     expect(runAskKilianChatForAdmin.mock.calls[0]?.[0]).not.toHaveProperty('callerMode')
     await expect(response.json()).resolves.toEqual({
       ok: true,
@@ -89,6 +93,28 @@ describe('POST /api/ask-kilian/chat', () => {
     await expect(response.json()).resolves.toEqual({
       ok: false,
       message: 'Invalid Ask Kilian chat request.',
+    })
+  })
+
+  it('returns a stable no-store JSON response when the admin runtime rejects', async () => {
+    runAskKilianChatForAdmin.mockRejectedValue(new Error('Convex runtime unavailable'))
+
+    const response = await postAskKilianChat({
+      messages: [{ role: 'user', content: 'What should I ask Kilian about projects?' }],
+    })
+
+    expect(response.status).toBe(500)
+    expect(response.headers.get('Cache-Control')).toBe('no-store')
+    expect(runAskKilianChatForAdmin).toHaveBeenCalledWith({
+      distinctId: 'ask-kilian-admin:user_admin_123',
+      messages: [{ role: 'user', content: 'What should I ask Kilian about projects?' }],
+      tier: 1,
+      includeSpoilers: false,
+      categories: [],
+    })
+    await expect(response.json()).resolves.toEqual({
+      ok: false,
+      message: 'Ask Kilian chat is temporarily unavailable.',
     })
   })
 

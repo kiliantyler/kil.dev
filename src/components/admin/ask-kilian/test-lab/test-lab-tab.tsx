@@ -33,6 +33,9 @@ const EMPTY_PROMPT_CONFIG_ERROR = 'Enter an active system prompt before saving.'
 const EMPTY_RUNTIME_MODEL_ERROR = 'Enter an active model id before saving runtime config.'
 const MIN_RETRIEVAL_LIMIT = 1
 const MAX_RETRIEVAL_LIMIT = 12
+const MIN_RUNTIME_NUMERIC_VALUE = 1
+const MIN_RUNTIME_TEMPERATURE = 0
+const MAX_RUNTIME_TEMPERATURE = 2
 const UNSET_MODEL_PICKER_VALUE = 'unset'
 const CUSTOM_MODEL_PICKER_VALUE = 'custom'
 
@@ -165,6 +168,19 @@ export function clampRetrievalLimit(value: number | string) {
   return Math.min(MAX_RETRIEVAL_LIMIT, Math.max(MIN_RETRIEVAL_LIMIT, Math.trunc(numericValue)))
 }
 
+function clampRuntimePositiveInteger(value: number) {
+  if (!Number.isFinite(value)) return MIN_RUNTIME_NUMERIC_VALUE
+
+  return Math.max(MIN_RUNTIME_NUMERIC_VALUE, Math.trunc(value))
+}
+
+function clampRuntimeTemperature(value: number) {
+  if (value === Infinity) return MAX_RUNTIME_TEMPERATURE
+  if (!Number.isFinite(value)) return MIN_RUNTIME_TEMPERATURE
+
+  return Math.max(MIN_RUNTIME_TEMPERATURE, Math.min(MAX_RUNTIME_TEMPERATURE, Number(value)))
+}
+
 export function buildAskKilianRuntimeConfigPayload(input: {
   modelId: string
   maxOutputTokens: number
@@ -187,14 +203,14 @@ export function buildAskKilianRuntimeConfigPayload(input: {
     ok: true,
     payload: {
       modelId,
-      maxOutputTokens: Math.max(1, Math.trunc(input.maxOutputTokens)),
-      temperature: Math.max(0, Math.min(2, Number(input.temperature))),
-      conversationWindow: Math.max(1, Math.trunc(input.conversationWindow)),
+      maxOutputTokens: clampRuntimePositiveInteger(input.maxOutputTokens),
+      temperature: clampRuntimeTemperature(input.temperature),
+      conversationWindow: clampRuntimePositiveInteger(input.conversationWindow),
       ragLimit: clampRetrievalLimit(input.ragLimit),
       quota: {
-        adminTestDailyRequests: Math.max(1, Math.trunc(input.adminTestDailyRequests)),
-        publicDailyRequests: Math.max(1, Math.trunc(input.publicDailyRequests)),
-        publicDailyEstimatedTokens: Math.max(1, Math.trunc(input.publicDailyEstimatedTokens)),
+        adminTestDailyRequests: clampRuntimePositiveInteger(input.adminTestDailyRequests),
+        publicDailyRequests: clampRuntimePositiveInteger(input.publicDailyRequests),
+        publicDailyEstimatedTokens: clampRuntimePositiveInteger(input.publicDailyEstimatedTokens),
       },
     },
   }
@@ -461,16 +477,32 @@ export function TestLabTab({ workspace }: { workspace: AskKilianAdminWorkspaceCo
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border/80 pb-4">
         <div>
           <h2 className="text-lg font-semibold">Test Lab</h2>
-          <p className="text-sm text-muted-foreground">Talk to the live admin test bot, then inspect what powered the answer.</p>
+          <p className="text-sm text-muted-foreground">
+            Talk to the live admin test bot, then inspect what powered the answer.
+          </p>
         </div>
         <div className="flex flex-wrap gap-2 text-xs">
-          <span className={cn('rounded-md border px-2 py-1', workspace.state.activePromptConfig ? 'border-border bg-muted/30' : 'border-destructive/40 text-destructive')}>
+          <span
+            className={cn(
+              'rounded-md border px-2 py-1',
+              workspace.state.activePromptConfig
+                ? 'border-border bg-muted/30'
+                : 'border-destructive/40 text-destructive',
+            )}>
             Prompt {workspace.state.activePromptConfig ? 'active' : 'missing'}
           </span>
-          <span className={cn('rounded-md border px-2 py-1', workspace.state.activeRuntimeConfig ? 'border-border bg-muted/30' : 'border-destructive/40 text-destructive')}>
+          <span
+            className={cn(
+              'rounded-md border px-2 py-1',
+              workspace.state.activeRuntimeConfig
+                ? 'border-border bg-muted/30'
+                : 'border-destructive/40 text-destructive',
+            )}>
             Runtime {workspace.state.activeRuntimeConfig ? 'active' : 'missing'}
           </span>
-          <span className="rounded-md border border-border bg-muted/30 px-2 py-1">RAG {workspace.state.ragStatus.level}</span>
+          <span className="rounded-md border border-border bg-muted/30 px-2 py-1">
+            RAG {workspace.state.ragStatus.level}
+          </span>
         </div>
       </div>
 
@@ -582,7 +614,10 @@ export function TestLabTab({ workspace }: { workspace: AskKilianAdminWorkspaceCo
             <span className="block text-sm font-semibold">Runtime setup</span>
             <span className="block text-xs text-muted-foreground">{workspace.state.runtimeStatus.reason}</span>
           </span>
-          <ChevronDown aria-hidden="true" className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
+          <ChevronDown
+            aria-hidden="true"
+            className="size-4 text-muted-foreground transition-transform group-open:rotate-180"
+          />
         </summary>
         <div className="grid gap-4 border-t border-border p-4">
           <div className="grid gap-3">
@@ -793,9 +828,14 @@ export function TestLabTab({ workspace }: { workspace: AskKilianAdminWorkspaceCo
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 marker:hidden">
           <span>
             <span className="block text-sm font-semibold">Context and debug output</span>
-            <span className="block text-xs text-muted-foreground">Retrieved RAG context, assembled preview, trace, and diagnostics</span>
+            <span className="block text-xs text-muted-foreground">
+              Retrieved RAG context, assembled preview, trace, and diagnostics
+            </span>
           </span>
-          <ChevronDown aria-hidden="true" className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
+          <ChevronDown
+            aria-hidden="true"
+            className="size-4 text-muted-foreground transition-transform group-open:rotate-180"
+          />
         </summary>
         <div className="border-t border-border p-4">
           <ContextPreviewPanel preview={workspace.retrievalPreview} chatResponse={workspace.chatResponse} />

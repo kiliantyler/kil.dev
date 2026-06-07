@@ -123,6 +123,10 @@ function summarizeRagStatus(entries: AskKilianAdminWorkspaceState['entries']): A
   return { label: 'RAG', level: 'ready', reason: 'RAG ready', checkedAt: Date.now() }
 }
 
+function askKilianAdminDistinctId(admin: Awaited<ReturnType<typeof requireAdminAuthContext>>) {
+  return `ask-kilian-admin:${admin.workosUserId}`
+}
+
 async function isTestBypassRequest() {
   if (!isAdminTestBypassEnvEnabled()) return false
   const requestCookies = await cookies()
@@ -305,7 +309,7 @@ export async function saveAskKilianRuntimeConfigAction(input: AskKilianRuntimeCo
 
 export async function generateAskKilianChatAction(input: GenerateAskKilianChatAdminInput) {
   const admin = await requireAdminAuthContext()
-  return runAskKilianChatForAdmin({ ...input, distinctId: admin.email })
+  return runAskKilianChatForAdmin({ ...input, distinctId: askKilianAdminDistinctId(admin) })
 }
 
 export async function disableAskKilianAdminEntryAction(stableKey: string) {

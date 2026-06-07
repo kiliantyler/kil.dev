@@ -85,7 +85,7 @@ function createDeps(overrides: Partial<AskKilianChatEngineDeps> = {}): AskKilian
 function adminInput() {
   return {
     callerMode: 'admin_test' as const,
-    distinctId: 'admin@example.com',
+    distinctId: 'ask-kilian-admin:user_admin_123',
     messages: [{ role: 'user' as const, content: 'What is Kilian doing with kil.dev?' }],
     tier: 2 as const,
     includeSpoilers: true,
@@ -179,14 +179,14 @@ describe('Ask Kilian chat engine', () => {
           outputTokens: 21,
           finishReason: 'stop',
         },
-        posthogDistinctId: 'admin@example.com',
+        posthogDistinctId: 'ask-kilian-admin:user_admin_123',
         posthogTraceId: 'trace-ask-kilian-1',
       }),
     })
     expect(deps.captureMetric).toHaveBeenCalledWith(
       expect.objectContaining({
         event: 'ask_kilian_chat_completed',
-        distinctId: 'admin@example.com',
+        distinctId: 'ask-kilian-admin:user_admin_123',
         traceId: 'trace-ask-kilian-1',
         status: 'completed',
       }),
@@ -291,7 +291,7 @@ describe('Ask Kilian chat engine', () => {
     )
   })
 
-  it('still uses RAG and the model for tier 2 fake lore responses', async () => {
+  it('returns deterministic fake lore for private-fact fishing without calling RAG or the model', async () => {
     const fakeLoreClassification: AskKilianClassificationDecision = {
       scope: 'private_fact_fishing',
       behavior: 'fake_lore',
@@ -312,13 +312,34 @@ describe('Ask Kilian chat engine', () => {
     expect(result).toMatchObject({
       ok: true,
       status: 'completed',
+      text: expect.stringContaining('Obviously fake lore'),
       diagnostics: {
         classification: fakeLoreClassification,
-        ragCorpusVersionKey: 'rag:v2:abc123',
+        ragCorpusVersionKey: 'rag:no-rag:v1',
+        retrievedEntries: [],
+        model: {
+          modelId: 'deterministic',
+          latencyMs: 0,
+          finishReason: 'fake_lore',
+        },
       },
     })
-    expect(deps.searchRag).toHaveBeenCalledOnce()
-    expect(deps.streamModel).toHaveBeenCalledOnce()
+    expect(deps.searchRag).not.toHaveBeenCalled()
+    expect(deps.streamModel).not.toHaveBeenCalled()
+    expect(deps.recordConversation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({
+          status: 'completed',
+          ragCorpusVersionKey: 'rag:no-rag:v1',
+          retrievedEntries: [],
+          model: {
+            modelId: 'deterministic',
+            latencyMs: 0,
+            finishReason: 'fake_lore',
+          },
+        }),
+      }),
+    )
   })
 
   it('fails closed when quota blocks and skips RAG, model streaming, and trace logging', async () => {

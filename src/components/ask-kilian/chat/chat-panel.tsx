@@ -30,6 +30,9 @@ export function shouldSubmitAskKilianChatComposer(input: AskKilianChatComposerKe
   )
 }
 
+export const ASK_KILIAN_CHAT_MESSAGE_CONTENT_CLASS =
+  'max-w-full rounded-md px-3 py-2 text-sm leading-6 whitespace-pre-wrap wrap-anywhere shadow-sm'
+
 export function AskKilianChatPanel({
   title = 'Ask Kilian',
   subtitle,
@@ -175,7 +178,7 @@ function AskKilianMessageBubble({ message }: { message: AskKilianChatMessage }) 
         <p className="text-xs font-medium text-muted-foreground">{getAskKilianChatRoleLabel(message.role)}</p>
         <div
           className={cn(
-            'rounded-md px-3 py-2 text-sm leading-6 whitespace-pre-wrap shadow-sm',
+            ASK_KILIAN_CHAT_MESSAGE_CONTENT_CLASS,
             isUser
               ? 'bg-primary text-primary-foreground'
               : 'border border-border bg-muted/50 text-foreground',

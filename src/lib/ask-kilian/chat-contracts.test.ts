@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   ASK_KILIAN_CHAT_CONTEXT_WINDOW,
+  ASK_KILIAN_CHAT_MAX_CONVERSATION_LENGTH,
   ASK_KILIAN_CHAT_MAX_INPUT_LENGTH,
   buildAskKilianChatRequest,
   normalizeAskKilianConversationWindow,
@@ -39,6 +40,27 @@ describe('Ask Kilian chat contracts', () => {
       error: {
         code: 'input_too_large',
         message: `Ask Kilian messages must be ${ASK_KILIAN_CHAT_MAX_INPUT_LENGTH} characters or fewer.`,
+      },
+    })
+  })
+
+  it('rejects oversized retained conversation history before model or RAG work', () => {
+    const result = buildAskKilianChatRequest({
+      callerMode: 'public',
+      messages: [
+        { role: 'assistant', content: 'a'.repeat(ASK_KILIAN_CHAT_MAX_CONVERSATION_LENGTH) },
+        { role: 'user', content: 'Short latest message' },
+      ],
+      tier: 0,
+      includeSpoilers: false,
+      categories: ['quickfacts'],
+    })
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        code: 'input_too_large',
+        message: `Ask Kilian conversations must be ${ASK_KILIAN_CHAT_MAX_CONVERSATION_LENGTH} characters or fewer.`,
       },
     })
   })
@@ -134,5 +156,29 @@ describe('Ask Kilian chat contracts', () => {
       { role: 'assistant', content: 'fourth' },
       { role: 'user', content: 'fifth' },
     ])
+  })
+
+  it('allows normal retained multi-turn conversation windows within the total budget', () => {
+    const result = buildAskKilianChatRequest({
+      callerMode: 'public',
+      messages: [
+        { role: 'user', content: 'What are you working on lately?' },
+        { role: 'assistant', content: 'A mix of design systems and AI tooling.' },
+        { role: 'user', content: 'What should I ask about kil.dev?' },
+        { role: 'assistant', content: 'Ask about the games, experiments, and project history.' },
+        { role: 'user', content: 'Give me a concise suggestion.' },
+      ],
+      tier: 1,
+      includeSpoilers: false,
+      categories: ['projects', 'quickfacts'],
+    })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) {
+      return
+    }
+
+    expect(result.request.messages).toHaveLength(5)
+    expect(result.request.latestUserMessage).toBe('Give me a concise suggestion.')
   })
 })

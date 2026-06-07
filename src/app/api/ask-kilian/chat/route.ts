@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server'
 
 const ADMIN_ONLY_MESSAGE = 'Ask Kilian chat is admin-only until KTY-67.'
 const INVALID_REQUEST_MESSAGE = 'Invalid Ask Kilian chat request.'
+const RUNTIME_FAILURE_MESSAGE = 'Ask Kilian chat is temporarily unavailable.'
 const NO_STORE_HEADERS = {
   'Cache-Control': 'no-store',
 }
@@ -40,10 +41,16 @@ export async function POST(request: Request) {
     return invalidRequestResponse()
   }
 
-  const result = await runAskKilianChatForAdmin({
-    ...input.value,
-    distinctId: admin.email,
-  })
+  let result: Awaited<ReturnType<typeof runAskKilianChatForAdmin>>
+
+  try {
+    result = await runAskKilianChatForAdmin({
+      ...input.value,
+      distinctId: askKilianAdminDistinctId(admin),
+    })
+  } catch {
+    return runtimeFailureResponse()
+  }
 
   return NextResponse.json(result, {
     headers: NO_STORE_HEADERS,
@@ -70,6 +77,23 @@ function invalidRequestResponse() {
       headers: NO_STORE_HEADERS,
     },
   )
+}
+
+function runtimeFailureResponse() {
+  return NextResponse.json(
+    {
+      ok: false,
+      message: RUNTIME_FAILURE_MESSAGE,
+    },
+    {
+      status: 500,
+      headers: NO_STORE_HEADERS,
+    },
+  )
+}
+
+function askKilianAdminDistinctId(admin: Awaited<ReturnType<typeof requireAdminAuthContext>>) {
+  return `ask-kilian-admin:${admin.workosUserId}`
 }
 
 function parseAskKilianChatRequestBody(body: unknown): ParseAskKilianChatRequestBodyResult {
