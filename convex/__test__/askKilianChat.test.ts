@@ -527,4 +527,97 @@ describe('Ask Kilian chat helpers', () => {
     })
     expect(buildVersionKey).toHaveBeenCalledWith(searchResults)
   })
+
+  it('uses stable content hashes and current RAG config in the runtime corpus version key', async () => {
+    const sameResultsDifferentOrder = [
+      {
+        stableKey: 'repo:beta',
+        title: 'Beta',
+        category: 'projects' as const,
+        score: 0.72,
+        text: 'Beta text that should not be fingerprinted when contentHash exists.',
+        contentHash: 'hash-beta',
+      },
+      {
+        stableKey: 'repo:alpha',
+        title: 'Alpha',
+        category: 'persona' as const,
+        score: 0.91,
+        text: 'Alpha text that should not be fingerprinted when contentHash exists.',
+        contentHash: 'hash-alpha',
+      },
+    ]
+    const handler = createRuntimeRagSearchHandler({
+      searchKnowledge: vi.fn(async () => sameResultsDifferentOrder),
+    })
+
+    const result = await handler(
+      { runQuery: vi.fn() } as never,
+      {
+        messages: [],
+        latestUserMessage: 'What should I know about Kilian?',
+        tier: 2,
+        includeSpoilers: true,
+        categories: ['persona', 'projects'],
+        limit: 8,
+      },
+    )
+
+    expect(result.ragCorpusVersionKey).toBe(
+      buildAskKilianRagCorpusVersionKey({
+        entries: [
+          { stableKey: 'repo:alpha', contentHash: 'hash-alpha' },
+          { stableKey: 'repo:beta', contentHash: 'hash-beta' },
+        ],
+        ragFilterVersion: 2,
+        embeddingModel: 'alibaba/qwen3-embedding-4b',
+        embeddingDimensions: 2048,
+      }),
+    )
+  })
+
+  it('falls back to stable key, score, and title when runtime RAG results lack content hashes', async () => {
+    const resultsWithoutHashes = [
+      {
+        stableKey: 'repo:kil-dev',
+        title: 'kil.dev',
+        category: 'projects' as const,
+        score: 0.91,
+        text: 'First text body.',
+      },
+    ]
+    const resultsWithChangedText = [
+      {
+        ...resultsWithoutHashes[0]!,
+        text: 'Changed text body should not change the fallback fingerprint.',
+      },
+    ]
+    const firstHandler = createRuntimeRagSearchHandler({
+      searchKnowledge: vi.fn(async () => resultsWithoutHashes),
+    })
+    const secondHandler = createRuntimeRagSearchHandler({
+      searchKnowledge: vi.fn(async () => resultsWithChangedText),
+    })
+    const args = {
+      messages: [],
+      latestUserMessage: 'What is kil.dev?',
+      tier: 0 as const,
+      includeSpoilers: false,
+      categories: ['projects' as const],
+      limit: 4,
+    }
+
+    const first = await firstHandler({ runQuery: vi.fn() } as never, args)
+    const second = await secondHandler({ runQuery: vi.fn() } as never, args)
+
+    expect(first.ragCorpusVersionKey).toBe(second.ragCorpusVersionKey)
+    expect(first.ragCorpusVersionKey).toBe(
+      buildAskKilianRagCorpusVersionKey({
+        entries: [{ stableKey: 'repo:kil-dev', contentHash: 'fallback:0.91:kil.dev' }],
+        ragFilterVersion: 2,
+        embeddingModel: 'alibaba/qwen3-embedding-4b',
+        embeddingDimensions: 2048,
+      }),
+    )
+  })
 })

@@ -165,6 +165,7 @@ const runtimeRagSearchResultValidator = v.object({
   category: askKilianCategoryValidator,
   score: v.number(),
   text: v.string(),
+  contentHash: v.optional(v.string()),
 })
 type RuntimeRagSearchResult = Infer<typeof runtimeRagSearchResultValidator>
 
@@ -429,7 +430,7 @@ function buildRuntimeRagCorpusVersionKey(results: RuntimeRagSearchResult[]) {
   return buildAskKilianRagCorpusVersionKey({
     entries: results.map(result => ({
       stableKey: result.stableKey,
-      contentHash: stableShortHash(result.text),
+      contentHash: result.contentHash ?? `fallback:${result.score}:${result.title}`,
     })),
     ragFilterVersion: ASK_KILIAN_RAG_FILTER_VERSION,
     embeddingModel: ASK_KILIAN_DEFAULT_EMBEDDING_MODEL,
