@@ -3,6 +3,7 @@
 import {
   applyAskKilianRepoSyncAction,
   disableAskKilianAdminEntryAction,
+  generateAskKilianChatAction,
   getAskKilianAdminWorkspaceStateAction,
   getAskKilianKnowledgeEntryAction,
   previewAskKilianRepoSyncAction,
@@ -21,6 +22,7 @@ import { hasAskKilianRepoSyncChanges } from './repo-sync-preview'
 
 export type AskKilianRetrievalPreview = Awaited<ReturnType<typeof previewAskKilianRetrievalAction>>
 export type AskKilianSyncPreview = Awaited<ReturnType<typeof previewAskKilianRepoSyncAction>>
+export type AskKilianChatResponse = Awaited<ReturnType<typeof generateAskKilianChatAction>>
 
 export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspaceState) {
   const [state, setState] = useState(initialState)
@@ -32,6 +34,8 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
   const [syncPreviewStale, setSyncPreviewStale] = useState(false)
   const [retrievalError, setRetrievalError] = useState<string | null>(null)
   const [retrievalPreview, setRetrievalPreview] = useState<AskKilianRetrievalPreview | null>(null)
+  const [chatError, setChatError] = useState<string | null>(null)
+  const [chatResponse, setChatResponse] = useState<AskKilianChatResponse | null>(null)
   const [isPending, startTransition] = useTransition()
   const [pendingOperations, setPendingOperations] = useState(0)
   const syncPreviewRef = useRef<AskKilianSyncPreview | null>(null)
@@ -42,6 +46,7 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
   const latestDetailRequestStableKey = useRef<string | null>(null)
   const latestDetailRequestId = useRef(0)
   const latestRetrievalRequestId = useRef(0)
+  const latestChatRequestId = useRef(0)
   const pendingOperationKeys = useRef(new Set<string>())
   const didLoadInitialDetail = useRef(false)
 
@@ -253,6 +258,22 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
     }, 'previewRetrieval')
   }
 
+  function generateChat(input: Parameters<typeof generateAskKilianChatAction>[0]) {
+    setChatError(null)
+    runWorkspaceOperation(async () => {
+      const requestId = latestChatRequestId.current + 1
+      latestChatRequestId.current = requestId
+      try {
+        const response = await generateAskKilianChatAction(input)
+        if (latestChatRequestId.current === requestId) setChatResponse(response)
+      } catch (error) {
+        if (latestChatRequestId.current === requestId) {
+          setChatError(error instanceof Error ? error.message : 'Unable to generate Ask Kilian chat response')
+        }
+      }
+    })
+  }
+
   const isOperationPending = isPending || pendingOperations > 0
 
   return {
@@ -265,6 +286,8 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
     syncPreviewStale,
     retrievalError,
     retrievalPreview,
+    chatError,
+    chatResponse,
     isPending: isOperationPending,
     actions: {
       refresh,
@@ -277,6 +300,7 @@ export function useAskKilianAdminWorkspace(initialState: AskKilianAdminWorkspace
       applyRepoSync,
       markSyncPreviewStale: () => setCurrentSyncPreviewStale(true),
       previewRetrieval,
+      generateChat,
     },
   }
 }

@@ -12,6 +12,7 @@ const repoRoot = path.resolve(__dirname, '../../../..')
 type WorkspaceHarnessGlobal = typeof globalThis & {
   askKilianActionMocks: {
     detailResolvers: Array<(value: unknown) => void>
+    chatResolvers: Array<(value: unknown) => void>
     repoSyncApplyCalls: string[]
     repoSyncPreviewResolvers: Array<(value: unknown) => void>
     retrievalResolvers: Array<(value: unknown) => void>
@@ -24,8 +25,16 @@ type WorkspaceHarnessGlobal = typeof globalThis & {
     syncPreview?: { confirmationToken?: string }
     syncPreviewStale?: boolean
     retrievalPreview?: { contextPreview?: string; results?: unknown[] }
+    chatError?: string | null
+    chatResponse?: { text?: string; diagnostics?: { promptRevisionId?: string } }
     actions: {
       applyRepoSync: () => void
+      generateChat: (input: {
+        messages: Array<{ role: string; content: string }>
+        tier: number
+        includeSpoilers: boolean
+        categories: string[]
+      }) => void
       loadEntryDetail: (stableKey: string) => Promise<unknown>
       previewRepoSync: () => void
       previewRetrieval: (input: {
@@ -50,6 +59,7 @@ async function buildWorkspaceHookTestPage() {
     actionsPath,
     `
       const detailResolvers = []
+      const chatResolvers = []
       const repoSyncPreviewResolvers = []
       const repoSyncApplyCalls = []
       const retrievalResolvers = []
@@ -72,6 +82,7 @@ async function buildWorkspaceHookTestPage() {
 
       globalThis.askKilianActionMocks = {
         detailResolvers,
+        chatResolvers,
         repoSyncApplyCalls,
         repoSyncPreviewResolvers,
         retrievalResolvers,
@@ -90,6 +101,10 @@ async function buildWorkspaceHookTestPage() {
 
       export async function getAskKilianKnowledgeEntryAction() {
         return new Promise(resolve => detailResolvers.push(resolve))
+      }
+
+      export async function generateAskKilianChatAction() {
+        return new Promise(resolve => chatResolvers.push(resolve))
       }
 
       export async function previewAskKilianRetrievalAction() {
@@ -315,6 +330,117 @@ describe('useAskKilianAdminWorkspace', () => {
           () => (globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.retrievalPreview?.results?.length,
         ),
       ).resolves.toBe(1)
+    } finally {
+      await page.close()
+      await browser.close()
+    }
+  })
+
+  it('stores the latest generated chat response and diagnostics', async () => {
+    const html = await buildWorkspaceHookTestPage()
+    const browser = await chromium.launch()
+    const page = await browser.newPage()
+
+    try {
+      await openWorkspaceHookPage(page, html)
+      await page.evaluate(() => {
+        ;(globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.actions.generateChat({
+          messages: [{ role: 'user', content: 'What did Kilian build?' }],
+          tier: 2,
+          includeSpoilers: true,
+          categories: ['projects'],
+        })
+      })
+      await page.waitForFunction(
+        () => (globalThis as WorkspaceHarnessGlobal).askKilianActionMocks.chatResolvers.length === 1,
+      )
+
+      await page.evaluate(() => {
+        ;(globalThis as WorkspaceHarnessGlobal).askKilianActionMocks.chatResolvers.shift()?.({
+          ok: true,
+          traceId: 'trace-1',
+          text: 'Kilian built kil.dev.',
+          diagnostics: { promptRevisionId: 'prompt-1' },
+        })
+      })
+
+      await page.waitForFunction(
+        () => (globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.chatResponse?.text === 'Kilian built kil.dev.',
+      )
+      await expect(
+        page.evaluate(
+          () => (globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.chatResponse?.diagnostics?.promptRevisionId,
+        ),
+      ).resolves.toBe('prompt-1')
+      await expect(
+        page.evaluate(() => (globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.chatError),
+      ).resolves.toBeNull()
+    } finally {
+      await page.close()
+      await browser.close()
+    }
+  })
+
+  it('does not let an older generated chat response overwrite a later response', async () => {
+    const html = await buildWorkspaceHookTestPage()
+    const browser = await chromium.launch()
+    const page = await browser.newPage()
+
+    try {
+      await openWorkspaceHookPage(page, html)
+      await page.evaluate(() => {
+        const workspace = (globalThis as WorkspaceHarnessGlobal).askKilianWorkspace
+        workspace.actions.generateChat({
+          messages: [{ role: 'user', content: 'First question?' }],
+          tier: 2,
+          includeSpoilers: true,
+          categories: ['projects'],
+        })
+        workspace.actions.generateChat({
+          messages: [{ role: 'user', content: 'Second question?' }],
+          tier: 2,
+          includeSpoilers: true,
+          categories: ['projects'],
+        })
+      })
+      await page.waitForFunction(
+        () => (globalThis as WorkspaceHarnessGlobal).askKilianActionMocks.chatResolvers.length === 2,
+      )
+
+      await page.evaluate(() => {
+        const resolvers = (globalThis as WorkspaceHarnessGlobal).askKilianActionMocks.chatResolvers
+        resolvers[1]?.({
+          ok: true,
+          traceId: 'trace-new',
+          text: 'Latest generated response.',
+          diagnostics: { promptRevisionId: 'prompt-new' },
+        })
+      })
+      await page.waitForFunction(
+        () =>
+          (globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.chatResponse?.text ===
+          'Latest generated response.',
+      )
+
+      await page.evaluate(() => {
+        const resolvers = (globalThis as WorkspaceHarnessGlobal).askKilianActionMocks.chatResolvers
+        resolvers[0]?.({
+          ok: true,
+          traceId: 'trace-old',
+          text: 'Stale generated response.',
+          diagnostics: { promptRevisionId: 'prompt-old' },
+        })
+      })
+      await page.waitForTimeout(0)
+
+      await expect(
+        page.evaluate(() => (globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.chatResponse?.text),
+      ).resolves.toBe('Latest generated response.')
+      await expect(
+        page.evaluate(
+          () => (globalThis as WorkspaceHarnessGlobal).askKilianWorkspace.chatResponse?.diagnostics?.promptRevisionId,
+        ),
+      ).resolves.toBe('prompt-new')
     } finally {
       await page.close()
       await browser.close()
