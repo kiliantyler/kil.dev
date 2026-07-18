@@ -223,7 +223,7 @@ describe('hydrateAskKilianPreviewRag', () => {
     expect(deps.rm).toHaveBeenCalledWith('/tmp/ask-kilian-preview-rag-test', { recursive: true, force: true })
   })
 
-  it('streams a large JSONL table out of the first available snapshot candidate', async () => {
+  it('extracts a large JSONL table out of the first available snapshot candidate without a system unzip', async () => {
     const tempDir = await mkdtemp(path.join(tmpdir(), 'ask-kilian-rag-extract-test-'))
 
     try {
