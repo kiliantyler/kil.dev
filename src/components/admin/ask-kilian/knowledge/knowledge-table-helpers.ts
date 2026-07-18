@@ -3,15 +3,7 @@ import type { AskKilianKnowledgeCategory, AskKilianSpoilerLevel } from '@/lib/as
 import type { ColumnFiltersState, ColumnSizingState, VisibilityState } from '@tanstack/react-table'
 
 export type KnowledgeTableSortKey =
-  | 'stableKey'
-  | 'title'
-  | 'source'
-  | 'category'
-  | 'minTier'
-  | 'spoilerLevel'
-  | 'status'
-  | 'ragStatus'
-  | 'updatedAt'
+  'stableKey' | 'title' | 'source' | 'category' | 'minTier' | 'spoilerLevel' | 'status' | 'ragStatus' | 'updatedAt'
 
 export type KnowledgeFilterOptions = {
   source: string[]
@@ -23,14 +15,7 @@ export type KnowledgeFilterOptions = {
 }
 
 export type KnowledgeColumnVisibilityKey =
-  | 'title'
-  | 'sourcePath'
-  | 'source'
-  | 'contentHash'
-  | 'importance'
-  | 'category'
-  | 'minTier'
-  | 'spoilerLevel'
+  'title' | 'sourcePath' | 'source' | 'contentHash' | 'importance' | 'category' | 'minTier' | 'spoilerLevel'
 export type KnowledgeFilterKey = keyof KnowledgeFilterOptions
 
 export type KnowledgeFilterDefinition = {

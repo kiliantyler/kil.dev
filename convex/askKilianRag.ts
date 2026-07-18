@@ -18,7 +18,7 @@ type AskKilianRagFilters = {
   categoryStatus: string
   status: 'active'
 }
-type AskKilianEmbeddingModel = Exclude<EmbeddingModel, string>
+type AskKilianEmbeddingModel = Extract<Exclude<EmbeddingModel, string>, { specificationVersion: 'v3' }>
 type VercelEmbeddingResponse = {
   data?: Array<{ embedding?: number[] }>
   usage?: {

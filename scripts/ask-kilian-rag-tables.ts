@@ -27,13 +27,7 @@ export const ASK_KILIAN_RAG_TABLES = [
 ] as const
 
 export type ConvexDeployKeyClassification =
-  | 'dev'
-  | 'preview'
-  | 'prod'
-  | 'project'
-  | 'missing'
-  | 'placeholder'
-  | 'unknown'
+  'dev' | 'preview' | 'prod' | 'project' | 'missing' | 'placeholder' | 'unknown'
 
 export function vectorTableForDimensions(dimensions: number) {
   return `vectors_${dimensions}` as `vectors_${number}`
