@@ -223,7 +223,7 @@ describe('hydrateAskKilianPreviewRag', () => {
     expect(deps.rm).toHaveBeenCalledWith('/tmp/ask-kilian-preview-rag-test', { recursive: true, force: true })
   })
 
-  it('streams a large JSONL table out of the first available snapshot candidate', async () => {
+  it('extracts a large JSONL table out of the first available snapshot candidate without a system unzip', async () => {
     const tempDir = await mkdtemp(path.join(tmpdir(), 'ask-kilian-rag-extract-test-'))
 
     try {
@@ -238,6 +238,9 @@ describe('hydrateAskKilianPreviewRag', () => {
       const content = `${lines.join('\n')}\n\n`
       const documentsPath = path.join(tableDir, 'documents.jsonl')
       await writeFile(documentsPath, content)
+      const unrelatedTableDir = path.join(sourceDir, 'unrelatedLargeTable')
+      await mkdir(unrelatedTableDir, { recursive: true })
+      await writeFile(path.join(unrelatedTableDir, 'documents.jsonl'), 'unrelated content'.repeat(200_000))
 
       const zipPath = path.join(tempDir, 'snapshot.zip')
       await execFileAsync('zip', ['-qr', zipPath, '.'], { cwd: sourceDir })

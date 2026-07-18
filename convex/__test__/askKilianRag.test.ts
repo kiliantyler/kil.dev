@@ -1,12 +1,12 @@
-import { APICallError, embed } from 'ai'
+import { APICallError } from 'ai'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import * as sharedAskKilianConfig from '../../src/lib/ask-kilian/config'
 
-async function importAskKilianRag() {
-  vi.stubEnv('AI_GATEWAY_API_KEY', '')
+async function importAskKilianRag({ apiKey = '' }: { apiKey?: string } = {}) {
+  vi.stubEnv('AI_GATEWAY_API_KEY', apiKey)
   vi.stubEnv('VERCEL_PROJECT_ID', 'prj_test')
   vi.stubEnv('ASK_KILIAN_GATEWAY_ENV', '')
   vi.stubEnv('ASK_KILIAN_EMBEDDING_DIMENSIONS', '')
@@ -20,6 +20,7 @@ describe('Ask Kilian RAG configuration', () => {
 
   afterEach(() => {
     vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
   })
 
   it('keeps the Gateway embedding model and 2048-dimension default synchronized', async () => {
@@ -290,25 +291,46 @@ describe('Ask Kilian RAG configuration', () => {
     })
   })
 
-  it('retries transient network failures through the AI SDK retry wrapper', async () => {
-    const { createAskKilianGatewayEmbeddingModel } = await importAskKilianRag()
+  it('embeds through the production RAG client and retries transient Gateway failures', async () => {
     const fetchImplementation = vi
       .fn()
-      .mockRejectedValueOnce(new TypeError('fetch failed'))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: { message: 'Gateway temporarily unavailable' } }), {
+          headers: { 'retry-after-ms': '0' },
+          status: 503,
+        }),
+      )
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ data: [{ embedding: embedding2048 }], usage: { total_tokens: 3 } }), {
           status: 200,
         }),
       )
-    const embeddingModel = createAskKilianGatewayEmbeddingModel({
-      apiKey: 'test-key',
-      dimensions: 2048,
-      fetchImplementation,
-    })
+    vi.stubGlobal('fetch', fetchImplementation)
+    const { askKilianRag } = await importAskKilianRag({ apiKey: 'test-key' })
+    const runMutation = vi
+      .fn()
+      .mockResolvedValueOnce({ namespaceId: 'namespace_test', status: 'ready' })
+      .mockResolvedValueOnce({ entryId: 'entry_test', status: 'ready', created: true })
 
-    const result = await embed({ model: embeddingModel, value: 'hello', maxRetries: 1 })
+    const result = await askKilianRag.add({ runMutation }, { namespace: 'test', chunks: ['hello'] })
 
     expect(fetchImplementation).toHaveBeenCalledTimes(2)
-    expect(result.embedding).toEqual(embedding2048)
+    expect(runMutation).toHaveBeenCalledTimes(2)
+    expect(runMutation.mock.calls[1]?.[1]).toMatchObject({
+      entry: { namespaceId: 'namespace_test' },
+      allChunks: [
+        {
+          content: { text: 'hello' },
+          embedding: embedding2048,
+          searchableText: 'hello',
+        },
+      ],
+    })
+    expect(result).toMatchObject({
+      entryId: 'entry_test',
+      status: 'ready',
+      created: true,
+      usage: { tokens: 3 },
+    })
   })
 })
