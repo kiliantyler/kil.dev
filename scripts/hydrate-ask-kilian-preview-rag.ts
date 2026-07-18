@@ -109,10 +109,14 @@ export async function extractSnapshotTable(
   const outputDir = options.outputDir ?? tmpdir()
   await mkdir(outputDir, { recursive: true })
   const filePath = path.join(outputDir, `${options.component ? `${options.component}-` : ''}${table}.jsonl`)
-  const archive = unzipSync(await readFile(snapshotZip))
+  const candidates = snapshotPathCandidates(table, options)
+  const candidateSet = new Set(candidates)
+  const archive = unzipSync(await readFile(snapshotZip), {
+    filter: file => candidateSet.has(file.name),
+  })
   let rowCount: number | undefined
 
-  for (const candidate of snapshotPathCandidates(table, options)) {
+  for (const candidate of candidates) {
     const content = archive[candidate]
     if (content === undefined) continue
 

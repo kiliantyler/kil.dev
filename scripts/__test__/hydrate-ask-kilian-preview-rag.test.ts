@@ -238,6 +238,9 @@ describe('hydrateAskKilianPreviewRag', () => {
       const content = `${lines.join('\n')}\n\n`
       const documentsPath = path.join(tableDir, 'documents.jsonl')
       await writeFile(documentsPath, content)
+      const unrelatedTableDir = path.join(sourceDir, 'unrelatedLargeTable')
+      await mkdir(unrelatedTableDir, { recursive: true })
+      await writeFile(path.join(unrelatedTableDir, 'documents.jsonl'), 'unrelated content'.repeat(200_000))
 
       const zipPath = path.join(tempDir, 'snapshot.zip')
       await execFileAsync('zip', ['-qr', zipPath, '.'], { cwd: sourceDir })
